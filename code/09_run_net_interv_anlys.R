@@ -58,20 +58,6 @@ net_dat_all_to_s6_wide$positive_vs_fifty_fifty[net_dat_all_to_s6_wide$cbmConditi
 net_dat_all_to_s6_wide$positive_vs_neutral[net_dat_all_to_s6_wide$cbmCondition     == "NEUTRAL"]     <- 0
 net_dat_all_to_s6_wide$positive_vs_fifty_fifty[net_dat_all_to_s6_wide$cbmCondition == "FIFTY_FIFTY"] <- 0
 
-# Create indicator of complete data across baseline, Session 3, and Session 6
-
-node_vars <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social",
-               "rr_ns_mean", "rr_ps_mean_rev")
-
-node_vars_at_target_waves <- c(paste0(node_vars, ".PRE"),
-                               paste0(node_vars, ".SESSION3"),
-                               paste0(node_vars, ".SESSION6"))
-
-net_dat_all_to_s6_wide$complete_bl_s3_s6 <- NA
-
-net_dat_all_to_s6_wide$complete_bl_s3_s6[complete.cases(net_dat_all_to_s6_wide[, node_vars_at_target_waves])]  <- 1
-net_dat_all_to_s6_wide$complete_bl_s3_s6[!complete.cases(net_dat_all_to_s6_wide[, node_vars_at_target_waves])] <- 0
-
 # ---------------------------------------------------------------------------- #
 # Compute zero-order correlations at baseline for ITT participants ----
 # ---------------------------------------------------------------------------- #

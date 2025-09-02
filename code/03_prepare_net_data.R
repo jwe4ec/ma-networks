@@ -124,6 +124,22 @@ net_dat_all_to_s6_wide <- reshape(net_dat_all_to_s6,
                                   v.names = c(oa_node_cols, rr_node_cols, "rr_ps_mean_rev"))
 
 # ---------------------------------------------------------------------------- #
+# Create indicator of complete data across baseline, Session 3, and Session 6 ----
+# ---------------------------------------------------------------------------- #
+
+node_vars <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social",
+               "rr_ns_mean", "rr_ps_mean_rev")
+
+node_vars_at_target_waves <- c(paste0(node_vars, ".PRE"),
+                               paste0(node_vars, ".SESSION3"),
+                               paste0(node_vars, ".SESSION6"))
+
+net_dat_all_to_s6_wide$complete_bl_s3_s6 <- NA
+
+net_dat_all_to_s6_wide$complete_bl_s3_s6[complete.cases(net_dat_all_to_s6_wide[, node_vars_at_target_waves])]  <- 1
+net_dat_all_to_s6_wide$complete_bl_s3_s6[!complete.cases(net_dat_all_to_s6_wide[, node_vars_at_target_waves])] <- 0
+
+# ---------------------------------------------------------------------------- #
 # Export data ----
 # ---------------------------------------------------------------------------- #
 
