@@ -1,2 +1,10 @@
 # ma-networks
-Analysis code for manuscript "Network Analyses of Interpretation Bias and Anxiety Symptoms in Web-Based Interpretation Bias Modification: Positive Training Versus 50-50 and No Training"
+This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
+
+# Data
+
+TODO
+
+# Code
+
+TODO
