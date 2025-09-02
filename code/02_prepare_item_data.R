@@ -54,7 +54,7 @@ source("./code/01a_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control_temporal()
+groundhog_day <- version_control()
 
 # No packages loaded
 
