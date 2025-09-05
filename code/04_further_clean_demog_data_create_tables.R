@@ -20,7 +20,7 @@
 # - On GitHub (https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/tree/master/Data%20Cleaning)
 #   - "R34_cleaning_script.R"
 #   - "R34.ipynb"
-# - On MA OSF project
+# - On MA main outcomes paper OSF project
 #   - "Script0_Demographics.R" (https://osf.io/uv5jm)
 
 # ---------------------------------------------------------------------------- #
