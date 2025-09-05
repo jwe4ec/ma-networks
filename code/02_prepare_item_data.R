@@ -31,11 +31,14 @@
 #    available. However, the file was likely created by adjusting the script "R34.ipynb" 
 #    in the study's Data Cleaning folder (https://bit.ly/3CLi5It) on GitHub.
 
-# 2. Raw data files obtained from Sonia Baee on 9/3/2020 (called Set A in this script), 
-#    who stated on that date that they represent the latest version of the database on 
-#    the R34 server and that she obtained them from Claudia Calicho-Mamani
+# 2. Raw data files obtained from Sonia Baee on 9/3/2020, who stated on that date that
+#    they represent the latest version of the database on the R34 server and that she 
+#    obtained them from Claudia Calicho-Mamani
 
-# 3. A partial set of raw data files obtained from Sonia Baee on 1/18/2023 (called Set B)
+# 3. Raw data files from the OSF project for the Managing Anxiety study, which Yuhan
+#    Hou uploaded on 3/16/2023 after dumping the CSV files from the "teachmanlab" SQL
+#    Data Server using Grafana (because the "angular_training" table was too large to
+#    obtain via Grafana, Yuhan dumped it directly from the Data Server).
 
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
@@ -51,7 +54,7 @@ source("./code/01a_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control_temporal()
+groundhog_day <- version_control()
 
 # No packages loaded
 
@@ -66,49 +69,51 @@ dat_main_bl_items  <- read.csv("./data/source/clean_from_main_paper/R34_Cronbach
 dat_main_lg_scales <- read.csv("./data/source/clean_from_main_paper/R34_FinalData_New_v02.csv")
 
 # ---------------------------------------------------------------------------- #
-# Import raw data files from Sonia ----
+# Import raw data files from Sonia and from MA study OSF project ----
 # ---------------------------------------------------------------------------- #
 
-# Obtain file names of Sets A and B of raw CSV data files from Sonia (see Sources
-# 2 and 3 above for more info)
+# Obtain file names of raw CSV data files from Sonia (see Source 2 above) and
+# from MA study OSF project (see Source 3 above)
 
-raw_data_dir_son_a <- paste0(wd_dir, "/data/source/raw_from_sonia_a")
-raw_data_dir_son_b <- paste0(wd_dir, "/data/source/raw_from_sonia_b")
+raw_data_dir_sb  <- paste0(wd_dir, "/data/source/raw_from_sonia")
+raw_data_dir_osf <- paste0(wd_dir, "/data/source/raw_from_osf")
 
-raw_filenames_son_a <- list.files(raw_data_dir_son_a, pattern = "*.csv", full.names = FALSE)
-raw_filenames_son_b <- list.files(raw_data_dir_son_b, pattern = "*.csv", full.names = FALSE)
+raw_filenames_sb  <- list.files(raw_data_dir_sb, 
+                                pattern = "*.csv", full.names = FALSE)
+raw_filenames_osf <- list.files(raw_data_dir_osf, 
+                                pattern = "*.csv", full.names = FALSE)
 
 # Import raw data files and store them in list
 
-raw_dat_son_a <- lapply(paste0(raw_data_dir_son_a, "/", raw_filenames_son_a), read.csv)
-raw_dat_son_b <- lapply(paste0(raw_data_dir_son_b, "/", raw_filenames_son_b), read.csv)
+raw_dat_sb  <- lapply(paste0(raw_data_dir_sb,  "/", raw_filenames_sb),  read.csv)
+raw_dat_osf <- lapply(paste0(raw_data_dir_osf, "/", raw_filenames_osf), read.csv)
 
 # Name each raw data file in list
 
 split_char <- ".csv"
 
-names(raw_dat_son_a) <- unlist(lapply(raw_filenames_son_a,
-                                      function(f) {
-                                        unlist(strsplit(f,
-                                                        split = split_char,
-                                                        fixed = FALSE))[1]
-                                      }))
-names(raw_dat_son_b) <- unlist(lapply(raw_filenames_son_b,
-                                      function(f) {
-                                        unlist(strsplit(f,
-                                                        split = split_char,
-                                                        fixed = FALSE))[1]
-                                      }))
+names(raw_dat_sb)  <- unlist(lapply(raw_filenames_sb,
+                                    function(f) {
+                                      unlist(strsplit(f,
+                                                      split = split_char,
+                                                      fixed = FALSE))[1]
+                                    }))
+names(raw_dat_osf) <- unlist(lapply(raw_filenames_osf,
+                                    function(f) {
+                                      unlist(strsplit(f,
+                                                      split = split_char,
+                                                      fixed = FALSE))[1]
+                                    }))
 
 # ---------------------------------------------------------------------------- #
 # Decide which data to use for network analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Decide whether to add raw data from Set B to raw data from Set A (see Lines
-# 667-752 below). For now, use only raw data from Set A. However, "cln_dat" is also
+# TODO: Decide whether to add raw data from OSF to raw data from Sonia (see Lines
+# 670-760 below). For now, use only raw data from Sonia. However, "cln_dat" is also
 # used in some operations below, so define it here too.
 
-raw_dat <- raw_dat_son_a
+raw_dat <- raw_dat_sb
 
 cln_dat <- dat_main_lg_scales
 
@@ -656,6 +661,7 @@ for (i in 1:length(sel_dat)) {
 
 
 
+
 # ---------------------------------------------------------------------------- #
 # Filter raw data ----
 # ---------------------------------------------------------------------------- #
@@ -671,7 +677,8 @@ miss_ids <- setdiff(cln_participant_ids, sel_dat$participant_export_dao$particip
 
 #   None of the missing participants have data in "dass21_as" or "oa", but most of
 #   them do have data in other tables. The participants do seem to have "dass21_as"
-#   and "oa" data in the raw data in Set B. The participants also seem
+#   and "oa" data in the raw data posted on the Public Component of the Managing 
+#   Anxiety study's OSF project (https://osf.io/pvd67/). The participants also seem
 #   to have baseline data in the Managing Anxiety study main outcome paper's OSF 
 #   project (https://osf.io/3b67v; note that DASS-21-AS items names differ though).
 
@@ -681,16 +688,18 @@ lapply(sel_dat, function(x) sum(unique(x$participant_id) %in% miss_ids))
 
 
 
-#   After some cleaning, the missing participants' baseline data for "oa" items in
-#   Set B (where "id" is the participant ID) is the same as the baseline data for "oa" 
-#   items for these participants in Sonia's "R34_Cronbach.csv" file in the Managing 
-#   Anxiety study main outcome paper's OSF project. This suggests that the data from 
-#   Set B can be used for "oa" items at other time points for the missing participants.
+#   After some cleaning, the missing participants' baseline data for "oa" items on 
+#   the Public Component of the Managing Anxiety study's OSF project (where "id" is 
+#   the participant ID) is the same as the baseline data for "oa" items for these 
+#   participants in Sonia's "R34_Cronbach.csv" file in the Managing Anxiety study 
+#   main outcome paper's OSF project. This suggests that the data from the Managing 
+#   Anxiety study's OSF project can be used for "oa" items at other time points for 
+#   the missing participants.
 
 bl_items_sonia <- dat_main_bl_items
-oa_from_son_b  <- raw_dat_son_b$OA_02_02_2019
+oa_from_osf    <- raw_dat_osf$OA_02_02_2019
 
-test1 <- oa_from_son_b[oa_from_son_b$id %in% miss_ids & oa_from_son_b$session == "PRE", ]
+test1 <- oa_from_osf[oa_from_osf$id %in% miss_ids & oa_from_osf$session == "PRE", ]
 names(test1)[names(test1) == "id"] <- "participant_id"
 test1 <- test1[order(test1$participant_id), ]
 row.names(test1) <- 1:nrow(test1)
@@ -714,11 +723,12 @@ identical(test1[, c("participant_id", "session", oa_items)],
           test2[, c("participant_id", "session", oa_items)])
 
 #   Same for baseline "dass21_as" items, except that Sonia's "R34_Cronbach.csv" file
-#   has data for all 36 missing participants, whereas Set B has data for only 34
+#   has data for all 36 missing participants, whereas the Managing Anxiety study's 
+#   OSF project has data for only 34
 
-dass21_as_from_son_b <- raw_dat_son_b$DASS21_AS_02_02_2019
+dass21_as_from_osf <- raw_dat_osf$DASS21_AS_02_02_2019
 
-test1 <- dass21_as_from_son_b[dass21_as_from_son_b$id %in% miss_ids & dass21_as_from_son_b$session == "ELIGIBLE", ]
+test1 <- dass21_as_from_osf[dass21_as_from_osf$id %in% miss_ids & dass21_as_from_osf$session == "ELIGIBLE", ]
 names(test1)[names(test1) == "id"] <- "participant_id"
 test1 <- test1[order(test1$participant_id), ]
 row.names(test1) <- 1:nrow(test1)
@@ -749,7 +759,8 @@ identical(test1[, c("participant_id", "session", dass21_as_items)],
           test2_tmp[, c("participant_id", "session", dass21_as_items)])
 
 # TODO: Consider adding "oa" and "dass21_as" (and potentially other) data from 
-# Set B to raw data files from Set A
+# Public Component of the Managing Anxiety study's OSF project to raw data files 
+# obtained from Sonia Baee
 
 
 
@@ -1587,4 +1598,14 @@ write.csv(merge_rr_rest2, file = "./data/intermediate/merge_rr_rest2.csv",
 # Export raw restricted participant data (contains more columns than clean data)
 
 write.csv(participant_raw_rest2, file = "./data/intermediate/participant_raw_rest2.csv", 
+          row.names = FALSE)
+
+# Export clean restricted demographics data (cleaner than raw data)
+
+write.csv(demographics_cln_rest2, file = "./data/intermediate/demographics_cln_rest2.csv", 
+          row.names = FALSE)
+
+# Export raw restricted credibility data (not available in clean data)
+
+write.csv(credibility_raw_rest2, file = "./data/intermediate/credibility_raw_rest2.csv", 
           row.names = FALSE)
