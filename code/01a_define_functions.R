@@ -49,14 +49,22 @@ version_control <- function() {
 # Define identify_cols() ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to identify columns matching a grep pattern in a data frame.
-# Ignore case. Use lapply to apply the function to all data frames in a list.
+# Define function to identify columns matching a grep pattern in a data frame
+# (ignoring case), with option to exclude certain columns. Use lapply to apply 
+# the function to all data frames in a list.
 
-identify_cols <- function(df, grep_pattern) {
+identify_cols <- function(df, grep_pattern, exclude_cols = NULL) {
   df_colnames <- colnames(df)
   
-  selected_cols <- grep(grep_pattern, df_colnames, ignore.case = TRUE)
-  if (length(selected_cols) != 0) {
-    df_colnames[selected_cols]
+  select_idx <- grep(grep_pattern, df_colnames, ignore.case = TRUE)
+  
+  if (!is.null(exclude_cols)) {
+    exclude_idx <- which(df_colnames %in% exclude_cols)
+    
+    select_idx <- setdiff(select_idx, exclude_idx)
+  }
+  
+  if (length(select_idx) != 0) {
+    df_colnames[select_idx]
   }
 }

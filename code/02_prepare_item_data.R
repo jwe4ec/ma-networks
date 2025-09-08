@@ -526,7 +526,7 @@ sel_dat <- recode_date_time_timezone(sel_dat)
 
 # Identify columns containing "session" in each table
 
-lapply(sel_dat, identify_cols, grep_pattern = "session")
+lapply(sel_dat, identify_cols, grep_pattern = "session", exclude_cols = "sessionId")
 
 # View structure of columns containing "session" in each table
 
