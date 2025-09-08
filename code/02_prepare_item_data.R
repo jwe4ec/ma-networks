@@ -1008,7 +1008,11 @@ flt_dat <- keep_recent_entry_list(flt_dat)
 # Compute selected scores ----
 # ---------------------------------------------------------------------------- #
 
-# For now, compute scores only for "oa" and "rr" tables
+# TODO (compute for BBSIQ): For now, compute scores only for "oa" and "rr" tables
+
+
+
+
 
 # Define scale items
 
@@ -1309,16 +1313,12 @@ for (i in 1:length(flt_dat_comp_rest)) {
 for (i in 1:length(sep_dat_comp_rest)) {
   if (!(names(sep_dat_comp_rest[i]) %in% c("demographic", "participant"))) {
     if (names(sep_dat_comp_rest[i]) == "dass_as") {
-      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <-
-        "session_and_eligibility_status"
+      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <- "session_and_eligibility_status"
       
-      sep_dat_comp_rest[[i]][, "session_only"] <- 
-        sep_dat_comp_rest[[i]][, "session_and_eligibility_status"]
-      sep_dat_comp_rest[[i]][sep_dat_comp_rest[[i]][, "session_only"] == "ELIGIBLE", 
-                             "session_only"] <- "Eligibility"
+      sep_dat_comp_rest[[i]][, "session_only"] <- sep_dat_comp_rest[[i]][, "session_and_eligibility_status"]
+      sep_dat_comp_rest[[i]][sep_dat_comp_rest[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
     } else {
-      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <-
-        "session_only"
+      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <- "session_only"
     }
   }
 }
