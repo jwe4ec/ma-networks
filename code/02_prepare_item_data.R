@@ -93,7 +93,7 @@ names(raw_dat_son_b) <- tools::file_path_sans_ext(raw_filenames_son_b)
 # ---------------------------------------------------------------------------- #
 
 # TODO: Decide whether to add raw data from Set B to raw data from Set A (see Lines
-# 667-752 below). For now, use only raw data from Set A. However, "cln_dat" is also
+# 618-705 below). For now, use only raw data from Set A. However, "cln_dat" is also
 # used in some operations below, so define it here too.
 
 raw_dat <- raw_dat_son_a
@@ -616,7 +616,9 @@ for (i in 1:length(sel_dat)) {
 cln_participant_ids <- cln_dat$participantID
 
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
-# table. Asked Sonia about this on 11/24/21.
+# table. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists these 
+# participant IDs as "not included in original dataset due to server error."
+# Asked Sonia about this on 11/24/21.
 
 miss_ids <- setdiff(cln_participant_ids, sel_dat$participant_export_dao$participant_id)
 
@@ -758,7 +760,7 @@ flt_dat <- filter_all_data(sel_dat, cln_participant_ids)
 for (i in 1:length(flt_dat)) {
   meaningful_cols <- names(flt_dat[[i]])[!(names(flt_dat[[i]]) %in% c("X", "id"))]
   
-  if (names(flt_dat[i]) %in% "participant_export_dao") {
+  if (names(flt_dat[i]) == "participant_export_dao") {
     if (nrow(flt_dat[[i]]) != length(unique(flt_dat[[i]][, "participant_id"]))) {
       error(paste0("Unexpectedly, table ", names(flt_dat[i]), 
                    "contains multiple rows for at least one participant_id"))
@@ -766,8 +768,7 @@ for (i in 1:length(flt_dat)) {
   } else if ("id" %in% names(flt_dat[[i]])) {
     flt_dat[[i]] <- flt_dat[[i]][order(flt_dat[[i]][, "id"]), ]
     
-    flt_dat[[i]] <- flt_dat[[i]][!duplicated(flt_dat[[i]][, meaningful_cols],
-                                             fromLast = TRUE), ]
+    flt_dat[[i]] <- flt_dat[[i]][!duplicated(flt_dat[[i]][, meaningful_cols], fromLast = TRUE), ]
   } else {
     stop(paste0("Table ", names(flt_dat[i]), "needs to be checked for duplicates"))
   }
@@ -912,10 +913,10 @@ report_dups_list(flt_dat)
 
 
 # dass21_as:
-#   - R34_cleaning_script says all duplicates are multiple screening attempts, 
-#     assumes entries are in order by date, and keeps the last row
-#   - Other script says "get the latest entry for each participant" (does so by 
-#     most recent date for each session)
+# - R34_cleaning_script says all duplicates are multiple screening attempts, 
+#   assumes entries are in order by date, and keeps the last row
+# - Other script says "get the latest entry for each participant" (does so by 
+#   most recent date for each session)
 # 
 # oa:
 #   41 duplicated rows for table: oa
@@ -1063,9 +1064,7 @@ dummy_cols <- c("ANXIETY", "POSITIVE", "FIFTY_FIFTY", "POSITIVEANXIETY",
                 "POSITIVENEUTRAL", "FIFTY_FIFTYANXIETY", "FIFTY_FIFTYNEUTRAL",
                 "NONEANXIETY")
 
-cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols,
-                                                            computed_cols,
-                                                            dummy_cols))]]
+cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols, computed_cols, dummy_cols))]]
 
 # Remove dropout-related columns, which seem to have been created in some version
 # of "R34.ipynb", which, albeit outdated, is in the Data Cleaning folder on GitHub
@@ -1094,13 +1093,13 @@ setdiff(names(cln_dat), c(bbsiq_cols, dass_as_cols, dass_ds_cols, demographic_co
 
 # Extract data into separate tables
 
-table_cols <- list(bbsiq = bbsiq_cols,
-                   dass_as = dass_as_cols,
-                   dass_ds = dass_ds_cols,
+table_cols <- list(bbsiq       = bbsiq_cols,
+                   dass_as     = dass_as_cols,
+                   dass_ds     = dass_ds_cols,
                    demographic = demographic_cols,
-                   oa = oa_cols,
+                   oa          = oa_cols,
                    participant = participant_cols,
-                   rr = rr_cols)
+                   rr          = rr_cols)
 
 sep_dat_wide <- vector("list", length = length(table_cols))
 
@@ -1145,28 +1144,19 @@ for (i in 1:length(sep_dat_wide)) {
 
 # Identify repeated-measures columns for each score
 
-bbsiq_physical_score_cols <- names(sep_dat_wide$bbsiq)[grep("bbsiq_physical_score", 
-                                                            names(sep_dat_wide$bbsiq))]
-bbsiq_threat_score_cols <- names(sep_dat_wide$bbsiq)[grep("bbsiq_threat_score", 
-                                                          names(sep_dat_wide$bbsiq))]
+bbsiq_physical_score_cols <- names(sep_dat_wide$bbsiq)[grep("bbsiq_physical_score", names(sep_dat_wide$bbsiq))]
+bbsiq_threat_score_cols   <- names(sep_dat_wide$bbsiq)[grep("bbsiq_threat_score",   names(sep_dat_wide$bbsiq))]
 
-dass_as_score_cols <- names(sep_dat_wide$dass_as)[grep("dass_as_score", 
-                                                       names(sep_dat_wide$dass_as))]
+dass_as_score_cols        <- names(sep_dat_wide$dass_as)[grep("dass_as_score",      names(sep_dat_wide$dass_as))]
 
-dass_ds_score_cols <- names(sep_dat_wide$dass_ds)[grep("dass_ds_score", 
-                                                       names(sep_dat_wide$dass_ds))]
+dass_ds_score_cols        <- names(sep_dat_wide$dass_ds)[grep("dass_ds_score",      names(sep_dat_wide$dass_ds))]
 
-oasis_score_cols <- names(sep_dat_wide$oa)[grep("oasis_score", 
-                                                names(sep_dat_wide$oa))]
+oasis_score_cols          <- names(sep_dat_wide$oa)[grep("oasis_score",             names(sep_dat_wide$oa))]
 
-RR_negative_nf_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_nf_score", 
-                                                         names(sep_dat_wide$rr))]
-RR_negative_ns_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_ns_score", 
-                                                         names(sep_dat_wide$rr))]
-RR_positive_pf_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_pf_score", 
-                                                         names(sep_dat_wide$rr))]
-RR_positive_ps_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_ps_score", 
-                                                         names(sep_dat_wide$rr))]
+RR_negative_nf_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_nf_score",    names(sep_dat_wide$rr))]
+RR_negative_ns_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_ns_score",    names(sep_dat_wide$rr))]
+RR_positive_pf_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_pf_score",    names(sep_dat_wide$rr))]
+RR_positive_ps_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_ps_score",    names(sep_dat_wide$rr))]
 
 # Convert repeated-measures tables to long format
 
