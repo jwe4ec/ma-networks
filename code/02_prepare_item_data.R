@@ -530,51 +530,51 @@ lapply(sel_dat, identify_cols, grep_pattern = "session", exclude_cols = "session
 
 # View structure of columns containing "session" in each table
 
-view_session_str <- function(dat) {
+view_session_str <- function(dat, exclude_cols = NULL) {
   for (i in 1:length(dat)) {
-    print(paste0("Table: ", names(dat[i])))
-    cat("\n")
+    cat('\nTable: "', names(dat[i]), '"\n\n', sep = "")
     
     colnames <- names(dat[[i]])
     session_colnames <- colnames[grep("session", colnames, ignore.case = TRUE)]
+    
+    if (!is.null(exclude_cols)) {
+      session_colnames <- setdiff(session_colnames, exclude_cols)
+    }
     
     if (length(session_colnames) != 0) {
       for (j in 1:length(session_colnames)) {
         session_colname <- session_colnames[j]
         session_colname_class <- class(dat[[i]][, session_colname])
         
-        print(paste0(session_colname))
-        print(paste0("Class: ", session_colname_class))
-        
+        cat('"', session_colname, '"\n', sep = "")
+        cat("- Class:", session_colname_class, "\n")
+
         if (length(unique(dat[[i]][, session_colname])) > 20) {
-          print("First 20 unique levels: ")
+          cat("- First 20 unique levels:\n")
           print(unique(dat[[i]][, session_colname])[1:20])
         } else {
-          print("All unique levels: ")
+          cat("- All unique levels:\n")
           print(unique(dat[[i]][, session_colname]))
         }
         
-        print(paste0("Number NA: ", sum(is.na(dat[[i]][, session_colname]))))
+        cat("- Number NA:", sum(is.na(dat[[i]][, session_colname])), "\n")
         
         if (!("POSIXct" %in% session_colname_class)) {
-          print(paste0("Number blank: ", sum(dat[[i]][, session_colname] == "")))
-          print(paste0("Number 555: ", sum(dat[[i]][, session_colname] == 555,
-                                           na.rm = TRUE)))
+          cat("- Number blank:", sum(dat[[i]][, session_colname] == ""), "\n")
+          cat("- Number 555:",   sum(dat[[i]][, session_colname] == 555, na.rm = TRUE), "\n")
         }
         
         cat("\n")
       }
     } else {
-      print('No columns containing "session" found.')
-      cat("\n")
+      print('No columns containing "session" found.\n\n')
     }
     
-    cat("----------")
-    cat("\n", "\n")
+    cat("----------\n")
   }
 }
 
-view_session_str(sel_dat)
+view_session_str(sel_dat, exclude_cols = "sessionId")
 
 # Rename selected session-related columns to clarify conflated content of some
 # columns and to enable consistent naming (i.e., "session_only") across tables
