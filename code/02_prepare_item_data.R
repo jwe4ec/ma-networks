@@ -149,20 +149,15 @@ raw_dat$CIHS_recovered_Feb_02_2019 <- NULL
 table(raw_dat$DD_recovered_Feb_02_2019$session, useNA = "always")
 table(raw_dat$DD_FU_recovered_Feb_02_2019$session, useNA = "always")
 
-raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == 
-                                               "True"] <- "TRUE"
-raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == 
-                                               "False"] <- "FALSE"
-raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == 
-                                               "True"] <- "TRUE"
-raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == 
-                                               "False"] <- "FALSE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == "True"] <- "TRUE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == "False"] <- "FALSE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == "True"] <- "TRUE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == "False"] <- "FALSE"
 
 shared_dd_cols <- intersect(names(raw_dat$DD_recovered_Feb_02_2019),
                             names(raw_dat$DD_FU_recovered_Feb_02_2019))
 
-all(raw_dat$DD_recovered_Feb_02_2019[raw_dat$DD_recovered_Feb_02_2019$session != "PRE", 
-                                     shared_dd_cols] == 
+all(raw_dat$DD_recovered_Feb_02_2019[raw_dat$DD_recovered_Feb_02_2019$session != "PRE", shared_dd_cols] == 
       raw_dat$DD_FU_recovered_Feb_02_2019[, shared_dd_cols])
 
 added_dd_cols <- setdiff(names(raw_dat$DD_recovered_Feb_02_2019), 
@@ -174,30 +169,30 @@ raw_dat$DD_FU_recovered_Feb_02_2019 <- NULL
 # Shorten table names ----
 # ---------------------------------------------------------------------------- #
 
-names(raw_dat)[names(raw_dat) == "AnxietyTriggers_recovered_Feb_02_2019"] <- "anxiety_triggers"
-names(raw_dat)[names(raw_dat) == "BBSIQ_recovered_Feb_02_2019"] <- "bbsiq"
-names(raw_dat)[names(raw_dat) == "CC_recovered_Feb_02_2019"] <- "cc"
-names(raw_dat)[names(raw_dat) == "CIHS_Feb_02_2019_FIXED"] <- "cihs"
-names(raw_dat)[names(raw_dat) == "Credibility_recovered_Feb_02_2019"] <- "credibility"
-names(raw_dat)[names(raw_dat) == "DASS21_AS_recovered_Feb_02_2019"] <- "dass21_as"
-names(raw_dat)[names(raw_dat) == "DASS21_DS_recovered_Feb_02_2019_FIXED"] <- "dass21_ds"
-names(raw_dat)[names(raw_dat) == "DD_recovered_Feb_02_2019"] <- "dd"
-names(raw_dat)[names(raw_dat) == "Demographic_recovered_Feb_02_2019"] <- "demographic"
-names(raw_dat)[names(raw_dat) == "EmailLogDAO_recovered_Feb_02_2019"] <- "email_log"
-names(raw_dat)[names(raw_dat) == "GiftLogDAO_recovered_Feb_02_2019"] <- "gift_log"
-names(raw_dat)[names(raw_dat) == "ImageryPrime_recovered_Feb_02_2019"] <- "imagery_prime"
+names(raw_dat)[names(raw_dat) == "AnxietyTriggers_recovered_Feb_02_2019"]      <- "anxiety_triggers"
+names(raw_dat)[names(raw_dat) == "BBSIQ_recovered_Feb_02_2019"]                <- "bbsiq"
+names(raw_dat)[names(raw_dat) == "CC_recovered_Feb_02_2019"]                   <- "cc"
+names(raw_dat)[names(raw_dat) == "CIHS_Feb_02_2019_FIXED"]                     <- "cihs"
+names(raw_dat)[names(raw_dat) == "Credibility_recovered_Feb_02_2019"]          <- "credibility"
+names(raw_dat)[names(raw_dat) == "DASS21_AS_recovered_Feb_02_2019"]            <- "dass21_as"
+names(raw_dat)[names(raw_dat) == "DASS21_DS_recovered_Feb_02_2019_FIXED"]      <- "dass21_ds"
+names(raw_dat)[names(raw_dat) == "DD_recovered_Feb_02_2019"]                   <- "dd"
+names(raw_dat)[names(raw_dat) == "Demographic_recovered_Feb_02_2019"]          <- "demographic"
+names(raw_dat)[names(raw_dat) == "EmailLogDAO_recovered_Feb_02_2019"]          <- "email_log"
+names(raw_dat)[names(raw_dat) == "GiftLogDAO_recovered_Feb_02_2019"]           <- "gift_log"
+names(raw_dat)[names(raw_dat) == "ImageryPrime_recovered_Feb_02_2019"]         <- "imagery_prime"
 names(raw_dat)[names(raw_dat) == "ImpactAnxiousImagery_recovered_Feb_02_2019"] <- "impact_anxious_imagery"
-names(raw_dat)[names(raw_dat) == "MentalHealthHxTx_recovered_Feb_02_2019"] <- "mental_health_hx_tx"
-names(raw_dat)[names(raw_dat) == "MultiUserExperience_recovered_Feb_02_2019"] <- "multi_user_experience"
-names(raw_dat)[names(raw_dat) == "OA_recovered_Feb_02_2019"] <- "oa"
+names(raw_dat)[names(raw_dat) == "MentalHealthHxTx_recovered_Feb_02_2019"]     <- "mental_health_hx_tx"
+names(raw_dat)[names(raw_dat) == "MultiUserExperience_recovered_Feb_02_2019"]  <- "multi_user_experience"
+names(raw_dat)[names(raw_dat) == "OA_recovered_Feb_02_2019"]                   <- "oa"
 names(raw_dat)[names(raw_dat) == "ParticipantExportDAO_recovered_Feb_02_2019"] <- "participant_export_dao"
-names(raw_dat)[names(raw_dat) == "QOL_recovered_Feb_02_2019"] <- "qol"
-names(raw_dat)[names(raw_dat) == "ReturnIntention_recovered_Feb_02_2019"] <- "return_intention"
-names(raw_dat)[names(raw_dat) == "RR_recovered_Feb_02_2019"] <- "rr"
-names(raw_dat)[names(raw_dat) == "SUDS_recovered_Feb_02_2019"] <- "suds"
-names(raw_dat)[names(raw_dat) == "TaskLog_final_FIXED"] <- "task_log"
-names(raw_dat)[names(raw_dat) == "TrialDAO_recovered_Feb_02_2019"] <- "trial_dao"
-names(raw_dat)[names(raw_dat) == "VisitDAO_recovered_Feb_02_2019"] <- "visit_dao"
+names(raw_dat)[names(raw_dat) == "QOL_recovered_Feb_02_2019"]                  <- "qol"
+names(raw_dat)[names(raw_dat) == "ReturnIntention_recovered_Feb_02_2019"]      <- "return_intention"
+names(raw_dat)[names(raw_dat) == "RR_recovered_Feb_02_2019"]                   <- "rr"
+names(raw_dat)[names(raw_dat) == "SUDS_recovered_Feb_02_2019"]                 <- "suds"
+names(raw_dat)[names(raw_dat) == "TaskLog_final_FIXED"]                        <- "task_log"
+names(raw_dat)[names(raw_dat) == "TrialDAO_recovered_Feb_02_2019"]             <- "trial_dao"
+names(raw_dat)[names(raw_dat) == "VisitDAO_recovered_Feb_02_2019"]             <- "visit_dao"
 
 # ---------------------------------------------------------------------------- #
 # Restrict raw data tables to those potentially relevant to present analysis ----
@@ -215,7 +210,7 @@ sel_dat <- raw_dat[names(raw_dat) %in% sel_tbls]
 
 lapply(raw_dat, identify_cols, grep_pattern = "")
 
-potential_id_cols <- c("id", "participantDAO", "participantdao_id", "participantRSA",
+potential_id_cols <- c("^id$", "participantDAO", "participantdao_id", "participantRSA",
                        "participantId", "participant", "sessionId")
 pattern <- paste(potential_id_cols, collapse = "|")
 lapply(sel_dat, identify_cols, grep_pattern = pattern)
@@ -234,8 +229,7 @@ table(nchar(sel_dat$oa$participantRSA))
 # "participantDAO" 29 at "session" "POST" has a 344-character "participantRSA".
 # Use "participantDAO" to index participants.
 
-dass21_as_eligibility <- 
-  sel_dat$dass21_as[sel_dat$dass21_as$session %in% c("ELIGIBLE", ""), ]
+dass21_as_eligibility <- sel_dat$dass21_as[sel_dat$dass21_as$session %in% c("ELIGIBLE", ""), ]
 
 nrow(dass21_as_eligibility) ==
   nrow(dass21_as_eligibility[dass21_as_eligibility$session == "ELIGIBLE" &
@@ -246,14 +240,10 @@ nrow(dass21_as_eligibility) ==
 nrow(dass21_as_eligibility) ==
   nrow(dass21_as_eligibility[dass21_as_eligibility$participantRSA == "", ])
 
-dass21_as_other <- 
-  sel_dat$dass21_as[!(sel_dat$dass21_as$session %in% c("ELIGIBLE", "")), ]
+dass21_as_other <- sel_dat$dass21_as[!(sel_dat$dass21_as$session %in% c("ELIGIBLE", "")), ]
 
-nrow(dass21_as_other[dass21_as_other$participantDAO != 
-                       dass21_as_other$participantRSA, ])
-dass21_as_other[dass21_as_other$participantDAO != 
-                  dass21_as_other$participantRSA, 
-                "participantDAO"]
+nrow(dass21_as_other[dass21_as_other$participantDAO != dass21_as_other$participantRSA, ])
+dass21_as_other[dass21_as_other$participantDAO != dass21_as_other$participantRSA, "participantDAO"]
 
 # Table "dass_21_as" also has "sessionId", but no other tables (not even raw tables)
 # have this. It is blank until 6/8/2016 (starting with "id" 834), after which point 
@@ -271,25 +261,16 @@ sel_dat$dass21_as$date[sel_dat$dass21_as$id == 834] == "Wed, 08 Jun 2016 16:15:3
 # values too. However, none of these 344-character values appears more than once 
 # within or across these tables. It's unclear what the 344-character value means.
 
-oa_participantRSA_chars <- 
-  sel_dat$oa[nchar(sel_dat$oa$participantRSA) == 344, "participantRSA"]
-dass21_as_participantRSA_chars <- 
-  sel_dat$dass21_as[nchar(sel_dat$dass21_as$participantRSA) == 344, "participantRSA"]
+oa_participantRSA_chars          <- sel_dat$oa[nchar(sel_dat$oa$participantRSA)                   == 344, "participantRSA"]
+dass21_as_participantRSA_chars   <- sel_dat$dass21_as[nchar(sel_dat$dass21_as$participantRSA)     == 344, "participantRSA"]
 
-bbsiq_participantRSA_chars <- 
-  sel_dat$bbsiq[nchar(sel_dat$bbsiq$participantRSA) == 344, "participantRSA"]
-credibility_participantRSA_chars <-
-  sel_dat$credibility[nchar(sel_dat$credibility$participantRSA) == 344, "participantRSA"]
-dass21_ds_participantRSA_chars <- 
-  sel_dat$dass21_ds[nchar(sel_dat$dass21_ds$participantRSA) == 344, "participantRSA"]
-dd_participantRSA_chars <- 
-  sel_dat$dd[nchar(sel_dat$dd$participantRSA) == 344, "participantRSA"]
-demographic_participantRSA_chars <- 
-  sel_dat$demographic[nchar(sel_dat$demographic$participantRSA) == 344, "participantRSA"]
-qol_participantRSA_chars <- 
-  sel_dat$qol[nchar(sel_dat$qol$participantRSA) == 344, "participantRSA"]
-rr_participantRSA_chars <- 
-  sel_dat$rr[nchar(sel_dat$rr$participantRSA) == 344, "participantRSA"]
+bbsiq_participantRSA_chars       <- sel_dat$bbsiq[nchar(sel_dat$bbsiq$participantRSA)             == 344, "participantRSA"]
+credibility_participantRSA_chars <- sel_dat$credibility[nchar(sel_dat$credibility$participantRSA) == 344, "participantRSA"]
+dass21_ds_participantRSA_chars   <- sel_dat$dass21_ds[nchar(sel_dat$dass21_ds$participantRSA)     == 344, "participantRSA"]
+dd_participantRSA_chars          <- sel_dat$dd[nchar(sel_dat$dd$participantRSA)                   == 344, "participantRSA"]
+demographic_participantRSA_chars <- sel_dat$demographic[nchar(sel_dat$demographic$participantRSA) == 344, "participantRSA"]
+qol_participantRSA_chars         <- sel_dat$qol[nchar(sel_dat$qol$participantRSA)                 == 344, "participantRSA"]
+rr_participantRSA_chars          <- sel_dat$rr[nchar(sel_dat$rr$participantRSA)                   == 344, "participantRSA"]
 
 sum(table(c(oa_participantRSA_chars,
             credibility_participantRSA_chars,
@@ -306,19 +287,19 @@ sum(table(c(oa_participantRSA_chars,
 # ---------------------------------------------------------------------------- #
 
 # Sonia Baee's code "R34_cleaning_script.R" corrects "participantRSA" for certain
-# row numbers in some tables. Namely, it corrects "participantRSA" to 532 in row 
-# 68 of "bbsiq", "dass_ds", and "rr" tables and in row 50 of "dd" table. It also
-# corrects "participantRSA" to 534, 535, and 536 for rows 81, 88, and 99 of "qol"
+# row numbers in some tables. Namely, it corrects "participantRSA" to 532 in Row 
+# 68 of "bbsiq", "dass_ds", and "rr" tables and in Row 50 of "dd" table. It also
+# corrects "participantRSA" to 534, 535, and 536 for Rows 81, 88, and 99 of "qol"
 # table. Obtain the original "participantRSA" for each of these row numbers.
 
-bbsiq_row68_participantRSA <- sel_dat$bbsiq[68, ]$participantRSA
+bbsiq_row68_participantRSA     <- sel_dat$bbsiq[68, ]$participantRSA
 dass21_ds_row68_participantRSA <- sel_dat$dass21_ds[68, ]$participantRSA
-rr_row68_participantRSA <- sel_dat$rr[68, ]$participantRSA
-dd_row50_participantRSA <- sel_dat$dd[50, ]$participantRSA
+rr_row68_participantRSA        <- sel_dat$rr[68, ]$participantRSA
+dd_row50_participantRSA        <- sel_dat$dd[50, ]$participantRSA
 
-qol_row81_participantRSA <- sel_dat$qol[81, ]$participantRSA
-qol_row88_participantRSA <- sel_dat$qol[88, ]$participantRSA
-qol_row89_participantRSA <- sel_dat$qol[89, ]$participantRSA
+qol_row81_participantRSA       <- sel_dat$qol[81, ]$participantRSA
+qol_row88_participantRSA       <- sel_dat$qol[88, ]$participantRSA
+qol_row89_participantRSA       <- sel_dat$qol[89, ]$participantRSA
 
 # Explicitly name the relevant "participantRSA" values and subsequently refer to
 # these rather than to row numbers
@@ -369,21 +350,14 @@ qol_row89_participantRSA ==
 
 # Correct these "participantRSA" values
 
-sel_dat$bbsiq[sel_dat$bbsiq$participantRSA == bbsiq_row68_participantRSA, 
-              "participantRSA"] <- 532
-sel_dat$dass21_ds[sel_dat$dass21_ds$participantRSA == dass21_ds_row68_participantRSA, 
-                  "participantRSA"] <- 532
-sel_dat$rr[sel_dat$rr$participantRSA == rr_row68_participantRSA, 
-           "participantRSA"] <- 532
-sel_dat$dd[sel_dat$dd$participantRSA == dd_row50_participantRSA, 
-           "participantRSA"] <- 532
+sel_dat$bbsiq[sel_dat$bbsiq$participantRSA         == bbsiq_row68_participantRSA, "participantRSA"]     <- 532
+sel_dat$dass21_ds[sel_dat$dass21_ds$participantRSA == dass21_ds_row68_participantRSA, "participantRSA"] <- 532
+sel_dat$rr[sel_dat$rr$participantRSA               == rr_row68_participantRSA, "participantRSA"]        <- 532
+sel_dat$dd[sel_dat$dd$participantRSA               == dd_row50_participantRSA, "participantRSA"]        <- 532
 
-sel_dat$qol[sel_dat$qol$participantRSA == qol_row81_participantRSA,
-            "participantRSA"] <- 534
-sel_dat$qol[sel_dat$qol$participantRSA == qol_row88_participantRSA,
-            "participantRSA"] <- 535
-sel_dat$qol[sel_dat$qol$participantRSA == qol_row89_participantRSA,
-            "participantRSA"] <- 536
+sel_dat$qol[sel_dat$qol$participantRSA             == qol_row81_participantRSA, "participantRSA"]       <- 534
+sel_dat$qol[sel_dat$qol$participantRSA             == qol_row88_participantRSA, "participantRSA"]       <- 535
+sel_dat$qol[sel_dat$qol$participantRSA             == qol_row89_participantRSA, "participantRSA"]       <- 536
 
 # Correct other "participantRSA" values that are explicitly named in Sonia Baee's 
 # code "R34_cleaning_script.R" for "demographic" table
@@ -407,12 +381,9 @@ demographic_participantRSA_VS9LPK <-
          "qeRvXsTHGc4naet1I8PeQEcLtQJN2daxdfgZplToaOzEW7KGhdzgYYRyTwWCvwh8wHUcd",
          "mV4dW7VG3oGLvz35wLYVkOlpZMgZ+5eAr9an4JDaXwR1e3CeHYJHRDxSGibqK3rl/Q==")
 
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_NvorEv,
-                    "participantRSA"] <- 534
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_j5J6cs,
-                    "participantRSA"] <- 535
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_VS9LPK,
-                    "participantRSA"] <- 536
+sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_NvorEv, "participantRSA"] <- 534
+sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_j5J6cs, "participantRSA"] <- 535
+sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_VS9LPK, "participantRSA"] <- 536
 
 # Note that even after correcting these "participantRSA" values, some 344-character
 # values remain in all of these tables except "demographic"
@@ -424,16 +395,15 @@ sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participan
 # In "participant_export_dao" table, rename "id" as "participant_id", which is
 # the only column that can index participants
 
-names(sel_dat$participant_export_dao)[names(sel_dat$participant_export_dao) ==
-                                        "id"] <- "participant_id"
+names(sel_dat$participant_export_dao)[names(sel_dat$participant_export_dao) == "id"] <- "participant_id"
 
 # In "oa" and "dass21_as" tables, rename "participantDAO" as "participant_id"
 # and remove "participantRSA"
 
-names(sel_dat$oa)[names(sel_dat$oa) == "participantDAO"] <- "participant_id"
+names(sel_dat$oa)[names(sel_dat$oa)               == "participantDAO"] <- "participant_id"
 names(sel_dat$dass21_as)[names(sel_dat$dass21_as) == "participantDAO"] <- "participant_id"
 
-sel_dat$oa$participantRSA <- NULL
+sel_dat$oa$participantRSA        <- NULL
 sel_dat$dass21_as$participantRSA <- NULL
 
 # In "task_log" table, rename "participantdao_id" as "participant_id", which is
@@ -465,38 +435,36 @@ lapply(sel_dat, identify_cols, grep_pattern = "date")
 # is identical to "datetime" but different from "corrected_datetime".
 
 all(sel_dat$task_log$date_completed == sel_dat$task_log$datetime)
+
 all(sel_dat$task_log$date_completed == sel_dat$task_log$corrected_datetime)
-nrow(sel_dat$task_log[sel_dat$task_log$date_completed != 
-                        sel_dat$task_log$corrected_datetime, ])
+nrow(sel_dat$task_log[sel_dat$task_log$date_completed != sel_dat$task_log$corrected_datetime, ])
 
 # View structure of columns containing "date" in each table
 
 view_date_str <- function(df, df_name) {
-  print(paste0("Table: ", df_name))
-  cat("\n")
+  cat('\nTable: "', df_name, '"\n\n', sep = "")
   
-  df_colnames <- colnames(df)
-  date_cols <- grep("date", df_colnames)
+  date_cols <- names(df)[grepl("date", names(df))]
   
   if (length(date_cols) != 0) {
-    for (i in date_cols) {
-      print(paste0(df_colnames[i]))
-      str(df[, i])
-      print(paste0("Number NA: ", sum(is.na(df[, i]))))
-      print(paste0("Number blank: ", sum(df[, i] == "")))
-      print(paste0("Number 555: ", sum(df[, i] == 555, na.rm = TRUE)))
-      print("Number of characters: ")
-      print(table(nchar(df[, i])))
+    for (col in date_cols) {
+      cat('"', col, '"\n', sep = "")
+      str(df[[col]], vec.len = 3)
+      cat("- Number NA:    ", sum(is.na(df[[col]])), "\n")
+      cat("- Number blank: ", sum(df[[col]] == "",  na.rm = TRUE), "\n")
+      cat("- Number 555:   ", sum(df[[col]] == 555, na.rm = TRUE), "\n")
+      cat("- Number of characters:\n")
+      print(table(nchar(df[[col]])))
+      cat("\n")
     }
   } else {
-    print('No columns containing "date" found.')
+    cat('No columns containing "date" found.\n\n')
   }
   
-  cat("----------")
-  cat("\n")
+  cat("----------\n")
 }
 
-invisible(mapply(view_date_str, df = sel_dat, df_name = names(sel_dat)))
+invisible(mapply(view_date_str, sel_dat, names(sel_dat)))
 
 # TODO: The following columns across tables are system-generated date and time 
 # stamps. For now, assume all of these are in EST time zone (note: EST, or UTC - 
