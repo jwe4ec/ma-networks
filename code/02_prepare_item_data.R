@@ -1052,20 +1052,37 @@ all(sapply(list(bbsiq_ben_int_items, bbsiq_ben_ext_items), length) == 14)
 length(bbsiq_ben_items) == 28
 
 # ---------------------------------------------------------------------------- #
-# Compute selected scores ----
+# Recode "prefer not to answer" values ----
 # ---------------------------------------------------------------------------- #
 
 # Recode 555 and -1 ("prefer not to answer") as NA
 
-sum(flt_dat$oa[, oa_items] == 555)
-sum(flt_dat$rr[, rr_items] == -1)
+sum(flt_dat$oa[, oa_items]       == 555)
+sum(flt_dat$rr[, rr_items]       == -1)
+sum(flt_dat$bbsiq[, bbsiq_items] == 555)
 
-flt_dat$oa[, oa_items][flt_dat$oa[, oa_items] == 555] <- NA
-flt_dat$rr[, rr_items][flt_dat$rr[, rr_items] == -1]  <- NA
+flt_dat$oa[, oa_items][flt_dat$oa[, oa_items]             == 555] <- NA
+flt_dat$rr[, rr_items][flt_dat$rr[, rr_items]             == -1]  <- NA
+flt_dat$bbsiq[, bbsiq_items][flt_dat$bbsiq[, bbsiq_items] == 555] <- NA
 
-# TODO: Compute scale scores. Note: The summation used for "oa_total" below is 
-# incorrect because it treats an item-level responses of NA as responses of 0,
-# but this seems to be what was done in "R34.ipynb" cleaning script.
+# ---------------------------------------------------------------------------- #
+# Check response ranges ----
+# ---------------------------------------------------------------------------- #
+
+# Note: In present Managing Anxiety study, RR response options were 0:3, whereas 
+# in Calm Thinking study, they were 1:4
+
+all(sort(unique(as.vector(as.matrix(flt_dat$oa[, oa_items]))))       %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat$rr[, rr_items]))))       %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items])))) %in% 0:4)
+
+# ---------------------------------------------------------------------------- #
+# Compute selected scores ----
+# ---------------------------------------------------------------------------- #
+
+# Compute scale scores. Note: The summation used for "oa_total" below is incorrect 
+# because it treats an item-level responses of NA as responses of 0, but this seems 
+# to be what was done in "R34.ipynb" cleaning script.
 
 # View(flt_dat$oa[rowSums(is.na(flt_dat$oa[, oa_items])) > 0, ])
 sum(rowSums(is.na(flt_dat$oa[, oa_items])) == ncol(flt_dat$oa[, oa_items]))
@@ -1077,9 +1094,7 @@ flt_dat$rr$rr_ns_mean <- rowMeans(flt_dat$rr[, rr_ns_items], na.rm = TRUE)
 flt_dat$rr$rr_pf_mean <- rowMeans(flt_dat$rr[, rr_pf_items], na.rm = TRUE)
 flt_dat$rr$rr_ps_mean <- rowMeans(flt_dat$rr[, rr_ps_items], na.rm = TRUE)
 
-
-
-
+flt_dat$bbsiq$bbsiq_neg_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_items], na.rm = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Extract clean data into separate tables ----
