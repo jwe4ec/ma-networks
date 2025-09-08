@@ -595,22 +595,17 @@ table(sel_dat$dass21_as$session)
 # rather, it reflects participants' current sessions.
 
 for (i in 1:length(sel_dat)) {
-  if (names(sel_dat[i]) %in% "dass21_as") {
+  if (names(sel_dat[i]) == "dass21_as") {
     names(sel_dat[[i]])[names(sel_dat[[i]]) == "session"] <- "session_and_eligibility_status"
     
     sel_dat[[i]][, "session_only"] <- sel_dat[[i]][, "session_and_eligibility_status"]
-    sel_dat[[i]][sel_dat[[i]][, "session_only"] %in% c("ELIGIBLE", ""), 
-                 "session_only"] <- "Eligibility"
-  } else if (names(sel_dat[i]) %in% "task_log") {
+    sel_dat[[i]][sel_dat[[i]][, "session_only"] %in% c("ELIGIBLE", ""), "session_only"] <- "Eligibility"
+  } else if (names(sel_dat[i]) == "task_log") {
     names(sel_dat[[i]])[names(sel_dat[[i]]) == "session_name"] <- "session_only"
   } else if ("session" %in% names(sel_dat[[i]])) {
     names(sel_dat[[i]])[names(sel_dat[[i]]) == "session"] <- "session_only"
   }
 }
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Filter raw data ----
