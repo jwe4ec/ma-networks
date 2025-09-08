@@ -1005,24 +1005,55 @@ keep_recent_entry_list <- function(dat) {
 flt_dat <- keep_recent_entry_list(flt_dat)
 
 # ---------------------------------------------------------------------------- #
-# Compute selected scores ----
+# Define scale items ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (compute for BBSIQ): For now, compute scores only for "oa" and "rr" tables
-
-
-
-
-
-# Define scale items
+# OASIS
 
 oa_items <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
 
-rr_nf_items <- names(flt_dat$rr)[grep("NF", names(flt_dat$rr))]
-rr_ns_items <- names(flt_dat$rr)[grep("NS", names(flt_dat$rr))]
-rr_pf_items <- names(flt_dat$rr)[grep("PF", names(flt_dat$rr))]
-rr_ps_items <- names(flt_dat$rr)[grep("PS", names(flt_dat$rr))]
+length(oa_items) == 5
+
+# Recognition Ratings
+
+rr_nf_items <- names(flt_dat$rr)[grep("_NF$", names(flt_dat$rr))] # Negative nonthreat
+rr_ns_items <- names(flt_dat$rr)[grep("_NS$", names(flt_dat$rr))] # Negative threat
+rr_pf_items <- names(flt_dat$rr)[grep("_PF$", names(flt_dat$rr))] # Positive nonthreat
+rr_ps_items <- names(flt_dat$rr)[grep("_PS$", names(flt_dat$rr))] # Positive threat
+
 rr_items <- c(rr_nf_items, rr_ns_items, rr_pf_items, rr_ps_items)
+
+all(sapply(list(rr_nf_items, rr_ns_items, rr_pf_items, rr_ps_items), length) == 9)
+length(rr_items) == 36
+
+# BBSIQ
+
+bbsiq_neg_int_items <- c("breath_suffocate", "vision_illness", "lightheaded_faint", "chest_heart", 
+                         "heart_wrong", "confused_outofmind", "dizzy_ill")
+bbsiq_neg_ext_items <- c("visitors_bored", "shop_irritating", "smoke_house", "friend_incompetent", 
+                         "jolt_burglar", "party_boring", "urgent_died")
+bbsiq_neg_items <- c(bbsiq_neg_int_items, bbsiq_neg_ext_items)
+
+bbsiq_ben_int_items <- c("breath_flu", "breath_physically", "vision_glasses", "vision_strained",
+                         "lightheaded_eat", "lightheaded_sleep", "chest_indigestion", "chest_sore",
+                         "heart_active", "heart_excited", "confused_cold", "confused_work",
+                         "dizzy_ate", "dizzy_overtired")
+bbsiq_ben_ext_items <- c("visitors_engagement", "visitors_outstay", "shop_bored", "shop_concentrating",
+                         "smoke_cig", "smoke_food", "friend_helpful", "friend_moreoften", "jolt_dream",
+                         "jolt_wind", "party_hear", "party_preoccupied", "urgent_bill", "urgent_junk")
+bbsiq_ben_items <- c(bbsiq_ben_int_items, bbsiq_ben_ext_items)
+
+bbsiq_items <- c(bbsiq_neg_items, bbsiq_ben_items)
+
+all(sapply(list(bbsiq_neg_int_items, bbsiq_neg_ext_items), length) == 7)
+length(bbsiq_neg_items) == 14
+
+all(sapply(list(bbsiq_ben_int_items, bbsiq_ben_ext_items), length) == 14)
+length(bbsiq_ben_items) == 28
+
+# ---------------------------------------------------------------------------- #
+# Compute selected scores ----
+# ---------------------------------------------------------------------------- #
 
 # Recode 555 and -1 ("prefer not to answer") as NA
 
