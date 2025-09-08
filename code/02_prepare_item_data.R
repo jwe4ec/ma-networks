@@ -1028,17 +1028,17 @@ length(rr_items) == 36
 
 # BBSIQ
 
-bbsiq_neg_int_items <- c("breath_suffocate", "vision_illness", "lightheaded_faint", "chest_heart", 
+bbsiq_neg_int_items <- c("breath_suffocate", "vision_illness", "lightheaded_faint", "chest_heart",        # TODO: Sonia calls this "physical_list"
                          "heart_wrong", "confused_outofmind", "dizzy_ill")
-bbsiq_neg_ext_items <- c("visitors_bored", "shop_irritating", "smoke_house", "friend_incompetent", 
+bbsiq_neg_ext_items <- c("visitors_bored", "shop_irritating", "smoke_house", "friend_incompetent",        # TODO: Sonia calls this "threat_list"
                          "jolt_burglar", "party_boring", "urgent_died")
 bbsiq_neg_items <- c(bbsiq_neg_int_items, bbsiq_neg_ext_items)
-
-bbsiq_ben_int_items <- c("breath_flu", "breath_physically", "vision_glasses", "vision_strained",
+ 
+bbsiq_ben_int_items <- c("breath_flu", "breath_physically", "vision_glasses", "vision_strained",          # TODO: Sonia calls this "nonPhysical_list"
                          "lightheaded_eat", "lightheaded_sleep", "chest_indigestion", "chest_sore",
                          "heart_active", "heart_excited", "confused_cold", "confused_work",
                          "dizzy_ate", "dizzy_overtired")
-bbsiq_ben_ext_items <- c("visitors_engagement", "visitors_outstay", "shop_bored", "shop_concentrating",
+bbsiq_ben_ext_items <- c("visitors_engagement", "visitors_outstay", "shop_bored", "shop_concentrating",   # TODO: Sonia calls this "nonThreat_list"
                          "smoke_cig", "smoke_food", "friend_helpful", "friend_moreoften", "jolt_dream",
                          "jolt_wind", "party_hear", "party_preoccupied", "urgent_bill", "urgent_junk")
 bbsiq_ben_items <- c(bbsiq_ben_int_items, bbsiq_ben_ext_items)
@@ -1080,9 +1080,11 @@ all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items])))) %in% 0:4)
 # Compute selected scores ----
 # ---------------------------------------------------------------------------- #
 
-# Compute scale scores. Note: The summation used for "oa_total" below is incorrect 
-# because it treats an item-level responses of NA as responses of 0, but this seems 
-# to be what was done in "R34.ipynb" cleaning script.
+# Compute scale scores
+
+  # Note: The summation used for "oa_total" below is incorrect because it treats 
+  # an item-level responses of NA as responses of 0, but this seems to be what was 
+  # done in "R34.ipynb" cleaning script
 
 # View(flt_dat$oa[rowSums(is.na(flt_dat$oa[, oa_items])) > 0, ])
 sum(rowSums(is.na(flt_dat$oa[, oa_items])) == ncol(flt_dat$oa[, oa_items]))
@@ -1094,7 +1096,24 @@ flt_dat$rr$rr_ns_mean <- rowMeans(flt_dat$rr[, rr_ns_items], na.rm = TRUE)
 flt_dat$rr$rr_pf_mean <- rowMeans(flt_dat$rr[, rr_pf_items], na.rm = TRUE)
 flt_dat$rr$rr_ps_mean <- rowMeans(flt_dat$rr[, rr_ps_items], na.rm = TRUE)
 
-flt_dat$bbsiq$bbsiq_neg_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_items], na.rm = TRUE)
+  # Note: BBSIQ scores below are those per the Managing Anxiety main outcomes paper
+  # - The computation of the scores for "bbsiq_int_ratio" (as the ratio of the mean 
+  # for negative internal items to the mean for benign internal items) and for 
+  # "bbsiq_ext_ratio" (as the ratio of the mean for negative external items to the 
+  # mean for benign external items) is what was done in "R34.ipynb" cleaning script
+  # - The computation of "bbsiq_ratio_mean" (as the mean of the ratios above) is what 
+  # was done in the "Script1_DataPrep.R" script on the Managing Anxiety main outcomes 
+  # paper OSF project (https://osf.io/3b67v)
+
+flt_dat$bbsiq$bbsiq_neg_int_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_int_items], na.rm = TRUE)
+flt_dat$bbsiq$bbsiq_ben_int_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_ben_int_items], na.rm = TRUE)
+flt_dat$bbsiq$bbsiq_neg_ext_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_ext_items], na.rm = TRUE)
+flt_dat$bbsiq$bbsiq_ben_ext_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_ben_ext_items], na.rm = TRUE)
+
+flt_dat$bbsiq$bbsiq_int_ratio <- flt_dat$bbsiq$bbsiq_neg_int_mean / flt_dat$bbsiq$bbsiq_ben_int_mean
+flt_dat$bbsiq$bbsiq_ext_ratio <- flt_dat$bbsiq$bbsiq_neg_ext_mean / flt_dat$bbsiq$bbsiq_ben_ext_mean
+
+flt_dat$bbsiq$bbsiq_ratio_mean <- rowMeans(flt_dat$bbsiq[, c("bbsiq_int_ratio", "bbsiq_ext_ratio")], na.rm = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Extract clean data into separate tables ----
@@ -1502,17 +1521,28 @@ length(unique(discrep_ids))
 
 
 # Use natural join to restrict to shared time points for "rr" table. All scores
-# are the same when rounded to 4 decimal places.
+# are the same when rounded to 9 decimal places.
 
 merge_rr <- merge(flt_dat_comp_rest$rr, 
                   sep_dat_comp_rest$rr,
                   by = c("participant_id", "session_only"),
                   all = FALSE)
 
-all(sum(round(merge_rr$rr_nf_mean, 4) != round(merge_rr$RR_negative_nf_score, 4)) == 0,
-    sum(round(merge_rr$rr_ns_mean, 4) != round(merge_rr$RR_negative_ns_score, 4)) == 0,
-    sum(round(merge_rr$rr_pf_mean, 4) != round(merge_rr$RR_positive_pf_score, 4)) == 0,
-    sum(round(merge_rr$rr_ps_mean, 4) != round(merge_rr$RR_positive_ps_score, 4)) == 0)
+all(sum(round(merge_rr$rr_nf_mean, 9) != round(merge_rr$RR_negative_nf_score, 9)) == 0,
+    sum(round(merge_rr$rr_ns_mean, 9) != round(merge_rr$RR_negative_ns_score, 9)) == 0,
+    sum(round(merge_rr$rr_pf_mean, 9) != round(merge_rr$RR_positive_pf_score, 9)) == 0,
+    sum(round(merge_rr$rr_ps_mean, 9) != round(merge_rr$RR_positive_ps_score, 9)) == 0)
+
+# Use natural join to restrict to shared time points for "bbsiq" table. All scores
+# are the same when rounded to 7 decimal places.
+
+merge_bbsiq <- merge(flt_dat_comp_rest$bbsiq, 
+                     sep_dat_comp_rest$bbsiq,
+                     by = c("participant_id", "session_only"),
+                     all = FALSE)
+
+all(sum(round(merge_bbsiq$bbsiq_int_ratio, 7) != round(merge_bbsiq$bbsiq_physical_score, 7)) == 0,
+    sum(round(merge_bbsiq$bbsiq_ext_ratio, 7) != round(merge_bbsiq$bbsiq_threat_score,   7)) == 0)
 
 # Until discrepancies with "oa" table are resolved, remove 41 participants with
 # multiple entries in "oa" table. After doing so, all scores are the same.
