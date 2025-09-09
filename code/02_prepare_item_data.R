@@ -582,26 +582,34 @@ all(sel_dat$task_log$date_completed == sel_dat$task_log$datetime)
 all(sel_dat$task_log$date_completed == sel_dat$task_log$corrected_datetime)
 nrow(sel_dat$task_log[sel_dat$task_log$date_completed != sel_dat$task_log$corrected_datetime, ])
 
-# View structure of columns containing "date" in each table
+# View structure of columns containing specified date column in each table
 
-view_date_str <- function(df, df_name) {
+view_date_str <- function(df, df_name, grep_pattern = "date") {
   cat('\nTable: "', df_name, '"\n\n', sep = "")
   
-  date_cols <- names(df)[grepl("date", names(df))]
+  date_cols <- names(df)[grepl(grep_pattern, names(df))]
   
   if (length(date_cols) != 0) {
     for (col in date_cols) {
       cat('"', col, '"\n', sep = "")
       str(df[[col]], vec.len = 3)
-      cat("- Number NA:    ", sum(is.na(df[[col]])), "\n")
-      cat("- Number blank: ", sum(df[[col]] == "",  na.rm = TRUE), "\n")
-      cat("- Number 555:   ", sum(df[[col]] == 555, na.rm = TRUE), "\n")
-      cat("- Number of characters:\n")
-      print(table(nchar(df[[col]])))
+      cat("- Number NA:   ", sum(is.na(df[[col]])), "\n")
+      
+      if (is.character(df[[col]])) {
+        cat("- Number blank:", sum(df[[col]] == "",  na.rm = TRUE), "\n")
+        cat("- Number 555:  ", sum(df[[col]] == 555, na.rm = TRUE), "\n")
+        cat("- Number of characters:\n")
+        print(table(nchar(df[[col]])))
+      } else if (class(df[[col]])[1] == "POSIXct") {
+        cat("- Time zone:", attr(df[[col]], "tz"), "\n")
+      } else {
+        stop("Column's class is not character or POSIXct")
+      }
+      
       cat("\n")
     }
   } else {
-    cat('No columns containing "date" found.\n\n')
+    cat('No column names containing "', grep_pattern, '" found\n\n', sep = "")
   }
   
   cat("----------\n")
@@ -675,13 +683,18 @@ lapply(sel_dat_b, identify_cols, grep_pattern = "date")
 
 invisible(mapply(view_date_str, sel_dat_b, names(sel_dat_b)))
 
-# TODO: 58 and 42 participants in "dass21_as" and "oa" tables, respectively, have 
+# TODO (dates are now handled but think of what this means for the two datasets)
+# Note: 58 and 42 participants in "dass21_as" and "oa" tables, respectively, have 
 # dates that are 11:14 characters (and no dates with more characters), whereas all 
 # other participants (and all other tables) have dates that are 31 characters. These 
 # participants with shorter dates in "dass21_as" and "oa" tables are not in the Set A
 # "dass21_as", "oa", or "participant" tables but include all 36 of the participants
 # listed as "not included in original dataset due to server error" in "notes.csv"
 # (who are also included in the clean data).
+
+
+
+
 
 sel_dat_b$dass21_as$date[nchar(sel_dat_b$dass21_as$date) %in% 11:14]
 sel_dat_b$oa$date[nchar(sel_dat_b$oa$date)               %in% 11:14]
@@ -744,36 +757,33 @@ recode_date_time_timezone_b <- function(dat) {
     target_colnames <- colnames[colnames %in% system_date_time_cols_b]
     
     if (length(target_colnames) != 0) {
-      for (j in 1:length(target_colnames)) {
-        # Create new variable for POSIXct values. Recode blanks as NA.
+      for (target_colname in target_colnames) {
+        # Create new variable for POSIXct values
         
-        POSIXct_colname <- paste0(target_colnames[j], "_as_POSIXct")
+        POSIXct_colname <- paste0(target_colname, "_as_POSIXct")
         
-        dat[[i]][, POSIXct_colname] <- dat[[i]][, target_colnames[j]]
-        dat[[i]][dat[[i]][, POSIXct_colname] == "", POSIXct_colname] <- NA
-        
+        dat[[i]][[POSIXct_colname]] <- as.POSIXct(NA, tz = "EST")
+
         # Specify time zone as "EST" for all system-generated time stamps. Specify 
         # nonstandard formats to parse columns, which are not in standard formats.
         
-        if (table_name %in% c("dass21_as", "oa") & target_colnames[j] == "date") {
-          # TODO: Troubleshoot this section (recode into new column vs. recoding current column)
+        if (table_name %in% c("dass21_as", "oa") & target_colname == "date") {
+          short_date_idx <- nchar(dat[[i]][[target_colname]]) %in% 11:14
           
-          
-          
-          
-          
-          dat[[i]][nchar(dat[[i]][, POSIXct_colname]) %in% 11:14, POSIXct_colname] <-
-            as.POSIXct(dat[[i]][nchar(dat[[i]][, POSIXct_colname]) %in% 11:14, POSIXct_colname],
-                       tz = "EST", 
+          dat[[i]][[POSIXct_colname]][short_date_idx] <-
+            as.POSIXct(dat[[i]][[target_colname]][short_date_idx],
+                       tz = "EST",
                        format = "%m/%d/%y %H:%M") # Note: 2-digit year
           
-          dat[[i]][nchar(dat[[i]][, POSIXct_colname]) == 31, POSIXct_colname] <- 
-            as.POSIXct(dat[[i]][nchar(dat[[i]][, POSIXct_colname]) == 31, POSIXct_colname], 
+          long_date_idx <- nchar(dat[[i]][[target_colname]]) == 31
+          
+          dat[[i]][[POSIXct_colname]][long_date_idx] <- 
+            as.POSIXct(dat[[i]][[target_colname]][long_date_idx], 
                        tz = "EST",
                        format = "%a, %d %b %Y %H:%M:%S %z")
         } else {
-          dat[[i]][, POSIXct_colname] <- 
-            as.POSIXct(dat[[i]][, POSIXct_colname], 
+          dat[[i]][[POSIXct_colname]] <- 
+            as.POSIXct(dat[[i]][[target_colname]], 
                        tz = "EST",
                        format = "%a, %d %b %Y %H:%M:%S %z")
         } 
@@ -788,18 +798,15 @@ recode_date_time_timezone_b <- function(dat) {
 
 sel_dat_b <- recode_date_time_timezone_b(sel_dat_b)
 
-
-
+# ---------------------------------------------------------------------------- #
+# Identify and rename session-related columns ----
+# ---------------------------------------------------------------------------- #
 
 # TODO: Continue below for Set B
 
 
 
 
-
-# ---------------------------------------------------------------------------- #
-# Identify and rename session-related columns ----
-# ---------------------------------------------------------------------------- #
 
 # Identify columns containing "session" in each table
 
