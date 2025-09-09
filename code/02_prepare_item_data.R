@@ -103,9 +103,16 @@ cln_dat <- dat_main_lg_scales
 
 
 
+# TODO: Also consider Set B
+
+raw_dat_b <- raw_dat_son_b
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
-# Investigate "FIXED" tables ----
+# Investigate "FIXED" tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Three raw data files have "FIXED" in filenames ("CIHS_Feb_02_2019_FIXED.csv",
@@ -136,7 +143,7 @@ table(raw_dat$CIHS_Feb_02_2019_FIXED$corrected_session)
 raw_dat$CIHS_recovered_Feb_02_2019 <- NULL
 
 # ---------------------------------------------------------------------------- #
-# Investigate other repeated tables ----
+# Investigate other repeated tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Compare "DD_recovered_Feb_02_2019" with "DD_FU_recovered_Feb_02_2019". The "FU"
@@ -166,7 +173,33 @@ added_dd_cols <- setdiff(names(raw_dat$DD_recovered_Feb_02_2019),
 raw_dat$DD_FU_recovered_Feb_02_2019 <- NULL
 
 # ---------------------------------------------------------------------------- #
-# Shorten table names ----
+# Investigate repeated tables in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# Compare "DD_02_02_2019" with "DD_FU_02_02_2019". Same situation as the DD tables
+# in Set A. Thus, use the full version and remove "DD_FU_02_02_2019" from the list.
+
+table(raw_dat_b$DD_02_02_2019$session, useNA = "always")
+table(raw_dat_b$DD_FU_02_02_2019$session, useNA = "always")
+
+raw_dat_b$DD_FU_02_02_2019$q1_noAns[raw_dat_b$DD_FU_02_02_2019$q1_noAns == "True"]  <- "TRUE"
+raw_dat_b$DD_FU_02_02_2019$q1_noAns[raw_dat_b$DD_FU_02_02_2019$q1_noAns == "False"] <- "FALSE"
+raw_dat_b$DD_FU_02_02_2019$q2_noAns[raw_dat_b$DD_FU_02_02_2019$q2_noAns == "True"]  <- "TRUE"
+raw_dat_b$DD_FU_02_02_2019$q2_noAns[raw_dat_b$DD_FU_02_02_2019$q2_noAns == "False"] <- "FALSE"
+
+shared_dd_cols_b <- intersect(names(raw_dat_b$DD_02_02_2019),
+                              names(raw_dat_b$DD_FU_02_02_2019))
+
+all(raw_dat_b$DD_02_02_2019[raw_dat_b$DD_02_02_2019$session != "PRE", shared_dd_cols_b] == 
+      raw_dat_b$DD_FU_02_02_2019[, shared_dd_cols_b])
+
+added_dd_cols_b <- setdiff(names(raw_dat_b$DD_02_02_2019), 
+                           names(raw_dat_b$DD_FU_02_02_2019))
+
+raw_dat_b$DD_FU_02_02_2019 <- NULL
+
+# ---------------------------------------------------------------------------- #
+# Shorten table names in Set A ----
 # ---------------------------------------------------------------------------- #
 
 names(raw_dat)[names(raw_dat) == "AnxietyTriggers_recovered_Feb_02_2019"]      <- "anxiety_triggers"
@@ -195,15 +228,47 @@ names(raw_dat)[names(raw_dat) == "TrialDAO_recovered_Feb_02_2019"]             <
 names(raw_dat)[names(raw_dat) == "VisitDAO_recovered_Feb_02_2019"]             <- "visit_dao"
 
 # ---------------------------------------------------------------------------- #
+# Shorten table names in Set B ----
+# ---------------------------------------------------------------------------- #
+
+names(raw_dat_b)[names(raw_dat_b) == "AnxietyTriggers_02_02_2019"]      <- "anxiety_triggers"
+names(raw_dat_b)[names(raw_dat_b) == "BBSIQ_02_02_2019"]                <- "bbsiq"
+names(raw_dat_b)[names(raw_dat_b) == "CC_02_02_2019"]                   <- "cc"
+names(raw_dat_b)[names(raw_dat_b) == "CIHS_02_02_2019"]                 <- "cihs"
+names(raw_dat_b)[names(raw_dat_b) == "Credibility_02_02_2019"]          <- "credibility"
+names(raw_dat_b)[names(raw_dat_b) == "DASS21_AS_02_02_2019"]            <- "dass21_as"
+names(raw_dat_b)[names(raw_dat_b) == "DASS21_DS_02_02_2019"]            <- "dass21_ds"
+names(raw_dat_b)[names(raw_dat_b) == "DD_02_02_2019"]                   <- "dd"
+names(raw_dat_b)[names(raw_dat_b) == "Demographics_02_02_2019"]         <- "demographic"
+names(raw_dat_b)[names(raw_dat_b) == "ImageryPrime_02_02_2019"]         <- "imagery_prime"
+names(raw_dat_b)[names(raw_dat_b) == "ImpactAnxiousImagery_02_02_2019"] <- "impact_anxious_imagery"
+names(raw_dat_b)[names(raw_dat_b) == "MentalHealthHxTx_02_02_2019"]     <- "mental_health_hx_tx"
+names(raw_dat_b)[names(raw_dat_b) == "MultiUserExperience_02_02_2019"]  <- "multi_user_experience"
+names(raw_dat_b)[names(raw_dat_b) == "OA_02_02_2019"]                   <- "oa"
+names(raw_dat_b)[names(raw_dat_b) == "QOL_02_02_2019"]                  <- "qol"
+names(raw_dat_b)[names(raw_dat_b) == "ReturnIntention_02_02_2019"]      <- "return_intention"
+names(raw_dat_b)[names(raw_dat_b) == "RR_02_02_2019"]                   <- "rr"
+names(raw_dat_b)[names(raw_dat_b) == "SUDS_02_02_2019"]                 <- "suds"
+names(raw_dat_b)[names(raw_dat_b) == "TrialDAO_02_02_2019"]             <- "trial_dao"
+
+# ---------------------------------------------------------------------------- #
 # Restrict raw data tables to those potentially relevant to present analysis ----
 # ---------------------------------------------------------------------------- #
+
+# For Set A
 
 sel_tbls <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", "oa",
               "participant_export_dao", "qol", "rr", "task_log")
 sel_dat <- raw_dat[names(raw_dat) %in% sel_tbls]
 
+# For Set B
+
+sel_tbls_b <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", "oa",
+                "qol", "rr")
+sel_dat_b <- raw_dat_b[names(raw_dat_b) %in% sel_tbls_b]
+
 # ---------------------------------------------------------------------------- #
-# Identify potential columns that index participants ----
+# Identify potential columns that index participants in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Manually inspect column names to identify those that may index participants
@@ -283,7 +348,7 @@ sum(table(c(oa_participantRSA_chars,
             rr_participantRSA_chars)) > 1)
 
 # ---------------------------------------------------------------------------- #
-# Correct selected "participantRSA" values ----
+# Correct selected "participantRSA" values in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Sonia Baee's code "R34_cleaning_script.R" corrects "participantRSA" for certain
@@ -389,7 +454,7 @@ sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participan
 # values remain in all of these tables except "demographic"
 
 # ---------------------------------------------------------------------------- #
-# Define "participant_id" across tables ----
+# Define "participant_id" across tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # In "participant_export_dao" table, rename "id" as "participant_id", which is
@@ -424,7 +489,85 @@ for (i in 1:length(sel_dat)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Identify and recode time stamp and date columns ----
+# Identify potential columns that index participants in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# Manually inspect column names to identify those that may index participants
+
+lapply(raw_dat_b, identify_cols, grep_pattern = "")
+
+potential_id_cols_b <- c("^id$", "participantRSA", "participant")
+pattern <- paste(potential_id_cols_b, collapse = "|")
+lapply(sel_dat_b, identify_cols, grep_pattern = pattern)
+
+# "bbsiq" has 1 NA for "participantRSA", but "id" is complete and otherwise identical 
+# to "participantRSA". In "credibility", "dass21_ds", "dd", "demographic", "qol", and 
+# "rr", "id" is identical to "participantRSA". Use "id" to index participants.
+
+all(sel_dat_b$bbsiq$id == sel_dat_b$bbsiq$participantRSA, na.rm = TRUE)
+sum(is.na(sel_dat_b$bbsiq$id))
+
+all(sel_dat_b$credibility$id == sel_dat_b$credibility$participantRSA, na.rm = TRUE)
+all(sel_dat_b$dass21_ds$id   == sel_dat_b$dass21_ds$participantRSA,   na.rm = TRUE)
+all(sel_dat_b$dd$id          == sel_dat_b$dd$participantRSA,          na.rm = TRUE)
+all(sel_dat_b$demographic$id == sel_dat_b$demographic$participantRSA, na.rm = TRUE)
+all(sel_dat_b$qol$id         == sel_dat_b$qol$participantRSA,         na.rm = TRUE)
+all(sel_dat_b$rr$id          == sel_dat_b$rr$participantRSA,          na.rm = TRUE)
+
+# TODO: Unlike in Set A, Set B table "dass21_as" contains fewer rows, has no
+# blank "session" values, and does not contain "sessionId"
+
+table(sel_dat_b$dass21_as$session, useNA = "always")
+table(sel_dat$dass21_as$session, useNA = "always")
+
+
+
+
+
+# Unlike in Set A, no Set B tables have 344-character values for "participantRSA"
+# (if present, longest "participantRSA" is 4 characters)
+
+sel_dat_b_participantRSA_max_nchar <- sapply(sel_dat_b, function(x) {
+  if ("participantRSA" %in% names(x)) {
+    max(nchar(x$participantRSA), na.rm = TRUE)
+  } else {
+    NA
+  }
+})
+
+all(sel_dat_b_participantRSA_max_nchar == 4, na.rm = TRUE)
+
+# ---------------------------------------------------------------------------- #
+# Define "participant_id" across tables in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# In "dass21_as" and "oa" tables, rename "id" as "participant_id", which is
+# the only column that can index participants
+
+names(sel_dat_b$dass21_as)[names(sel_dat_b$dass21_as) == "id"] <- "participant_id"
+names(sel_dat_b$oa)[names(sel_dat_b$oa)               == "id"] <- "participant_id"
+
+# In "bbsiq", "credibility", "dass21_ds", "dd", "demographic", "qol", and "rr" 
+# tables, rename "id" as "participant_id" and remove "participantRSA"
+
+names(sel_dat_b$bbsiq)[names(sel_dat_b$bbsiq)             == "id"] <- "participant_id"
+names(sel_dat_b$credibility)[names(sel_dat_b$credibility) == "id"] <- "participant_id"
+names(sel_dat_b$dass21_ds)[names(sel_dat_b$dass21_ds)     == "id"] <- "participant_id"
+names(sel_dat_b$dd)[names(sel_dat_b$dd)                   == "id"] <- "participant_id"
+names(sel_dat_b$demographic)[names(sel_dat_b$demographic) == "id"] <- "participant_id"
+names(sel_dat_b$qol)[names(sel_dat_b$qol)                 == "id"] <- "participant_id"
+names(sel_dat_b$rr)[names(sel_dat_b$rr)                   == "id"] <- "participant_id"
+
+sel_dat_b$bbsiq$participantRSA       <- NULL
+sel_dat_b$credibility$participantRSA <- NULL
+sel_dat_b$dass21_ds$participantRSA   <- NULL
+sel_dat_b$dd$participantRSA          <- NULL
+sel_dat_b$demographic$participantRSA <- NULL
+sel_dat_b$qol$participantRSA         <- NULL
+sel_dat_b$rr$participantRSA          <- NULL
+
+# ---------------------------------------------------------------------------- #
+# Identify and recode time stamp and date columns in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Identify columns containing "date" in each table
@@ -502,7 +645,7 @@ recode_date_time_timezone <- function(dat) {
           dat[[i]][, POSIXct_colname] <- 
             as.POSIXct(dat[[i]][, POSIXct_colname],
                        tz = "EST", 
-                       format = "%m/%d/%Y %H:%M")
+                       format = "%m/%d/%Y %H:%M") # Note: 4-digit year
         } else {
           dat[[i]][, POSIXct_colname] <-
             as.POSIXct(dat[[i]][, POSIXct_colname], 
@@ -519,6 +662,140 @@ recode_date_time_timezone <- function(dat) {
 # Run function
 
 sel_dat <- recode_date_time_timezone(sel_dat)
+
+# ---------------------------------------------------------------------------- #
+# Identify and recode time stamp and date columns in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# Identify columns containing "date" in each table
+
+lapply(sel_dat_b, identify_cols, grep_pattern = "date")
+
+# View structure of columns containing "date" in each table
+
+invisible(mapply(view_date_str, sel_dat_b, names(sel_dat_b)))
+
+# TODO: 58 and 42 participants in "dass21_as" and "oa" tables, respectively, have 
+# dates that are 11:14 characters (and no dates with more characters), whereas all 
+# other participants (and all other tables) have dates that are 31 characters. These 
+# participants with shorter dates in "dass21_as" and "oa" tables are not in the Set A
+# "dass21_as", "oa", or "participant" tables but include all 36 of the participants
+# listed as "not included in original dataset due to server error" in "notes.csv"
+# (who are also included in the clean data).
+
+sel_dat_b$dass21_as$date[nchar(sel_dat_b$dass21_as$date) %in% 11:14]
+sel_dat_b$oa$date[nchar(sel_dat_b$oa$date)               %in% 11:14]
+
+short_date_pids_dass21_as <- unique(sel_dat_b$dass21_as$participant_id[nchar(sel_dat_b$dass21_as$date) %in% 11:14])
+short_date_pids_oa        <- unique(sel_dat_b$oa$participant_id[nchar(sel_dat_b$oa$date)               %in% 11:14])
+
+length(short_date_pids_dass21_as) == 58
+length(short_date_pids_oa)        == 42
+
+all(sort(unique(nchar(sel_dat_b$dass21_as$date[sel_dat_b$dass21_as$participant_id %in% short_date_pids_dass21_as]))) == 11:14)
+all(sort(unique(nchar(sel_dat_b$oa$date[sel_dat_b$oa$participant_id               %in% short_date_pids_oa])))        == 11:14)
+
+  # Comparison with Set A tables
+
+sum(short_date_pids_dass21_as %in% sel_dat$dass21_as$participant_id)              == 0
+sum(short_date_pids_oa        %in% sel_dat$oa$participant_id)                     == 0
+
+sum(short_date_pids_dass21_as %in% sel_dat$participant_export_dao$participant_id) == 0
+sum(short_date_pids_oa        %in% sel_dat$participant_export_dao$participant_id) == 0
+
+  # Comparison with participants subject at one point to server error
+
+server_error_pids <- c(1912, 1915, 1917, 1918, 1919, 1920, 1922, 1923, 1925, 1927, 1928, 1929, 
+                       1932, 1933, 1934, 1938, 1939, 1940, 1942, 1943, 1946, 1947, 1948, 1953, 
+                       1956, 1958, 1959, 1960, 1961, 1963, 1964, 1965, 1966, 1967, 1969, 1972)
+
+length(server_error_pids) == 36
+
+all(server_error_pids %in% short_date_pids_dass21_as)
+all(server_error_pids %in% short_date_pids_oa)
+
+  # Comparison with clean data
+
+sum(short_date_pids_dass21_as %in% cln_dat$participantID) == 36
+sum(short_date_pids_oa        %in% cln_dat$participantID) == 36
+
+setequal(intersect(short_date_pids_dass21_as, cln_dat$participantID), server_error_pids)
+setequal(intersect(short_date_pids_oa,        cln_dat$participantID), server_error_pids)
+
+
+
+
+
+# Except for the participants above with shorter dates in their "dass21_as" and 
+# "oa" tables, the following columns across tables are system-generated date and 
+# time stamps. For now, assume all of these are in EST time zone (note: EST, or 
+# UTC - 5, all year, not "America/New York", which switches between EST and EDT). 
+# Assume that the shorter dates are also in EST.
+
+system_date_time_cols_b <- "date"
+
+# Define function to reformat system-generated time stamps and add time zone in Set B, 
+# handling participants above with shorter dates in their "dass21_as" and "oa" tables
+
+recode_date_time_timezone_b <- function(dat) {
+  for (i in 1:length(dat)) {
+    table_name <- names(dat[i])
+    colnames <- names(dat[[i]])
+    target_colnames <- colnames[colnames %in% system_date_time_cols_b]
+    
+    if (length(target_colnames) != 0) {
+      for (j in 1:length(target_colnames)) {
+        # Create new variable for POSIXct values. Recode blanks as NA.
+        
+        POSIXct_colname <- paste0(target_colnames[j], "_as_POSIXct")
+        
+        dat[[i]][, POSIXct_colname] <- dat[[i]][, target_colnames[j]]
+        dat[[i]][dat[[i]][, POSIXct_colname] == "", POSIXct_colname] <- NA
+        
+        # Specify time zone as "EST" for all system-generated time stamps. Specify 
+        # nonstandard formats to parse columns, which are not in standard formats.
+        
+        if (table_name %in% c("dass21_as", "oa") & target_colnames[j] == "date") {
+          # TODO: Troubleshoot this section (recode into new column vs. recoding current column)
+          
+          
+          
+          
+          
+          dat[[i]][nchar(dat[[i]][, POSIXct_colname]) %in% 11:14, POSIXct_colname] <-
+            as.POSIXct(dat[[i]][nchar(dat[[i]][, POSIXct_colname]) %in% 11:14, POSIXct_colname],
+                       tz = "EST", 
+                       format = "%m/%d/%y %H:%M") # Note: 2-digit year
+          
+          dat[[i]][nchar(dat[[i]][, POSIXct_colname]) == 31, POSIXct_colname] <- 
+            as.POSIXct(dat[[i]][nchar(dat[[i]][, POSIXct_colname]) == 31, POSIXct_colname], 
+                       tz = "EST",
+                       format = "%a, %d %b %Y %H:%M:%S %z")
+        } else {
+          dat[[i]][, POSIXct_colname] <- 
+            as.POSIXct(dat[[i]][, POSIXct_colname], 
+                       tz = "EST",
+                       format = "%a, %d %b %Y %H:%M:%S %z")
+        } 
+      }
+    }
+  }
+  
+  return(dat)
+}
+
+# Run function
+
+sel_dat_b <- recode_date_time_timezone_b(sel_dat_b)
+
+
+
+
+# TODO: Continue below for Set B
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Identify and rename session-related columns ----
