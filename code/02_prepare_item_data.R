@@ -799,14 +799,8 @@ recode_date_time_timezone_b <- function(dat) {
 sel_dat_b <- recode_date_time_timezone_b(sel_dat_b)
 
 # ---------------------------------------------------------------------------- #
-# Identify and rename session-related columns ----
+# Identify and rename session-related columns for Set A ----
 # ---------------------------------------------------------------------------- #
-
-# TODO: Continue below for Set B
-
-
-
-
 
 # Identify columns containing "session" in each table
 
@@ -868,7 +862,7 @@ view_session_str(sel_dat, exclude_cols = "sessionId")
 # information and eligibility status, rename column to reflect this.
 # Also create new column "session_only" with "ELIGIBLE" and "" entries of
 # original "session" column recoded as "Eligibility" (to reflect that these
-# entries were collected at the eligibility screener time point.
+# entries were collected at the eligibility screener time point).
 
 table(sel_dat$dass21_as$session)
 
@@ -892,12 +886,52 @@ for (i in 1:length(sel_dat)) {
 }
 
 # ---------------------------------------------------------------------------- #
+# Identify and rename session-related columns for Set B ----
+# ---------------------------------------------------------------------------- #
+
+# Identify columns containing "session" in each table
+
+lapply(sel_dat_b, identify_cols, grep_pattern = "session")
+
+# View structure of columns containing "session" in each table
+
+view_session_str(sel_dat_b)
+
+# Given that "session" column in "dass21_as" table may contain both session information 
+# and eligibility status (unlike original "session" column in Set A, which contains both 
+# "ELIGIBLE" and "" entries, original "session" column in Set B contains no "" entries), 
+# create new column "session_only" with "ELIGIBLE" entries of original "session" column 
+# recoded as "Eligibility" (to reflect that these were collected at eligibility screener).
+
+table(sel_dat_b$dass21_as$session)
+
+# Rename remaining "session" columns to "session_only" to reflect that they contain only 
+# session information
+
+for (i in 1:length(sel_dat_b)) {
+  if (names(sel_dat_b[i]) == "dass21_as") {
+    sel_dat_b[[i]][, "session_only"] <- sel_dat_b[[i]][, "session"]
+    sel_dat_b[[i]][sel_dat_b[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
+  } else if ("session" %in% names(sel_dat_b[[i]])) {
+    names(sel_dat_b[[i]])[names(sel_dat_b[[i]]) == "session"] <- "session_only"
+  }
+}
+
+# ---------------------------------------------------------------------------- #
 # Filter raw data ----
 # ---------------------------------------------------------------------------- #
 
 # Identify participant IDs in clean data
 
 cln_participant_ids <- cln_dat$participantID
+
+length(cln_participant_ids) == 807
+
+# TODO: Continue here for Set B
+
+
+
+
 
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
 # table. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists these 
