@@ -93,7 +93,7 @@ names(raw_dat_son_b) <- tools::file_path_sans_ext(raw_filenames_son_b)
 # ---------------------------------------------------------------------------- #
 
 # TODO: Decide whether to add raw data from Set B to raw data from Set A (see Lines
-# 618-705 below). For now, use only raw data from Set A. However, "cln_dat" is also
+# 930-1021 below). For now, use only raw data from Set A. However, "cln_dat" is also
 # used in some operations below, so define it here too.
 
 raw_dat <- raw_dat_son_a
@@ -252,7 +252,7 @@ names(raw_dat_b)[names(raw_dat_b) == "SUDS_02_02_2019"]                 <- "suds
 names(raw_dat_b)[names(raw_dat_b) == "TrialDAO_02_02_2019"]             <- "trial_dao"
 
 # ---------------------------------------------------------------------------- #
-# Restrict raw data tables to those potentially relevant to present analysis ----
+# Restrict raw data tables to those relevant to present analysis for Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
 # For Set A
@@ -918,7 +918,7 @@ for (i in 1:length(sel_dat_b)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Filter raw data ----
+# Filter raw data in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
 # Identify participant IDs in clean data
@@ -927,48 +927,48 @@ cln_participant_ids <- cln_dat$participantID
 
 length(cln_participant_ids) == 807
 
-# TODO: Continue here for Set B
-
-
-
-
-
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
-# table. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists these 
-# participant IDs as "not included in original dataset due to server error."
+# table in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists 
+# these participant IDs as "not included in original dataset due to server error."
 # Asked Sonia about this on 11/24/21.
 
 miss_ids <- setdiff(cln_participant_ids, sel_dat$participant_export_dao$participant_id)
 
-#   None of the missing participants have data in "dass21_as" or "oa", but most of
-#   them do have data in other tables. The participants do seem to have "dass21_as"
-#   and "oa" data in the raw data in Set B. The participants also seem
-#   to have baseline data in the Managing Anxiety study main outcome paper's OSF 
-#   project (https://osf.io/3b67v; note that DASS-21-AS items names differ though).
+setequal(miss_ids, server_error_pids)
 
-lapply(sel_dat, function(x) sum(unique(x$participant_id) %in% miss_ids))
+#   None of the missing participants have data in "dass21_as" or "oa" in Set A, but 
+#   most of them do have data in other tables. The participants do have "dass21_as" 
+#   and "oa" data in the raw data in Set B, and the same number of rows of data in
+#   other tables as in Set A. The participants also seem to have baseline data in 
+#   the Managing Anxiety study main outcome paper's OSF project (https://osf.io/3b67v; 
+#   note that DASS-21-AS items' names differ though).
+
+lapply(sel_dat,   function(x) sum(unique(x$participant_id) %in% miss_ids))
+lapply(sel_dat_b, function(x) sum(unique(x$participant_id) %in% miss_ids))
+
+lapply(sel_dat,   function(x) nrow(x[x$participant_id %in% miss_ids, ]))
+lapply(sel_dat_b, function(x) nrow(x[x$participant_id %in% miss_ids, ]))
 
 
 
 
 
 #   After some cleaning, the missing participants' baseline data for "oa" items in
-#   Set B (where "id" is the participant ID) is the same as the baseline data for "oa" 
-#   items for these participants in Sonia's "R34_Cronbach.csv" file in the Managing 
-#   Anxiety study main outcome paper's OSF project. This suggests that the data from 
-#   Set B can be used for "oa" items at other time points for the missing participants.
+#   Set B is the same as the baseline data for "oa" items for these participants in 
+#   Sonia's "R34_Cronbach.csv" file in the Managing Anxiety study main outcome paper's 
+#   OSF project. This suggests that the data from Set B can be used for "oa" items at 
+#   other time points for the missing participants.
 
 bl_items_sonia <- dat_main_bl_items
-oa_from_son_b  <- raw_dat_son_b$OA_02_02_2019
 
-test1 <- oa_from_son_b[oa_from_son_b$id %in% miss_ids & oa_from_son_b$session == "PRE", ]
-names(test1)[names(test1) == "id"] <- "participant_id"
+test1 <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids & sel_dat_b$oa$session == "PRE", ]
 test1 <- test1[order(test1$participant_id), ]
 row.names(test1) <- 1:nrow(test1)
 
 long_oa_items <- names(bl_items_sonia)[grepl("OA_", names(bl_items_sonia))]
 test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
                         c("participantID", "id", "session", "date", long_oa_items)]
+names(test2)[names(test2) == "session"]             <- "session_only"
 names(test2)[names(test2) == "OA_anxious_freq"]     <- "anxious_freq"
 names(test2)[names(test2) == "OA_anxious_sev"]      <- "anxious_sev"
 names(test2)[names(test2) == "OA_avoid"]            <- "avoid"
@@ -981,22 +981,21 @@ test2[, oa_items][test2[, oa_items] == 555] <- NA
 test2 <- test2[order(test2$participant_id), ]
 row.names(test2) <- 1:nrow(test2)
 
-identical(test1[, c("participant_id", "session", oa_items)],
-          test2[, c("participant_id", "session", oa_items)])
+identical(test1[, c("participant_id", "session_only", oa_items)],
+          test2[, c("participant_id", "session_only", oa_items)])
 
 #   Same for baseline "dass21_as" items, except that Sonia's "R34_Cronbach.csv" file
 #   has data for all 36 missing participants, whereas Set B has data for only 34
 
-dass21_as_from_son_b <- raw_dat_son_b$DASS21_AS_02_02_2019
-
-test1 <- dass21_as_from_son_b[dass21_as_from_son_b$id %in% miss_ids & dass21_as_from_son_b$session == "ELIGIBLE", ]
-names(test1)[names(test1) == "id"] <- "participant_id"
+test1 <- sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids & sel_dat_b$dass21_as$session_only == "Eligibility", ]
 test1 <- test1[order(test1$participant_id), ]
 row.names(test1) <- 1:nrow(test1)
 
 long_dass21_as_items <- names(bl_items_sonia)[grepl("DASSA_", names(bl_items_sonia))]
 test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
                         c("participantID", "id", "session", "date", long_dass21_as_items)]
+names(test2)[names(test2) == "participantID"]   <- "participant_id"
+names(test2)[names(test2) == "session"]         <- "session_only"
 names(test2)[names(test2) == "DASSA_breathing"] <- "breathing"
 names(test2)[names(test2) == "DASSA_dryness"]   <- "dryness"
 names(test2)[names(test2) == "DASSA_heart"]     <- "heart"
@@ -1004,10 +1003,9 @@ names(test2)[names(test2) == "DASSA_panic"]     <- "panic"
 names(test2)[names(test2) == "DASSA_scared"]    <- "scared"
 names(test2)[names(test2) == "DASSA_trembling"] <- "trembling"
 names(test2)[names(test2) == "DASSA_worry"]     <- "worry"
-names(test2)[names(test2) == "participantID"]   <- "participant_id"
 dass21_as_items <- c("breathing", "dryness", "heart", "panic", "scared", "trembling", "worry")
 sum(test2[, dass21_as_items] == 555) == 0
-test2$session[test2$session == "PRE"] <- "ELIGIBLE"
+test2$session_only[test2$session_only == "PRE"] <- "Eligibility"
 test2 <- test2[order(test2$participant_id), ]
 
 setdiff(test1$participant_id, test2$participant_id)
@@ -1016,8 +1014,8 @@ setdiff(test2$participant_id, test1$participant_id) == c(1929, 1932)
 test2_tmp <- test2[!(test2$participant_id %in% c(1929, 1932)), ]
 row.names(test2_tmp) <- 1:nrow(test2_tmp)
 
-identical(test1[, c("participant_id", "session", dass21_as_items)],
-          test2_tmp[, c("participant_id", "session", dass21_as_items)])
+identical(test1[, c("participant_id", "session_only", dass21_as_items)],
+          test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
 
 # TODO: Consider adding "oa" and "dass21_as" (and potentially other) data from 
 # Set B to raw data files from Set A
@@ -1043,19 +1041,20 @@ filter_all_data <- function(dat, participant_ids) {
   return(output)
 }
 
-# Run function
+# Run function for Sets A and B
 
-flt_dat <- filter_all_data(sel_dat, cln_participant_ids)
+flt_dat   <- filter_all_data(sel_dat,   cln_participant_ids)
+flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 
 # ---------------------------------------------------------------------------- #
-# Check session and date values ----
+# Check session and date values in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Seem to be discrepancies between "session" and date-related values in 
-# "task_log" table and "session" and "date" in other tables (e.g., "oa"). For
-# example, for participant 623 "task_log" contains "OA" at "SESSION1" but this
-# data is not in "oa" table. In addition, "task_log" says "OA" at "SESSION2"
-# was completed on 9/12/16, but "oa" says "SESSION2" was done on 9/10/16.
+# TODO: In Set A, seem to be discrepancies between "session" and date-related
+# values in "task_log" table and "session" and "date" in other tables (e.g., "oa"). 
+# For example, for participant 623 "task_log" contains "OA" at "SESSION1" but this
+# data is not in "oa" table. In addition, "task_log" says "OA" at "SESSION2" was 
+# completed on 9/12/16, but "oa" says "SESSION2" was done on 9/10/16.
 
 # View(flt_dat$oa[flt_dat$oa$participant_id == 623, ])
 # View(flt_dat$task_log[flt_dat$task_log$participant_id == 623 &
@@ -1065,8 +1064,12 @@ flt_dat <- filter_all_data(sel_dat, cln_participant_ids)
 
 
 
+# Note: Also discrepancies between Set A "task_log" and Set B tables (example below)
+
+# View(flt_dat_b$oa[flt_dat_b$oa$participant_id == 623, ])
+
 # ---------------------------------------------------------------------------- #
-# Check for multiple entries ----
+# Check for multiple entries in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # For rows that have duplicated values on every meaningful column (i.e., every
@@ -1074,6 +1077,8 @@ flt_dat <- filter_all_data(sel_dat, cln_participant_ids)
 # tables that contain "id" (throw error if "participant_export_dao", which lacks
 # "id", contains multiple rows per "participant_id", in which case it will need 
 # to be sorted and have its rows consolidated).
+
+flt_dat_nrow_before <- sapply(flt_dat, nrow)
 
 for (i in 1:length(flt_dat)) {
   meaningful_cols <- names(flt_dat[[i]])[!(names(flt_dat[[i]]) %in% c("X", "id"))]
@@ -1091,6 +1096,12 @@ for (i in 1:length(flt_dat)) {
     stop(paste0("Table ", names(flt_dat[i]), "needs to be checked for duplicates"))
   }
 }
+
+flt_dat_nrow_after <- sapply(flt_dat, nrow)
+
+flt_dat_nrow_rm <- flt_dat_nrow_before - flt_dat_nrow_after
+all(flt_dat_nrow_rm[names(flt_dat_nrow_rm) != "task_log"] == 0)  # No exact dups except
+flt_dat_nrow_rm[names(flt_dat_nrow_rm)     == "task_log"] == 570 #   570 in "task_log"
 
 # Define functions to report duplicated rows on target columns. "report_dups_df"
 # is used within "report_dups_list".
@@ -1213,7 +1224,78 @@ report_dups_list <- function(dat) {
 report_dups_list(flt_dat)
 
 # ---------------------------------------------------------------------------- #
-# Resolve multiple entries ----
+# Check for multiple entries in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# For rows that have duplicated values on every meaningful column (i.e., every
+# column except "X" [only in "dass21_ds"]; no Set B tables contain "id" at this 
+# point), keep only the last row after sorting by "date_as_POSIXct"
+
+flt_dat_b_nrow_before <- sapply(flt_dat_b, nrow)
+
+for (i in 1:length(flt_dat_b)) {
+  meaningful_cols <- names(flt_dat_b[[i]])[names(flt_dat_b[[i]]) != "X"]
+  
+  if ("date_as_POSIXct" %in% names(flt_dat_b[[i]])) {
+    flt_dat_b[[i]] <- flt_dat_b[[i]][order(flt_dat_b[[i]][, "date_as_POSIXct"]), ]
+    
+    flt_dat_b[[i]] <- flt_dat_b[[i]][!duplicated(flt_dat_b[[i]][, meaningful_cols], fromLast = TRUE), ]
+  } else {
+    stop(paste0("Table ", names(flt_dat_b[i]), "needs to be checked for duplicates"))
+  }
+}
+
+flt_dat_b_nrow_after <- sapply(flt_dat_b, nrow)
+
+flt_dat_b_nrow_rm <- flt_dat_b_nrow_before - flt_dat_b_nrow_after
+all(flt_dat_b_nrow_rm == 0) # No exact duplicates
+
+# Define functions to report duplicated rows on target columns. "report_dups_df" 
+# defined for Set A above is used within "report_dups_list_b" for Set B.
+
+report_dups_list_b <- function(dat) {
+  for (i in 1:length(dat)) {
+    if (names(dat[i]) == "dass21_as") {
+      duplicated_rows_eligibility <- 
+        dat[[i]][dat[[i]][, "session_only"] == "Eligibility" &
+                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
+      duplicated_rows_other <-
+        dat[[i]][dat[[i]][, "session_only"] != "Eligibility" &
+                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
+      duplicated_rows <- rbind(duplicated_rows_eligibility, duplicated_rows_other)
+      
+      if (nrow(duplicated_rows) > 0) {
+        p_ids <- duplicated_rows_eligibility[!is.na(duplicated_rows_eligibility$participant_id),
+                                             "participant_id"]
+
+        cat(nrow(duplicated_rows_eligibility), 
+            "duplicated rows at Eligibility for table:", names(dat[i]), "\n")
+        cat("With these ", length(p_ids), "'participant_id': ", p_ids, "\n")
+        cat(nrow(duplicated_rows_other), 
+            "duplicated rows at other time points for table:", names(dat[i]))
+        if (nrow(duplicated_rows_other) > 0) {
+          cat("\nWith these 'participant_id': ", duplicated_rows_other$participant_id)
+        }
+        cat("\n-------------------------\n")
+      } else {
+        cat("No duplicated rows for table:", names(dat[i]))
+        cat("\n-------------------------\n")
+      }
+    } else {
+      report_dups_df(dat[[i]],
+                     names(dat[i]), 
+                     c("participant_id", "session_only"), 
+                     "participant_id")
+    }
+  }
+}
+
+# Run function
+
+report_dups_list_b(flt_dat_b) # No duplicates
+
+# ---------------------------------------------------------------------------- #
+# Resolve multiple entries in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # TODO: Describe what was done in R34 main outcomes paper. Script "R34.ipynb"
@@ -1231,7 +1313,7 @@ report_dups_list(flt_dat)
 
 
 # dass21_as:
-# - R34_cleaning_script says all duplicates are multiple screening attempts, 
+# - "R34_cleaning_script.R" says all duplicates are multiple screening attempts, 
 #   assumes entries are in order by date, and keeps the last row
 # - Other script says "get the latest entry for each participant" (does so by 
 #   most recent date for each session)
@@ -1242,7 +1324,7 @@ report_dups_list(flt_dat)
 # 683 598 712 674 582 669 745 625 684 723 644 627 659 590 731 708 701 727 687 662 
 # 541 719 597 710 640 552 435 600
 # 
-# - R34_cleaning_script says all duplicates are for scam/test accounts, but none 
+# - "R34_cleaning_script.R" says all duplicates are for scam/test accounts, but none 
 #   of these are test accounts based on Sonia's manually identified list of test accounts
 # - Other script says "get the latest entry for each participant" (does so by most 
 #   recent date for each session) and notes that 1767 has duplicated values at PRE 
@@ -1323,7 +1405,7 @@ keep_recent_entry_list <- function(dat) {
 flt_dat <- keep_recent_entry_list(flt_dat)
 
 # ---------------------------------------------------------------------------- #
-# Define scale items ----
+# Define scale items in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
 # OASIS
@@ -1331,6 +1413,9 @@ flt_dat <- keep_recent_entry_list(flt_dat)
 oa_items <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
 
 length(oa_items) == 5
+
+all(oa_items %in% names(flt_dat$oa))
+all(oa_items %in% names(flt_dat_b$oa))
 
 # Recognition Ratings
 
@@ -1344,19 +1429,22 @@ rr_items <- c(rr_nf_items, rr_ns_items, rr_pf_items, rr_ps_items)
 all(sapply(list(rr_nf_items, rr_ns_items, rr_pf_items, rr_ps_items), length) == 9)
 length(rr_items) == 36
 
+all(rr_items %in% names(flt_dat$rr))
+all(rr_items %in% names(flt_dat_b$rr))
+
 # BBSIQ
 
-bbsiq_neg_int_items <- c("breath_suffocate", "vision_illness", "lightheaded_faint", "chest_heart",        # TODO: Sonia calls this "physical_list"
+bbsiq_neg_int_items <- c("breath_suffocate", "vision_illness", "lightheaded_faint", "chest_heart",
                          "heart_wrong", "confused_outofmind", "dizzy_ill")
-bbsiq_neg_ext_items <- c("visitors_bored", "shop_irritating", "smoke_house", "friend_incompetent",        # TODO: Sonia calls this "threat_list"
+bbsiq_neg_ext_items <- c("visitors_bored", "shop_irritating", "smoke_house", "friend_incompetent",
                          "jolt_burglar", "party_boring", "urgent_died")
 bbsiq_neg_items <- c(bbsiq_neg_int_items, bbsiq_neg_ext_items)
  
-bbsiq_ben_int_items <- c("breath_flu", "breath_physically", "vision_glasses", "vision_strained",          # TODO: Sonia calls this "nonPhysical_list"
+bbsiq_ben_int_items <- c("breath_flu", "breath_physically", "vision_glasses", "vision_strained",
                          "lightheaded_eat", "lightheaded_sleep", "chest_indigestion", "chest_sore",
                          "heart_active", "heart_excited", "confused_cold", "confused_work",
                          "dizzy_ate", "dizzy_overtired")
-bbsiq_ben_ext_items <- c("visitors_engagement", "visitors_outstay", "shop_bored", "shop_concentrating",   # TODO: Sonia calls this "nonThreat_list"
+bbsiq_ben_ext_items <- c("visitors_engagement", "visitors_outstay", "shop_bored", "shop_concentrating",
                          "smoke_cig", "smoke_food", "friend_helpful", "friend_moreoften", "jolt_dream",
                          "jolt_wind", "party_hear", "party_preoccupied", "urgent_bill", "urgent_junk")
 bbsiq_ben_items <- c(bbsiq_ben_int_items, bbsiq_ben_ext_items)
@@ -1369,11 +1457,14 @@ length(bbsiq_neg_items) == 14
 all(sapply(list(bbsiq_ben_int_items, bbsiq_ben_ext_items), length) == 14)
 length(bbsiq_ben_items) == 28
 
+all(bbsiq_items %in% names(flt_dat$bbsiq))
+all(bbsiq_items %in% names(flt_dat_b$bbsiq))
+
 # ---------------------------------------------------------------------------- #
-# Recode "prefer not to answer" values ----
+# Recode "prefer not to answer" values in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
-# Recode 555 and -1 ("prefer not to answer") as NA
+# In Set A, recode 555 and -1 ("prefer not to answer") as NA
 
 sum(flt_dat$oa[, oa_items]       == 555)
 sum(flt_dat$rr[, rr_items]       == -1)
@@ -1383,36 +1474,70 @@ flt_dat$oa[, oa_items][flt_dat$oa[, oa_items]             == 555] <- NA
 flt_dat$rr[, rr_items][flt_dat$rr[, rr_items]             == -1]  <- NA
 flt_dat$bbsiq[, bbsiq_items][flt_dat$bbsiq[, bbsiq_items] == 555] <- NA
 
+# In Set B, no values in "oa", "rr", or "bbsiq" tables are 555 or -1 (already recoded as NA)
+
 # ---------------------------------------------------------------------------- #
-# Check response ranges ----
+# Check response ranges in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
 # Note: In present Managing Anxiety study, RR response options were 0:3, whereas 
 # in Calm Thinking study, they were 1:4
 
-all(sort(unique(as.vector(as.matrix(flt_dat$oa[, oa_items]))))       %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat$rr[, rr_items]))))       %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items])))) %in% 0:4)
+# For Set A
+
+all(sort(unique(as.vector(as.matrix(flt_dat$oa[, oa_items]))))         %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat$rr[, rr_items]))))         %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items]))))   %in% 0:4)
+
+# For Set B
+
+all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[, oa_items]))))       %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[, rr_items]))))       %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[, bbsiq_items])))) %in% 0:4)
 
 # ---------------------------------------------------------------------------- #
-# Compute selected scores ----
+# Compute selected scores in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
-# Compute scale scores
+# OASIS
 
   # Note: The summation used for "oa_total" below is incorrect because it treats 
   # an item-level responses of NA as responses of 0, but this seems to be what was 
   # done in "R34.ipynb" cleaning script
+
+  # For Set A
 
 # View(flt_dat$oa[rowSums(is.na(flt_dat$oa[, oa_items])) > 0, ])
 sum(rowSums(is.na(flt_dat$oa[, oa_items])) == ncol(flt_dat$oa[, oa_items]))
 
 flt_dat$oa$oa_total <- rowSums(flt_dat$oa[ , oa_items], na.rm = TRUE)
 
-flt_dat$rr$rr_nf_mean <- rowMeans(flt_dat$rr[, rr_nf_items], na.rm = TRUE)
-flt_dat$rr$rr_ns_mean <- rowMeans(flt_dat$rr[, rr_ns_items], na.rm = TRUE)
-flt_dat$rr$rr_pf_mean <- rowMeans(flt_dat$rr[, rr_pf_items], na.rm = TRUE)
-flt_dat$rr$rr_ps_mean <- rowMeans(flt_dat$rr[, rr_ps_items], na.rm = TRUE)
+  # For Set B
+
+# View(flt_dat_b$oa[rowSums(is.na(flt_dat_b$oa[, oa_items])) > 0, ])
+sum(rowSums(is.na(flt_dat_b$oa[, oa_items])) == ncol(flt_dat_b$oa[, oa_items]))
+
+flt_dat_b$oa$oa_total <- rowSums(flt_dat_b$oa[ , oa_items], na.rm = TRUE)
+
+# RR
+
+  # Define function to compute RR scores
+
+compute_rr_scores <- function(dat) {
+  dat$rr$rr_nf_mean <- rowMeans(dat$rr[, rr_nf_items], na.rm = TRUE)
+  dat$rr$rr_ns_mean <- rowMeans(dat$rr[, rr_ns_items], na.rm = TRUE)
+  dat$rr$rr_pf_mean <- rowMeans(dat$rr[, rr_pf_items], na.rm = TRUE)
+  dat$rr$rr_ps_mean <- rowMeans(dat$rr[, rr_ps_items], na.rm = TRUE)
+  
+  return(dat)
+}
+
+  # Run function for Sets A and B
+
+flt_dat   <- compute_rr_scores(flt_dat)
+flt_dat_b <- compute_rr_scores(flt_dat_b)
+
+# BBSIQ
 
   # Note: BBSIQ scores below are those per the Managing Anxiety main outcomes paper
   # - The computation of the scores for "bbsiq_int_ratio" (as the ratio of the mean 
@@ -1423,15 +1548,26 @@ flt_dat$rr$rr_ps_mean <- rowMeans(flt_dat$rr[, rr_ps_items], na.rm = TRUE)
   # was done in the "Script1_DataPrep.R" script on the Managing Anxiety main outcomes 
   # paper OSF project (https://osf.io/3b67v)
 
-flt_dat$bbsiq$bbsiq_neg_int_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_int_items], na.rm = TRUE)
-flt_dat$bbsiq$bbsiq_ben_int_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_ben_int_items], na.rm = TRUE)
-flt_dat$bbsiq$bbsiq_neg_ext_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_neg_ext_items], na.rm = TRUE)
-flt_dat$bbsiq$bbsiq_ben_ext_mean <- rowMeans(flt_dat$bbsiq[, bbsiq_ben_ext_items], na.rm = TRUE)
+  # Define function to compute BBSIQ scores
 
-flt_dat$bbsiq$bbsiq_int_ratio <- flt_dat$bbsiq$bbsiq_neg_int_mean / flt_dat$bbsiq$bbsiq_ben_int_mean
-flt_dat$bbsiq$bbsiq_ext_ratio <- flt_dat$bbsiq$bbsiq_neg_ext_mean / flt_dat$bbsiq$bbsiq_ben_ext_mean
+compute_bbsiq_scores <- function(dat) {
+  dat$bbsiq$bbsiq_neg_int_mean <- rowMeans(dat$bbsiq[, bbsiq_neg_int_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_ben_int_mean <- rowMeans(dat$bbsiq[, bbsiq_ben_int_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_neg_ext_mean <- rowMeans(dat$bbsiq[, bbsiq_neg_ext_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_ben_ext_mean <- rowMeans(dat$bbsiq[, bbsiq_ben_ext_items], na.rm = TRUE)
+  
+  dat$bbsiq$bbsiq_int_ratio <- dat$bbsiq$bbsiq_neg_int_mean / dat$bbsiq$bbsiq_ben_int_mean
+  dat$bbsiq$bbsiq_ext_ratio <- dat$bbsiq$bbsiq_neg_ext_mean / dat$bbsiq$bbsiq_ben_ext_mean
+  
+  dat$bbsiq$bbsiq_ratio_mean <- rowMeans(dat$bbsiq[, c("bbsiq_int_ratio", "bbsiq_ext_ratio")], na.rm = TRUE)
+  
+  return(dat)
+}
 
-flt_dat$bbsiq$bbsiq_ratio_mean <- rowMeans(flt_dat$bbsiq[, c("bbsiq_int_ratio", "bbsiq_ext_ratio")], na.rm = TRUE)
+  # Run function for Sets A and B
+
+flt_dat   <- compute_bbsiq_scores(flt_dat)
+flt_dat_b <- compute_bbsiq_scores(flt_dat_b)
 
 # ---------------------------------------------------------------------------- #
 # Extract clean data into separate tables ----
@@ -1614,6 +1750,12 @@ for (i in 1:length(sep_dat)) {
 # ---------------------------------------------------------------------------- #
 # Compare datasets ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Continue below for Set B
+
+
+
+
 
 # Define lists with corresponding tables
 
