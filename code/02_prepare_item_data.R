@@ -3,6 +3,13 @@
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
+# TODO: Review "https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/blob/master/Data%20Cleaning/R34.ipynb"
+# against present cleaning steps, with eye toward any changes to session in OASIS table
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
 # Notes ----
 # ---------------------------------------------------------------------------- #
@@ -1914,6 +1921,17 @@ view_oa <- function(participant_id) {
 
   # Likely more not shown above
 
+  # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
+  # was assessed at every time point and "rr" was assessed at fewer time points. 
+  # The session dates are inconsistent between these tables.
+
+flt_dat_comp_rest_oa_sessions <- 
+  flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% discrep_ids,
+                       c("participant_id", "date_as_POSIXct", "session_only")]
+flt_dat_comp_rest_rr_sessions <- 
+  flt_dat_comp_rest$rr[flt_dat_comp_rest$rr$participant_id %in% discrep_ids, 
+                       c("participant_id", "date_as_POSIXct", "session_only")]
+
 
 
 
@@ -2059,15 +2077,24 @@ view_oa_b <- function(participant_id) {
   View(merge_oa_b[merge_oa_b$participant_id     == participant_id, ])
 }
 
+  # Run function
+
 # view_oa_b(431) # Scores same but sessions mismatch
 # view_oa_b(434) # Scores same but sessions mismatch
 # view_oa_b(449) # Scores same but sessions mismatch
 
-# Likely more not shown above
+  # Likely more not shown above
 
+  # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
+  # was assessed at every time point and "rr" was assessed at fewer time points.
+  # The session dates are consistent across tables.
 
-
-
+flt_dat_comp_rest_b_oa_sessions <- 
+  flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% discrep_ids_b,
+                         c("participant_id", "date_as_POSIXct", "session_only")]
+flt_dat_comp_rest_b_rr_sessions <- 
+  flt_dat_comp_rest_b$rr[flt_dat_comp_rest_b$rr$participant_id %in% discrep_ids_b, 
+                         c("participant_id", "date_as_POSIXct", "session_only")]
 
 # Use natural join to restrict to shared time points for "rr" table. All scores
 # are the same when rounded to 9 decimal places.
