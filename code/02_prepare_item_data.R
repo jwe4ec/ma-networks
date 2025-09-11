@@ -531,24 +531,6 @@ for (i in 1:length(sel_dat)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Compare numbers of participants in Set A and counted in "R34.ipynb" ----
-# ---------------------------------------------------------------------------- #
-
-# Extract numbers of unique participants by table listed for raw data in "R34.ipynb" 
-# and in corresponding tables in Set A
-
-r34.ipynb_Ns <- c(bbsiq = 1417, dass21_as = 1865, dass21_ds = 1356, demographic = 1741,
-                  oa = 1413, participant = 1971, rr = 1382, task_log = 1390)
-
-set_a_Ns <- sapply(sel_dat, function(x) length(unique(x$participant_id)))
-names(set_a_Ns)[names(set_a_Ns) == "participant_export_dao"] <- "participant"
-set_a_Ns_comp <- set_a_Ns[names(set_a_Ns) %in% names(r34.ipynb_Ns)]
-
-# "R34.ipynb" lists more participants in all tables except "demographic" and "task_log"
-
-set_a_vs_r34.ipynb_Ns <- set_a_Ns_comp - r34.ipynb_Ns
-
-# ---------------------------------------------------------------------------- #
 # Identify potential columns that index participants in Set B ----
 # ---------------------------------------------------------------------------- #
 
@@ -625,6 +607,49 @@ sel_dat_b$dd$participantRSA          <- NULL
 sel_dat_b$demographic$participantRSA <- NULL
 sel_dat_b$qol$participantRSA         <- NULL
 sel_dat_b$rr$participantRSA          <- NULL
+
+# ---------------------------------------------------------------------------- #
+# Compare numbers of participants in Sets A and B and those counted in "R34.ipynb" ----
+# ---------------------------------------------------------------------------- #
+
+# Extract numbers of unique participants by table listed for raw data in "R34.ipynb" 
+# and in tables in Sets A and B
+
+r34.ipynb_Ns <- c(bbsiq = 1417, dass21_as = 1865, dass21_ds = 1356, demographic = 1741,
+                  oa = 1413, participant = 1971, rr = 1382, task_log = 1390)
+
+set_a_Ns <- sapply(sel_dat,   function(x) length(unique(x$participant_id)))
+set_b_Ns <- sapply(sel_dat_b, function(x) length(unique(x$participant_id)))
+
+# Define function to compare
+
+compare_Ns <- function(Ns1, Ns2) {
+  shared_tbls <- intersect(names(Ns1), names(Ns2))
+  
+  Ns1_comp <- Ns1[names(Ns1) %in% shared_tbls]
+  Ns2_comp <- Ns2[names(Ns2) %in% shared_tbls]
+  
+  Ns1_comp_vs_Ns2_comp <- Ns1_comp - Ns2_comp
+  
+  return(Ns1_comp_vs_Ns2_comp)
+}
+
+# Run function
+
+  # "R34.ipynb" lists more participants for all corresponding tables in Set A except 
+  # for "demographic" and "task_log" tables
+
+names(set_a_Ns)[names(set_a_Ns) == "participant_export_dao"] <- "participant"
+
+(set_a_vs_r34.ipynb_Ns <- compare_Ns(set_a_Ns, r34.ipynb_Ns))
+
+  # "R34.ipynb" lists far more participants for all corresponding tables in Set B
+
+(set_b_vs_r34.ipynb_Ns <- compare_Ns(set_b_Ns, r34.ipynb_Ns))
+
+  # Set A contains far more participants than Set B
+
+(set_a_vs_set_b_Ns <- compare_Ns(set_a_Ns, set_b_Ns))
 
 # ---------------------------------------------------------------------------- #
 # Identify and recode time stamp and date columns in Set A ----
@@ -981,9 +1006,26 @@ cln_participant_ids <- cln_dat$participantID
 
 length(cln_participant_ids) == 807
 
-# Confirm that none are test accounts per "notes.csv"
+# Confirm that none are test accounts
 
-sum(cln_dat$participantID %in% notes$participant_id[notes$test == 1]) == 0
+  # Test accounts manually identified per scripts "R34_cleaning_script.R" and 
+  # "sonia-consort diagram.R" on "MT-Data-ManagingAnxietyStudy" GitHub
+
+test_manual <- c(1, 2, 4, 5, 441, 450, 538, 540, 578, 610, 624, 718, 767, 753,
+                 775, 847, 848, 926, 971, 1014, 1020:1026, 1031:1033, 1038, 1058, 
+                 1187, 1213, 1215, 1220:1226, 1232, 1263, 1270, 1288, 1309, 1338, 
+                 1407, 1486:1488, 1490, 1499, 1500, 1608, 1631, 1740, 1767, 
+                 1817:1819, 1831, 1899, 1900, 1968, 1971)
+
+  # Test accounts per "notes.csv", all of which are already in "test_consort"
+
+test_notes <- notes$participant_id[notes$test %in% 1]
+
+all(test_notes %in% test_manual)
+
+  # Check for test accounts
+
+sum(cln_dat$participantID %in% c(test_manual, test_notes)) == 0
 
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
 # table in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists 
@@ -1075,8 +1117,8 @@ row.names(test2_tmp) <- 1:nrow(test2_tmp)
 identical(test1[, c("participant_id", "session_only", dass21_as_items)],
           test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
 
-# TODO: Consider adding "oa" and "dass21_as" (and potentially other) data from 
-# Set B to raw data files from Set A
+# TODO: Consider adding "oa" and "dass21_as" (and potentially other, if different) data from 
+# Set B to raw data files from Set A (though numbers of rows in other tables are the same)
 
 
 
