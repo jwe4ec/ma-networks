@@ -3,13 +3,6 @@
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
-# TODO: Review "https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/blob/master/Data%20Cleaning/R34.ipynb"
-# against present cleaning steps, with eye toward any changes to session in OASIS table
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
 # Notes ----
 # ---------------------------------------------------------------------------- #
@@ -43,6 +36,9 @@
 #    the R34 server and that she obtained them from Claudia Calicho-Mamani
 
 # 3. A partial set of raw data files obtained from Sonia Baee on 1/18/2023 (called Set B)
+
+# It also imports "notes.csv" obtained from Sonia Baee on 11/24/2021. A "notes.csv" is
+# loaded by the "R34.ipynb" script on GitHub (whose last commit "b3c370b" was 4/16/2020).
 
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
@@ -96,6 +92,12 @@ names(raw_dat_son_a) <- tools::file_path_sans_ext(raw_filenames_son_a)
 names(raw_dat_son_b) <- tools::file_path_sans_ext(raw_filenames_son_b)
 
 # ---------------------------------------------------------------------------- #
+# Import "notes.csv" from Sonia ----
+# ---------------------------------------------------------------------------- #
+
+notes <- read.csv("./data/source/notes_from_sonia/notes.csv")
+
+# ---------------------------------------------------------------------------- #
 # Decide which data to use for network analyses ----
 # ---------------------------------------------------------------------------- #
 
@@ -113,6 +115,37 @@ cln_dat <- dat_main_lg_scales
 # TODO: Also consider Set B
 
 raw_dat_b <- raw_dat_son_b
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Clean "notes.csv" ----
+# ---------------------------------------------------------------------------- #
+
+# Rename columns (per "R34.ipynb" script)
+
+names(notes)[names(notes) == "final4.participantID"]             <- "CL"
+names(notes)[names(notes) == "Julie_participants.participantID"] <- "SB"
+
+  # Also rename "participantID" (not done in "R34.ipynb")
+
+names(notes)[names(notes) == "participantID"] <- "participant_id"
+
+# Create test account column (per "R34.ipynb" script)
+
+notes$test <- ifelse(notes$notes == "Test account found after original analyses were run", 1, 0)
+
+# Identify server error IDs
+
+note_server_error <- "Not included in original dataset due to server error"
+
+server_error_pids <- notes$participantID[is.na(notes$SB) & 
+                                           (!is.na(notes$notes) & notes$notes == note_server_error)]
+length(server_error_pids) == 36
+
+# TODO: Continue reviewing "R34.ipynb"
 
 
 
@@ -464,6 +497,8 @@ sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participan
 # Define "participant_id" across tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
+# The following decisions are also consistent with "R34.ipynb"
+
 # In "participant_export_dao" table, rename "id" as "participant_id", which is
 # the only column that can index participants
 
@@ -494,6 +529,24 @@ for (i in 1:length(sel_dat)) {
     names(sel_dat[[i]])[names(sel_dat[[i]]) == "participantRSA"] <- "participant_id" 
   }
 }
+
+# ---------------------------------------------------------------------------- #
+# Compare numbers of participants in Set A and counted in "R34.ipynb" ----
+# ---------------------------------------------------------------------------- #
+
+# Extract numbers of unique participants by table listed for raw data in "R34.ipynb" 
+# and in corresponding tables in Set A
+
+r34.ipynb_Ns <- c(bbsiq = 1417, dass21_as = 1865, dass21_ds = 1356, demographic = 1741,
+                  oa = 1413, participant = 1971, rr = 1382, task_log = 1390)
+
+set_a_Ns <- sapply(sel_dat, function(x) length(unique(x$participant_id)))
+names(set_a_Ns)[names(set_a_Ns) == "participant_export_dao"] <- "participant"
+set_a_Ns_comp <- set_a_Ns[names(set_a_Ns) %in% names(r34.ipynb_Ns)]
+
+# "R34.ipynb" lists more participants in all tables except "demographic" and "task_log"
+
+set_a_vs_r34.ipynb_Ns <- set_a_Ns_comp - r34.ipynb_Ns
 
 # ---------------------------------------------------------------------------- #
 # Identify potential columns that index participants in Set B ----
@@ -725,12 +778,6 @@ sum(short_date_pids_oa        %in% sel_dat$participant_export_dao$participant_id
 
   # Comparison with participants subject at one point to server error
 
-server_error_pids <- c(1912, 1915, 1917, 1918, 1919, 1920, 1922, 1923, 1925, 1927, 1928, 1929, 
-                       1932, 1933, 1934, 1938, 1939, 1940, 1942, 1943, 1946, 1947, 1948, 1953, 
-                       1956, 1958, 1959, 1960, 1961, 1963, 1964, 1965, 1966, 1967, 1969, 1972)
-
-length(server_error_pids) == 36
-
 all(server_error_pids %in% short_date_pids_dass21_as)
 all(server_error_pids %in% short_date_pids_oa)
 
@@ -933,6 +980,10 @@ for (i in 1:length(sel_dat_b)) {
 cln_participant_ids <- cln_dat$participantID
 
 length(cln_participant_ids) == 807
+
+# Confirm that none are test accounts per "notes.csv"
+
+sum(cln_dat$participantID %in% notes$participant_id[notes$test == 1]) == 0
 
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
 # table in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists 
@@ -1306,9 +1357,9 @@ report_dups_list_b(flt_dat_b) # No duplicates
 # ---------------------------------------------------------------------------- #
 
 # TODO: Describe what was done in R34 main outcomes paper. Script "R34.ipynb"
-# seems to inadequately sort by "date" when keeping most recent entry, but see
-# if it's an issue once the scale scores are regenerated (not an issue for the
-# participant below).
+# seems to inadequately sort by "date" (does not first convert to "datetime") 
+# when  keeping most recent entry, but see if it's an issue once the scale scores 
+# are regenerated (not an issue for the participant below).
 
 # test <- flt_dat$oa[flt_dat$oa$participant_id == 620, ]
 # View(test[order(test$id), ])
