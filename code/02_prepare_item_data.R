@@ -1748,14 +1748,29 @@ for (i in 1:length(sep_dat)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Compare datasets ----
+# Compute "session_only" in clean data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Continue below for Set B
+# Given that "session" column in "dass21_as" table may contain both session information 
+# and eligibility status (unlike original "session" column in Set A, which contains both 
+# "ELIGIBLE" and "" entries, original "session" column in clean data has no "" entries), 
+# create new column "session_only" with "ELIGIBLE" entries of original "session" column 
+# recoded as "Eligibility" (to reflect that these were collected at eligibility screener).
 
+for (i in 1:length(sep_dat)) {
+  if (!(names(sep_dat[i]) %in% c("demographic", "participant"))) {
+    if (names(sep_dat[i]) == "dass_as") {
+      sep_dat[[i]][, "session_only"] <- sep_dat[[i]][, "session"]
+      sep_dat[[i]][sep_dat[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
+    } else {
+      names(sep_dat[[i]])[names(sep_dat[[i]]) == "session"] <- "session_only"
+    }
+  }
+}
 
-
-
+# ---------------------------------------------------------------------------- #
+# Compare clean data and Set A ----
+# ---------------------------------------------------------------------------- #
 
 # Define lists with corresponding tables
 
@@ -1781,72 +1796,66 @@ length_diff_participant_ids <- function(x, y) {
 mapply(length_diff_participant_ids, flt_dat_comp, sep_dat_comp)
 mapply(length_diff_participant_ids, sep_dat_comp, flt_dat_comp)
 
-# Restrict to shared participant_ids in each table and confirm that is so
+# Restrict to shared "participant_id"s in each table and confirm that is so
 
-flt_dat_comp_rest <- vector("list", length(flt_dat_comp))
-sep_dat_comp_rest <- vector("list", length(sep_dat_comp))
+  # Define function to restrict to shared "participant_id"s in each table
 
-names(flt_dat_comp_rest) <- names(flt_dat_comp)
-names(sep_dat_comp_rest) <- names(sep_dat_comp)
-
-for (i in 1:length(flt_dat_comp)) {
-  shared_participant_ids <- intersect(flt_dat_comp[[i]][, "participant_id"], 
-                                      sep_dat_comp[[i]][, "participant_id"])
-  flt_dat_comp_rest[[i]] <- flt_dat_comp[[i]][flt_dat_comp[[i]][, "participant_id"] %in% 
-                                                shared_participant_ids, ]
-  sep_dat_comp_rest[[i]] <- sep_dat_comp[[i]][sep_dat_comp[[i]][, "participant_id"] %in% 
-                                                shared_participant_ids, ]
+restrict_to_shared_ps <- function(dat1, dat2) {
+  dat1_rest <- vector("list", length(dat1))
+  dat2_rest <- vector("list", length(dat2))
+  
+  names(dat1_rest) <- names(dat1)
+  names(dat2_rest) <- names(dat2)
+  
+  for (i in 1:length(dat1)) {
+    shared_participant_ids <- intersect(dat1[[i]][, "participant_id"], 
+                                        dat2[[i]][, "participant_id"])
+    dat1_rest[[i]] <- dat1[[i]][dat1[[i]][, "participant_id"] %in% shared_participant_ids, ]
+    dat2_rest[[i]] <- dat2[[i]][dat2[[i]][, "participant_id"] %in% shared_participant_ids, ]
+  }
+  
+  ls_rest <- list(dat1_rest, dat2_rest)
+  
+  return(ls_rest)
 }
+
+  # Run function
+
+ls_rest <- restrict_to_shared_ps(flt_dat_comp, sep_dat_comp)
+flt_dat_comp_rest <- ls_rest[[1]]
+sep_dat_comp_rest <- ls_rest[[2]]
+
+  # Confirm
 
 all(mapply(length_diff_participant_ids, flt_dat_comp_rest, sep_dat_comp_rest) == 0)
 all(mapply(length_diff_participant_ids, sep_dat_comp_rest, flt_dat_comp_rest) == 0)
 
 # Sort tables by "participant_id" and "session"
 
-for (i in 1:length(flt_dat_comp_rest)) {
-  if ("session_only" %in% names(flt_dat_comp_rest[[i]])) {
-    flt_dat_comp_rest[[i]] <- 
-      flt_dat_comp_rest[[i]][order(flt_dat_comp_rest[[i]][, "participant_id"],
-                                   flt_dat_comp_rest[[i]][, "session_only"]), ]
-  } else {
-    flt_dat_comp_rest[[i]] <- 
-      flt_dat_comp_rest[[i]][order(flt_dat_comp_rest[[i]][, "participant_id"]), ]
+  # Define function to sort by participant and then (if present) by a session column
+
+sort_by_part_then_session <- function(dat, part_col, session_col) {
+  for (i in 1:length(dat)) {
+    if (session_col %in% names(dat[[i]])) {
+      dat[[i]] <- dat[[i]][order(dat[[i]][, part_col],
+                                 dat[[i]][, session_col]), ]
+    } else {
+      dat[[i]] <- dat[[i]][order(dat[[i]][, part_col]), ]
+    }
   }
+  
+  return(dat)
 }
 
-for (i in 1:length(sep_dat_comp_rest)) {
-  if ("session" %in% names(sep_dat_comp_rest[[i]])) {
-    sep_dat_comp_rest[[i]] <- 
-      sep_dat_comp_rest[[i]][order(sep_dat_comp_rest[[i]][, "participant_id"],
-                                   sep_dat_comp_rest[[i]][, "session"]), ]
-  } else {
-    sep_dat_comp_rest[[i]] <- 
-      sep_dat_comp_rest[[i]][order(sep_dat_comp_rest[[i]][, "participant_id"]), ]
-  }
-}
+  # Run function
+
+flt_dat_comp_rest <- sort_by_part_then_session(flt_dat_comp_rest, "participant_id", "session_only")
+sep_dat_comp_rest <- sort_by_part_then_session(sep_dat_comp_rest, "participant_id", "session_only")
 
 # Compare numbers of observations. They differ between datasets.
 
-for (i in 1:length(flt_dat_comp_rest)) {
-  print(paste0(names(flt_dat_comp_rest[i]), " has ", 
-               nrow(flt_dat_comp_rest[[i]]), " rows in raw data and ",
-               nrow(sep_dat_comp_rest[[i]]), " rows in clean data"))
-}
-
-# Compute "session_only" in clean dataset
-
-for (i in 1:length(sep_dat_comp_rest)) {
-  if (!(names(sep_dat_comp_rest[i]) %in% c("demographic", "participant"))) {
-    if (names(sep_dat_comp_rest[i]) == "dass_as") {
-      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <- "session_and_eligibility_status"
-      
-      sep_dat_comp_rest[[i]][, "session_only"] <- sep_dat_comp_rest[[i]][, "session_and_eligibility_status"]
-      sep_dat_comp_rest[[i]][sep_dat_comp_rest[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
-    } else {
-      names(sep_dat_comp_rest[[i]])[names(sep_dat_comp_rest[[i]]) == "session"] <- "session_only"
-    }
-  }
-}
+set_a_vs_cln_nrow <- data.frame(set_a = sapply(flt_dat_comp_rest, nrow),
+                                clean = sapply(sep_dat_comp_rest, nrow))
 
 # TODO: Use natural join to restrict to shared time points for "oa" table. The
 # discrepancies for 19 participants seem due to potential recoding of "session"
@@ -1858,123 +1867,52 @@ merge_oa <- merge(flt_dat_comp_rest$oa,
                   by = c("participant_id", "session_only"),
                   all = FALSE)
 
-sum(merge_oa$oa_total == merge_oa$oasis_score)
-sum(merge_oa$oa_total != merge_oa$oasis_score)
+sum(merge_oa$oa_total == merge_oa$oasis_score) == 2474
+sum(merge_oa$oa_total != merge_oa$oasis_score) == 59
 
-discrep_ids <- merge_oa[merge_oa$oa_total != merge_oa$oasis_score, ]$participant_id
-length(unique(discrep_ids))
+discrep_ids <- unique(merge_oa[merge_oa$oa_total != merge_oa$oasis_score, ]$participant_id)
+length(discrep_ids) == 19
 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 14, ]) # Missing S5 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 14, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 14, ])
-# View(merge_oa[merge_oa$participant_id     == 14, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 16, ]) # Missing S5 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 16, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 16, ])
-# View(merge_oa[merge_oa$participant_id     == 16, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 17, ]) # Missing S4 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 17, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 17, ])
-# View(merge_oa[merge_oa$participant_id     == 17, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 421, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 421, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 421, ])
-# View(merge_oa[merge_oa$participant_id     == 421, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 425, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 425, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 425, ])
-# View(merge_oa[merge_oa$participant_id     == 425, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 432, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 432, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 432, ])
-# View(merge_oa[merge_oa$participant_id     == 432, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 445, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 445, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 445, ])
-# View(merge_oa[merge_oa$participant_id     == 445, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 485, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 485, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 485, ])
-# View(merge_oa[merge_oa$participant_id     == 485, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 532, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 532, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 532, ])
-# View(merge_oa[merge_oa$participant_id     == 532, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 539, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 539, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 539, ])
-# View(merge_oa[merge_oa$participant_id     == 539, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 541, ]) # Missing S1 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 541, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 541, ])
-# View(merge_oa[merge_oa$participant_id     == 541, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 552, ]) # Missing S1 but has two S4
-# View(flt_dat$oa[flt_dat$oa$participant_id == 552, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 552, ])
-# View(merge_oa[merge_oa$participant_id     == 552, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 582, ]) # Missing S1 but has two S7
-# View(flt_dat$oa[flt_dat$oa$participant_id == 582, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 582, ])
-# View(merge_oa[merge_oa$participant_id     == 582, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 598, ]) # Missing S1 but has two S5
-# View(flt_dat$oa[flt_dat$oa$participant_id == 598, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 598, ])
-# View(merge_oa[merge_oa$participant_id     == 598, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 625, ]) # Missing S1 but has two S4
-# View(flt_dat$oa[flt_dat$oa$participant_id == 625, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 625, ])
-# View(merge_oa[merge_oa$participant_id     == 625, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 627, ]) # Missing S1 but has two S3
-# View(flt_dat$oa[flt_dat$oa$participant_id == 627, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 627, ])
-# View(merge_oa[merge_oa$participant_id     == 627, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 644, ]) # Missing S1 but has two S3
-# View(flt_dat$oa[flt_dat$oa$participant_id == 644, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 644, ])
-# View(merge_oa[merge_oa$participant_id     == 644, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 662, ]) # Missing S1 but has two S3
-# View(flt_dat$oa[flt_dat$oa$participant_id == 662, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 662, ])
-# View(merge_oa[merge_oa$participant_id     == 662, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 684, ]) # Missing S1 but has two S3
-# View(flt_dat$oa[flt_dat$oa$participant_id == 684, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 684, ])
-# View(merge_oa[merge_oa$participant_id     == 684, ])
+  # Define function to view "oa" table from relevant lists for given participant in Set A
 
-# 41 duplicated rows for table: oa
-# With these ' participant_id ':  8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 
-# 532, 539, 541, 552, 582, 590, 597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 
-# 662, 669, 674, 683, 684, 687, 701, 708, 710, 712, 719, 723, 727, 731, 745
+view_oa <- function(participant_id) {
+  View(sel_dat$oa[sel_dat$oa$participant_id == participant_id, ])
+  View(flt_dat$oa[flt_dat$oa$participant_id == participant_id, ])
+  View(sep_dat$oa[sep_dat$oa$participant_id == participant_id, ])
+  View(merge_oa[merge_oa$participant_id     == participant_id, ])
+}
 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 8, ]) # Missing S7 but has two S8
-# View(flt_dat$oa[flt_dat$oa$participant_id == 8, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 8, ])
-# View(merge_oa[merge_oa$participant_id     == 8, ])
-# 
-# View(sel_dat$oa[sel_dat$oa$participant_id == 600, ]) # Missing S1 but has two S2
-# View(flt_dat$oa[flt_dat$oa$participant_id == 600, ])
-# View(sep_dat$oa[sep_dat$oa$participant_id == 600, ])
-# View(merge_oa[merge_oa$participant_id     == 600, ])
+  # Run function
 
-# Likely more not shown above
+# view_oa(14)  # Missing S5 but has two S8
+# view_oa(16)  # Missing S5 but has two S8
+# view_oa(17)  # Missing S4 but has two S8
+# view_oa(421) # Missing S1 but has two S8
+# view_oa(425) # Missing S1 but has two S8
+# view_oa(432) # Missing S1 but has two S8
+# view_oa(445) # Missing S1 but has two S8
+# view_oa(485) # Missing S1 but has two S8
+# view_oa(532) # Missing S1 but has two S8
+# view_oa(539) # Missing S1 but has two S8
+# view_oa(541) # Missing S1 but has two S8
+# view_oa(552) # Missing S1 but has two S4
+# view_oa(582) # Missing S1 but has two S7
+# view_oa(598) # Missing S1 but has two S5
+# view_oa(625) # Missing S1 but has two S4
+# view_oa(627) # Missing S1 but has two S3
+# view_oa(644) # Missing S1 but has two S3
+# view_oa(662) # Missing S1 but has two S3
+# view_oa(684) # Missing S1 but has two S3
+
+  # 41 duplicated rows for table: oa
+  # With these ' participant_id ':  8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 
+  # 532, 539, 541, 552, 582, 590, 597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 
+  # 662, 669, 674, 683, 684, 687, 701, 708, 710, 712, 719, 723, 727, 731, 745
+
+# view_oa(8)   # Missing S7 but has two S8
+# view_oa(600) # Missing S1 but has two S2
+
+  # Likely more not shown above
 
 
 
@@ -2012,41 +1950,152 @@ multiple_oa_entry_participant_ids <-
     597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
     687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
 
-merge_oa_rest2 <- merge_oa[!(merge_oa$participant_id %in% 
-                               multiple_oa_entry_participant_ids), ]
-merge_rr_rest2 <- merge_rr[!(merge_rr$participant_id %in%
-                               multiple_oa_entry_participant_ids), ]
+merge_oa_rest2 <- merge_oa[!(merge_oa$participant_id %in% multiple_oa_entry_participant_ids), ]
+merge_rr_rest2 <- merge_rr[!(merge_rr$participant_id %in% multiple_oa_entry_participant_ids), ]
 
-participant_raw_rest2 <- 
-  flt_dat_comp_rest$participant_export_dao[!(flt_dat_comp_rest$participant_export_dao %in%
-                                               multiple_oa_entry_participant_ids), ]
-participant_cln_rest2 <- 
-  sep_dat_comp_rest$participant[!(sep_dat_comp_rest$participant %in%
-                                    multiple_oa_entry_participant_ids), ]
+participant_raw_rest2 <- flt_dat_comp_rest$participant_export_dao[!(flt_dat_comp_rest$participant_export_dao %in%
+                                                                      multiple_oa_entry_participant_ids), ]
+participant_cln_rest2 <- sep_dat_comp_rest$participant[!(sep_dat_comp_rest$participant %in%
+                                                           multiple_oa_entry_participant_ids), ]
 
-demographics_raw_rest2 <- 
-  flt_dat_comp_rest$demographic[!(flt_dat_comp_rest$demographic$participant_id %in%
-                                    multiple_oa_entry_participant_ids), ]
-demographics_cln_rest2 <- 
-  sep_dat_comp_rest$demographic[!(sep_dat_comp_rest$demographic$participant_id %in%
-                                    multiple_oa_entry_participant_ids), ]
+demographics_raw_rest2 <- flt_dat_comp_rest$demographic[!(flt_dat_comp_rest$demographic$participant_id %in%
+                                                            multiple_oa_entry_participant_ids), ]
+demographics_cln_rest2 <- sep_dat_comp_rest$demographic[!(sep_dat_comp_rest$demographic$participant_id %in%
+                                                            multiple_oa_entry_participant_ids), ]
 
   # Credibility table is not in clean data, so obtain it from raw data ("flt_dat") above
   # but still remove participants with multiple entries in "oa" table
 
-credibility_raw_rest2 <- flt_dat$credibility[!(flt_dat$credibility$participant_id %in%
+credibility_raw_rest2 <- flt_dat$credibility[!(flt_dat$credibility$participant_id %in% 
                                                  multiple_oa_entry_participant_ids), ]
+
+  # All OA scores are now the same
 
 sum(merge_oa_rest2$oa_total != merge_oa_rest2$oasis_score) == 0
 
-all(sum(round(merge_rr_rest2$rr_nf_mean, 4) != round(merge_rr_rest2$RR_negative_nf_score, 4)) == 0,
-    sum(round(merge_rr_rest2$rr_ns_mean, 4) != round(merge_rr_rest2$RR_negative_ns_score, 4)) == 0,
-    sum(round(merge_rr_rest2$rr_pf_mean, 4) != round(merge_rr_rest2$RR_positive_pf_score, 4)) == 0,
-    sum(round(merge_rr_rest2$rr_ps_mean, 4) != round(merge_rr_rest2$RR_positive_ps_score, 4)) == 0)
-
 # Compare CBM condition
 
-sum(participant_raw_rest2$cbmCondition != participant_cln_rest2$participant_cbm_condition)
+sum(participant_raw_rest2$cbmCondition != participant_cln_rest2$participant_cbm_condition) == 0
+
+# ---------------------------------------------------------------------------- #
+# Compare clean data and Set B ----
+# ---------------------------------------------------------------------------- #
+
+# Define lists with corresponding tables
+
+flt_dat_comp_b <- flt_dat_b[c("bbsiq", "dass21_as", "dass21_ds", "demographic", "oa", "rr")]
+sep_dat_comp_b <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic", "oa", "rr")]
+
+# Using functions "diff_participant_ids" and "length_diff_participant_ids" defined
+# above for Set A, compare "participant_id"s for each table. "bbsiq" table in Set B 
+# has 1 more participant (480) than that in clean data. By contrast, "oa" table in 
+# clean data has 1 more participant (1866) than that in Set B.
+
+mapply(diff_participant_ids, flt_dat_comp_b, sep_dat_comp_b)
+mapply(diff_participant_ids, sep_dat_comp_b, flt_dat_comp_b)
+
+mapply(length_diff_participant_ids, flt_dat_comp_b, sep_dat_comp_b)
+mapply(length_diff_participant_ids, sep_dat_comp_b, flt_dat_comp_b)
+
+# Restrict to shared participant_ids in each table and confirm that is so
+
+  # Run function defined for Set A
+
+ls_rest_b <- restrict_to_shared_ps(flt_dat_comp_b, sep_dat_comp_b)
+flt_dat_comp_rest_b <- ls_rest_b[[1]]
+sep_dat_comp_rest_b <- ls_rest_b[[2]]
+
+  # Confirm
+
+all(mapply(length_diff_participant_ids, flt_dat_comp_rest_b, sep_dat_comp_rest_b) == 0)
+all(mapply(length_diff_participant_ids, sep_dat_comp_rest_b, flt_dat_comp_rest_b) == 0)
+
+# Sort tables by participant and (if present) then session using function defined above for Set A
+
+flt_dat_comp_rest_b <- sort_by_part_then_session(flt_dat_comp_rest_b, "participant_id", "session_only")
+sep_dat_comp_rest_b <- sort_by_part_then_session(sep_dat_comp_rest_b, "participant_id", "session_only")
+
+# Compare numbers of observations. They differ between datasets.
+
+set_b_vs_cln_nrow <- data.frame(set_b = sapply(flt_dat_comp_rest_b, nrow),
+                                clean = sapply(sep_dat_comp_rest_b, nrow))
+
+  # TODO: Compare to Set A vs. clean data
+
+set_a_vs_cln_nrow
+
+
+
+
+
+# TODO: Use natural join to restrict to shared time points for "oa" table. The
+# discrepancies for 24 participants seem due to INSERT
+
+
+
+
+
+merge_oa_b <- merge(flt_dat_comp_rest_b$oa, 
+                    sep_dat_comp_rest_b$oa,
+                    by = c("participant_id", "session_only"),
+                    all = FALSE)
+
+sum(merge_oa_b$oa_total == merge_oa_b$oasis_score) == 2512
+sum(merge_oa_b$oa_total != merge_oa_b$oasis_score) == 38
+
+discrep_ids_b <- unique(merge_oa_b[merge_oa_b$oa_total != merge_oa_b$oasis_score, ]$participant_id)
+length(discrep_ids_b) == 24
+
+  # None of these discrepant IDs are in Set A
+
+length(intersect(discrep_ids, discrep_ids_b)) == 0
+
+  # Define function to view "oa" table from relevant lists for given participant in Set B
+
+view_oa_b <- function(participant_id) {
+  View(sel_dat_b$oa[sel_dat_b$oa$participant_id == participant_id, ])
+  View(flt_dat_b$oa[flt_dat_b$oa$participant_id == participant_id, ])
+  View(sep_dat$oa[sep_dat$oa$participant_id     == participant_id, ])
+  View(merge_oa_b[merge_oa_b$participant_id     == participant_id, ])
+}
+
+# view_oa_b(431) # Scores same but sessions mismatch
+# view_oa_b(434) # Scores same but sessions mismatch
+# view_oa_b(449) # Scores same but sessions mismatch
+
+# Likely more not shown above
+
+
+
+
+
+# Use natural join to restrict to shared time points for "rr" table. All scores
+# are the same when rounded to 9 decimal places.
+
+merge_rr_b <- merge(flt_dat_comp_rest_b$rr, 
+                    sep_dat_comp_rest_b$rr,
+                    by = c("participant_id", "session_only"),
+                    all = FALSE)
+
+all(sum(round(merge_rr_b$rr_nf_mean, 9) != round(merge_rr_b$RR_negative_nf_score, 9)) == 0,
+    sum(round(merge_rr_b$rr_ns_mean, 9) != round(merge_rr_b$RR_negative_ns_score, 9)) == 0,
+    sum(round(merge_rr_b$rr_pf_mean, 9) != round(merge_rr_b$RR_positive_pf_score, 9)) == 0,
+    sum(round(merge_rr_b$rr_ps_mean, 9) != round(merge_rr_b$RR_positive_ps_score, 9)) == 0)
+
+# Use natural join to restrict to shared time points for "bbsiq" table. All scores
+# are the same when rounded to 7 decimal places.
+
+merge_bbsiq_b <- merge(flt_dat_comp_rest_b$bbsiq, 
+                       sep_dat_comp_rest_b$bbsiq,
+                       by = c("participant_id", "session_only"),
+                       all = FALSE)
+
+all(sum(round(merge_bbsiq_b$bbsiq_int_ratio, 7) != round(merge_bbsiq_b$bbsiq_physical_score, 7)) == 0,
+    sum(round(merge_bbsiq_b$bbsiq_ext_ratio, 7) != round(merge_bbsiq_b$bbsiq_threat_score,   7)) == 0)
+
+# Although "imagery_prime" contains "prime" condition, no table in Set B seems to
+# indicate CBM condition. Perhaps it could be derived from the "trial_dao" table,
+# though, by computing the proportion of positive scenarios (see "positive" column)
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
