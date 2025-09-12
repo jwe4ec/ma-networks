@@ -141,8 +141,8 @@ notes$test <- ifelse(notes$notes == "Test account found after original analyses 
 
 note_server_error <- "Not included in original dataset due to server error"
 
-server_error_pids <- notes$participantID[is.na(notes$SB) & 
-                                           (!is.na(notes$notes) & notes$notes == note_server_error)]
+server_error_pids <- notes$participant_id[is.na(notes$SB) & 
+                                            (!is.na(notes$notes) & notes$notes == note_server_error)]
 length(server_error_pids) == 36
 
 # TODO: Continue reviewing "R34.ipynb"
@@ -150,6 +150,205 @@ length(server_error_pids) == 36
 
 
 
+
+# ---------------------------------------------------------------------------- #
+# Extract clean data into separate tables ----
+# ---------------------------------------------------------------------------- #
+
+# Remove renamed columns, computed columns (besides "score"-related columns), and 
+# dummy-coded condition columns, which were all defined in "Script1_DataPrep.R", 
+# which is on the OSF project for the main outcomes paper (https://osf.io/5wscm/)
+
+renamed_cols <- c("RRNegative_PRE", "RRNegative_SESSION3", "RRNegative_SESSION6",
+                  "RRPositive_PRE", "RRPositive_SESSION3", "RRPositive_SESSION6",
+                  "OASISScore_PRE", "OASISScore_SESSION1", "OASISScore_SESSION2",
+                  "OASISScore_SESSION3", "OASISScore_SESSION4", "OASISScore_SESSION5",
+                  "OASISScore_SESSION6")
+computed_cols <- c("negativeBBSIQ_PRE", "negativeBBSIQ_SESSION3", "negativeBBSIQ_SESSION6")
+dummy_cols <- c("ANXIETY", "POSITIVE", "FIFTY_FIFTY", "POSITIVEANXIETY",
+                "POSITIVENEUTRAL", "FIFTY_FIFTYANXIETY", "FIFTY_FIFTYNEUTRAL",
+                "NONEANXIETY")
+
+cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols, computed_cols, dummy_cols))]]
+
+# Remove dropout-related columns, which seem to have been created in some version
+# of "R34.ipynb", which, albeit outdated, is in the Data Cleaning folder on GitHub
+# (https://github.com/jwe4ec/MT-Data-ManagingAnxietyStudy/tree/master/Data%20Cleaning)
+
+dropout_cols <- names(cln_dat)[grep("_dropout", names(cln_dat))]
+
+cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% dropout_cols)]]
+
+# Rename "participantID" as "participant_id"
+
+names(cln_dat)[names(cln_dat) == "participantID"] <- "participant_id"
+
+# Extract column names for separate tables
+
+bbsiq_cols       <- names(cln_dat)[grep("bbsiq_",       names(cln_dat), ignore.case = TRUE)]
+dass_as_cols     <- names(cln_dat)[grep("dass_as_",     names(cln_dat))]
+dass_ds_cols     <- names(cln_dat)[grep("dass_ds_",     names(cln_dat))]
+demographic_cols <- names(cln_dat)[grep("demographic_", names(cln_dat))]
+oa_cols          <- names(cln_dat)[grep("oasis_",       names(cln_dat), ignore.case = TRUE)]
+participant_cols <- names(cln_dat)[grep("participant",  names(cln_dat))]
+rr_cols          <- names(cln_dat)[grep("RR_",          names(cln_dat), ignore.case = TRUE)]
+
+setdiff(names(cln_dat), c(bbsiq_cols, dass_as_cols, dass_ds_cols, demographic_cols,
+                          oa_cols, participant_cols, rr_cols))
+
+# Extract data into separate tables
+
+table_cols <- list(bbsiq       = bbsiq_cols,
+                   dass_as     = dass_as_cols,
+                   dass_ds     = dass_ds_cols,
+                   demographic = demographic_cols,
+                   oa          = oa_cols,
+                   participant = participant_cols,
+                   rr          = rr_cols)
+
+sep_dat_wide <- vector("list", length = length(table_cols))
+
+for (i in 1:length(table_cols)) {
+  if ("participant_id" %in% table_cols[[i]]) {
+    sep_dat_wide[[i]] <- cln_dat[, table_cols[[i]]]
+  } else {
+    sep_dat_wide[[i]] <- cln_dat[, c("participant_id", table_cols[[i]])]
+  }
+}
+
+names(sep_dat_wide) <- names(table_cols)
+
+# ---------------------------------------------------------------------------- #
+# Convert clean data tables into long format ----
+# ---------------------------------------------------------------------------- #
+
+# Alphabetize columns of each table and then sort them by time point, retaining
+# "participant_id" as the first column
+
+for (i in 1:length(sep_dat_wide)) {
+  sep_dat_wide[[i]] <- sep_dat_wide[[i]][, sort(names(sep_dat_wide[[i]]))]
+  
+  if (names(sep_dat_wide[i]) %in% c("demographic", "participant")) {
+    sep_dat_wide[[i]] <- sep_dat_wide[[i]]
+  } else {
+    sep_dat_wide[[i]] <- 
+      sep_dat_wide[[i]][, c("participant_id",
+                            names(sep_dat_wide[[i]])[grep("ELIGIBLE", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("PRE",      names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION1", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION2", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION3", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION4", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION5", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION6", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION7", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("SESSION8", names(sep_dat_wide[[i]]))],
+                            names(sep_dat_wide[[i]])[grep("POST",     names(sep_dat_wide[[i]]))])]
+  }
+}
+
+# Identify repeated-measures columns for each score
+
+bbsiq_physical_score_cols <- names(sep_dat_wide$bbsiq)[grep("bbsiq_physical_score", names(sep_dat_wide$bbsiq))]
+bbsiq_threat_score_cols   <- names(sep_dat_wide$bbsiq)[grep("bbsiq_threat_score",   names(sep_dat_wide$bbsiq))]
+
+dass_as_score_cols        <- names(sep_dat_wide$dass_as)[grep("dass_as_score",      names(sep_dat_wide$dass_as))]
+
+dass_ds_score_cols        <- names(sep_dat_wide$dass_ds)[grep("dass_ds_score",      names(sep_dat_wide$dass_ds))]
+
+oasis_score_cols          <- names(sep_dat_wide$oa)[grep("oasis_score",             names(sep_dat_wide$oa))]
+
+RR_negative_nf_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_nf_score",    names(sep_dat_wide$rr))]
+RR_negative_ns_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_ns_score",    names(sep_dat_wide$rr))]
+RR_positive_pf_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_pf_score",    names(sep_dat_wide$rr))]
+RR_positive_ps_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_ps_score",    names(sep_dat_wide$rr))]
+
+# Convert repeated-measures tables to long format
+
+sep_dat <- vector("list", length = length(sep_dat_wide))
+names(sep_dat) <- names(sep_dat_wide)
+
+sep_dat$demographic <- sep_dat_wide$demographic
+sep_dat$participant <- sep_dat_wide$participant
+
+sep_dat$bbsiq <- reshape(sep_dat_wide$bbsiq, 
+                         direction = "long",
+                         idvar = "participant_id",
+                         timevar = "session",
+                         varying = list(bbsiq_physical_score = bbsiq_physical_score_cols,
+                                        bbsiq_threat_score = bbsiq_threat_score_cols),
+                         v.names = c("bbsiq_physical_score", "bbsiq_threat_score"),
+                         times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
+
+sep_dat$dass_as <- reshape(sep_dat_wide$dass_as, 
+                           direction = "long",
+                           idvar = "participant_id",
+                           timevar = "session",
+                           varying = list(dass_as_score = dass_as_score_cols),
+                           v.names = "dass_as_score",
+                           times = c("ELIGIBLE", "SESSION8", "POST"))
+
+sep_dat$dass_ds <- reshape(sep_dat_wide$dass_ds, 
+                           direction = "long",
+                           idvar = "participant_id",
+                           timevar = "session",
+                           varying = list(dass_ds_score = dass_ds_score_cols),
+                           v.names = "dass_ds_score",
+                           times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
+
+sep_dat$oa <- reshape(sep_dat_wide$oa, 
+                      direction = "long",
+                      idvar = "participant_id",
+                      timevar = "session",
+                      varying = list(oasis_score = oasis_score_cols),
+                      v.names = "oasis_score",
+                      times = c("PRE", "SESSION1", "SESSION2", "SESSION3", "SESSION4",
+                                "SESSION5", "SESSION6", "SESSION7", "SESSION8", "POST"))
+
+sep_dat$rr <- reshape(sep_dat_wide$rr, 
+                      direction = "long",
+                      idvar = "participant_id",
+                      timevar = "session",
+                      varying = list(RR_negative_nf_score = RR_negative_nf_score_cols,
+                                     RR_negative_ns_score = RR_negative_ns_score_cols,
+                                     RR_positive_pf_score = RR_positive_pf_score_cols,
+                                     RR_positive_ps_score = RR_positive_ps_score_cols),
+                      v.names = c("RR_negative_nf_score", "RR_negative_ns_score",
+                                  "RR_positive_pf_score", "RR_positive_ps_score"),
+                      times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
+
+# Remove rows that contain only NAs for scores
+
+for (i in 1:length(sep_dat)) {
+  if (names(sep_dat[i]) %in% c("demographic", "participant")) {
+    sep_dat[[i]] <- sep_dat[[i]]
+  } else {
+    score_cols <- names(sep_dat[[i]])[grep("_score", names(sep_dat[[i]]))]
+    
+    sep_dat[[i]] <- sep_dat[[i]][complete.cases(sep_dat[[i]][, score_cols]), ]
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+# Compute "session_only" in clean data ----
+# ---------------------------------------------------------------------------- #
+
+# Given that "session" column in "dass21_as" table may contain both session information 
+# and eligibility status (unlike original "session" column in Set A, which contains both 
+# "ELIGIBLE" and "" entries, original "session" column in clean data has no "" entries), 
+# create new column "session_only" with "ELIGIBLE" entries of original "session" column 
+# recoded as "Eligibility" (to reflect that these were collected at eligibility screener).
+
+for (i in 1:length(sep_dat)) {
+  if (!(names(sep_dat[i]) %in% c("demographic", "participant"))) {
+    if (names(sep_dat[i]) == "dass_as") {
+      sep_dat[[i]][, "session_only"] <- sep_dat[[i]][, "session"]
+      sep_dat[[i]][sep_dat[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
+    } else {
+      names(sep_dat[[i]])[names(sep_dat[[i]]) == "session"] <- "session_only"
+    }
+  }
+}
 
 # ---------------------------------------------------------------------------- #
 # Investigate "FIXED" tables in Set A ----
@@ -196,9 +395,9 @@ raw_dat$CIHS_recovered_Feb_02_2019 <- NULL
 table(raw_dat$DD_recovered_Feb_02_2019$session, useNA = "always")
 table(raw_dat$DD_FU_recovered_Feb_02_2019$session, useNA = "always")
 
-raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == "True"] <- "TRUE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == "True"]  <- "TRUE"
 raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q1_noAns == "False"] <- "FALSE"
-raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == "True"] <- "TRUE"
+raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == "True"]  <- "TRUE"
 raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns[raw_dat$DD_FU_recovered_Feb_02_2019$q2_noAns == "False"] <- "FALSE"
 
 shared_dd_cols <- intersect(names(raw_dat$DD_recovered_Feb_02_2019),
@@ -808,11 +1007,11 @@ all(server_error_pids %in% short_date_pids_oa)
 
   # Comparison with clean data
 
-sum(short_date_pids_dass21_as %in% cln_dat$participantID) == 36
-sum(short_date_pids_oa        %in% cln_dat$participantID) == 36
+sum(short_date_pids_dass21_as %in% sep_dat$participant$participant_id) == 36
+sum(short_date_pids_oa        %in% sep_dat$participant$participant_id) == 36
 
-setequal(intersect(short_date_pids_dass21_as, cln_dat$participantID), server_error_pids)
-setequal(intersect(short_date_pids_oa,        cln_dat$participantID), server_error_pids)
+setequal(intersect(short_date_pids_dass21_as, sep_dat$participant$participant_id), server_error_pids)
+setequal(intersect(short_date_pids_oa,        sep_dat$participant$participant_id), server_error_pids)
 
 
 
@@ -1002,7 +1201,7 @@ for (i in 1:length(sel_dat_b)) {
 
 # Identify participant IDs in clean data
 
-cln_participant_ids <- cln_dat$participantID
+cln_participant_ids <- sep_dat$participant$participant_id
 
 length(cln_participant_ids) == 807
 
@@ -1025,7 +1224,7 @@ all(test_notes %in% test_manual)
 
   # Check for test accounts
 
-sum(cln_dat$participantID %in% c(test_manual, test_notes)) == 0
+sum(cln_participant_ids %in% c(test_manual, test_notes)) == 0
 
 # TODO: 36 participants in clean data are missing from "participant_export_dao" 
 # table in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists 
@@ -1152,7 +1351,7 @@ flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 
 # TODO: In Set A, seem to be discrepancies between "session" and date-related
 # values in "task_log" table and "session" and "date" in other tables (e.g., "oa"). 
-# For example, for participant 623 "task_log" contains "OA" at "SESSION1" but this
+# - For example, for participant 623 "task_log" contains "OA" at "SESSION1" but this
 # data is not in "oa" table. In addition, "task_log" says "OA" at "SESSION2" was 
 # completed on 9/12/16, but "oa" says "SESSION2" was done on 9/10/16.
 
@@ -1406,7 +1605,7 @@ report_dups_list_b(flt_dat_b) # No duplicates
 # test <- flt_dat$oa[flt_dat$oa$participant_id == 620, ]
 # View(test[order(test$id), ])
 # 
-# View(cln_dat[cln_dat$participantID == 620, ])
+# View(sep_dat$oa[sep_dat$oa$participant_id == 620, ])
 
 
 
@@ -1668,205 +1867,6 @@ compute_bbsiq_scores <- function(dat) {
 
 flt_dat   <- compute_bbsiq_scores(flt_dat)
 flt_dat_b <- compute_bbsiq_scores(flt_dat_b)
-
-# ---------------------------------------------------------------------------- #
-# Extract clean data into separate tables ----
-# ---------------------------------------------------------------------------- #
-
-# Remove renamed columns, computed columns (besides "score"-related columns), and 
-# dummy-coded condition columns, which were all defined in "Script1_DataPrep.R", 
-# which is on the OSF project for the main outcomes paper (https://osf.io/5wscm/)
-
-renamed_cols <- c("RRNegative_PRE", "RRNegative_SESSION3", "RRNegative_SESSION6",
-                  "RRPositive_PRE", "RRPositive_SESSION3", "RRPositive_SESSION6",
-                  "OASISScore_PRE", "OASISScore_SESSION1", "OASISScore_SESSION2",
-                  "OASISScore_SESSION3", "OASISScore_SESSION4", "OASISScore_SESSION5",
-                  "OASISScore_SESSION6")
-computed_cols <- c("negativeBBSIQ_PRE", "negativeBBSIQ_SESSION3", "negativeBBSIQ_SESSION6")
-dummy_cols <- c("ANXIETY", "POSITIVE", "FIFTY_FIFTY", "POSITIVEANXIETY",
-                "POSITIVENEUTRAL", "FIFTY_FIFTYANXIETY", "FIFTY_FIFTYNEUTRAL",
-                "NONEANXIETY")
-
-cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols, computed_cols, dummy_cols))]]
-
-# Remove dropout-related columns, which seem to have been created in some version
-# of "R34.ipynb", which, albeit outdated, is in the Data Cleaning folder on GitHub
-# (https://github.com/jwe4ec/MT-Data-ManagingAnxietyStudy/tree/master/Data%20Cleaning)
-
-dropout_cols <- names(cln_dat)[grep("_dropout", names(cln_dat))]
-
-cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% dropout_cols)]]
-
-# Rename "participantID" as "participant_id"
-
-names(cln_dat)[names(cln_dat) == "participantID"] <- "participant_id"
-
-# Extract column names for separate tables
-
-bbsiq_cols       <- names(cln_dat)[grep("bbsiq_",       names(cln_dat), ignore.case = TRUE)]
-dass_as_cols     <- names(cln_dat)[grep("dass_as_",     names(cln_dat))]
-dass_ds_cols     <- names(cln_dat)[grep("dass_ds_",     names(cln_dat))]
-demographic_cols <- names(cln_dat)[grep("demographic_", names(cln_dat))]
-oa_cols          <- names(cln_dat)[grep("oasis_",       names(cln_dat), ignore.case = TRUE)]
-participant_cols <- names(cln_dat)[grep("participant",  names(cln_dat))]
-rr_cols          <- names(cln_dat)[grep("RR_",          names(cln_dat), ignore.case = TRUE)]
-
-setdiff(names(cln_dat), c(bbsiq_cols, dass_as_cols, dass_ds_cols, demographic_cols,
-                          oa_cols, participant_cols, rr_cols))
-
-# Extract data into separate tables
-
-table_cols <- list(bbsiq       = bbsiq_cols,
-                   dass_as     = dass_as_cols,
-                   dass_ds     = dass_ds_cols,
-                   demographic = demographic_cols,
-                   oa          = oa_cols,
-                   participant = participant_cols,
-                   rr          = rr_cols)
-
-sep_dat_wide <- vector("list", length = length(table_cols))
-
-for (i in 1:length(table_cols)) {
-  if ("participant_id" %in% table_cols[[i]]) {
-    sep_dat_wide[[i]] <- cln_dat[, table_cols[[i]]]
-  } else {
-    sep_dat_wide[[i]] <- cln_dat[, c("participant_id", table_cols[[i]])]
-  }
-}
-
-names(sep_dat_wide) <- names(table_cols)
-
-# ---------------------------------------------------------------------------- #
-# Convert clean data tables into long format ----
-# ---------------------------------------------------------------------------- #
-
-# Alphabetize columns of each table and then sort them by time point, retaining
-# "participant_id" as the first column
-
-for (i in 1:length(sep_dat_wide)) {
-  sep_dat_wide[[i]] <- sep_dat_wide[[i]][, sort(names(sep_dat_wide[[i]]))]
-  
-  if (names(sep_dat_wide[i]) %in% c("demographic", "participant")) {
-    sep_dat_wide[[i]] <- sep_dat_wide[[i]]
-  } else {
-    sep_dat_wide[[i]] <- 
-      sep_dat_wide[[i]][, c("participant_id",
-                            names(sep_dat_wide[[i]])[grep("ELIGIBLE", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("PRE",      names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION1", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION2", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION3", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION4", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION5", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION6", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION7", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION8", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("POST",     names(sep_dat_wide[[i]]))])]
-  }
-}
-
-# Identify repeated-measures columns for each score
-
-bbsiq_physical_score_cols <- names(sep_dat_wide$bbsiq)[grep("bbsiq_physical_score", names(sep_dat_wide$bbsiq))]
-bbsiq_threat_score_cols   <- names(sep_dat_wide$bbsiq)[grep("bbsiq_threat_score",   names(sep_dat_wide$bbsiq))]
-
-dass_as_score_cols        <- names(sep_dat_wide$dass_as)[grep("dass_as_score",      names(sep_dat_wide$dass_as))]
-
-dass_ds_score_cols        <- names(sep_dat_wide$dass_ds)[grep("dass_ds_score",      names(sep_dat_wide$dass_ds))]
-
-oasis_score_cols          <- names(sep_dat_wide$oa)[grep("oasis_score",             names(sep_dat_wide$oa))]
-
-RR_negative_nf_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_nf_score",    names(sep_dat_wide$rr))]
-RR_negative_ns_score_cols <- names(sep_dat_wide$rr)[grep("RR_negative_ns_score",    names(sep_dat_wide$rr))]
-RR_positive_pf_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_pf_score",    names(sep_dat_wide$rr))]
-RR_positive_ps_score_cols <- names(sep_dat_wide$rr)[grep("RR_positive_ps_score",    names(sep_dat_wide$rr))]
-
-# Convert repeated-measures tables to long format
-
-sep_dat <- vector("list", length = length(sep_dat_wide))
-names(sep_dat) <- names(sep_dat_wide)
-
-sep_dat$demographic <- sep_dat_wide$demographic
-sep_dat$participant <- sep_dat_wide$participant
-
-sep_dat$bbsiq <- reshape(sep_dat_wide$bbsiq, 
-                         direction = "long",
-                         idvar = "participant_id",
-                         timevar = "session",
-                         varying = list(bbsiq_physical_score = bbsiq_physical_score_cols,
-                                        bbsiq_threat_score = bbsiq_threat_score_cols),
-                         v.names = c("bbsiq_physical_score", "bbsiq_threat_score"),
-                         times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
-
-sep_dat$dass_as <- reshape(sep_dat_wide$dass_as, 
-                           direction = "long",
-                           idvar = "participant_id",
-                           timevar = "session",
-                           varying = list(dass_as_score = dass_as_score_cols),
-                           v.names = "dass_as_score",
-                           times = c("ELIGIBLE", "SESSION8", "POST"))
-
-sep_dat$dass_ds <- reshape(sep_dat_wide$dass_ds, 
-                           direction = "long",
-                           idvar = "participant_id",
-                           timevar = "session",
-                           varying = list(dass_ds_score = dass_ds_score_cols),
-                           v.names = "dass_ds_score",
-                           times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
-
-sep_dat$oa <- reshape(sep_dat_wide$oa, 
-                      direction = "long",
-                      idvar = "participant_id",
-                      timevar = "session",
-                      varying = list(oasis_score = oasis_score_cols),
-                      v.names = "oasis_score",
-                      times = c("PRE", "SESSION1", "SESSION2", "SESSION3", "SESSION4",
-                                "SESSION5", "SESSION6", "SESSION7", "SESSION8", "POST"))
-
-sep_dat$rr <- reshape(sep_dat_wide$rr, 
-                      direction = "long",
-                      idvar = "participant_id",
-                      timevar = "session",
-                      varying = list(RR_negative_nf_score = RR_negative_nf_score_cols,
-                                     RR_negative_ns_score = RR_negative_ns_score_cols,
-                                     RR_positive_pf_score = RR_positive_pf_score_cols,
-                                     RR_positive_ps_score = RR_positive_ps_score_cols),
-                      v.names = c("RR_negative_nf_score", "RR_negative_ns_score",
-                                  "RR_positive_pf_score", "RR_positive_ps_score"),
-                      times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
-
-# Remove rows that contain only NAs for scores
-
-for (i in 1:length(sep_dat)) {
-  if (names(sep_dat[i]) %in% c("demographic", "participant")) {
-    sep_dat[[i]] <- sep_dat[[i]]
-  } else {
-    score_cols <- names(sep_dat[[i]])[grep("_score", names(sep_dat[[i]]))]
-    
-    sep_dat[[i]] <- sep_dat[[i]][complete.cases(sep_dat[[i]][, score_cols]), ]
-  }
-}
-
-# ---------------------------------------------------------------------------- #
-# Compute "session_only" in clean data ----
-# ---------------------------------------------------------------------------- #
-
-# Given that "session" column in "dass21_as" table may contain both session information 
-# and eligibility status (unlike original "session" column in Set A, which contains both 
-# "ELIGIBLE" and "" entries, original "session" column in clean data has no "" entries), 
-# create new column "session_only" with "ELIGIBLE" entries of original "session" column 
-# recoded as "Eligibility" (to reflect that these were collected at eligibility screener).
-
-for (i in 1:length(sep_dat)) {
-  if (!(names(sep_dat[i]) %in% c("demographic", "participant"))) {
-    if (names(sep_dat[i]) == "dass_as") {
-      sep_dat[[i]][, "session_only"] <- sep_dat[[i]][, "session"]
-      sep_dat[[i]][sep_dat[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
-    } else {
-      names(sep_dat[[i]])[names(sep_dat[[i]]) == "session"] <- "session_only"
-    }
-  }
-}
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set A ----

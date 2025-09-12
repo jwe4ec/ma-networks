@@ -1,21 +1,15 @@
-# ma-networks
-This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
+# repo-name
 
-# Data
+# Heading 1
 
-## Clean
+## Heading 2
 
-- Has 807 participants (no test accounts)
+`inline_code`
 
-## Set A
+```r
+code_chunk
+```
 
-- **General**
-  - Has more tables than Set B (including those, e.g., `participant`, likely from other server)
-  - Has some 344-character `participantRSA` values, some of which are in `R34_cleaning_script.R`
-  - Is more similar to tables loaded and described in `R34.ipynb`
-    - Has similar file names and same names of participant ID columns
-    - But has fewer participants (so data are different), except for `demographic`
-    and `task_log` tables (which have same number of participants)
 <details>
 <summary>Counts</summary>
 
