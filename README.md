@@ -24,6 +24,7 @@ TODO: Resume summarizing comparisons at "Check session and date values in Sets A
     and `task_log` tables (which have same number of participants)
 <details>
 <summary>Counts</summary>
+
 ```
 > set_a_vs_r34.ipynb_Ns
       bbsiq   dass21_as   dass21_ds demographic          oa participant          rr    task_log 
@@ -55,6 +56,7 @@ TODO: Resume summarizing comparisons at "Check session and date values in Sets A
     - Has far fewer participants
 <details>
 <summary>Counts</summary>
+
 ```
 > set_b_vs_r34.ipynb_Ns
       bbsiq   dass21_as   dass21_ds demographic          oa          rr 
