@@ -3,12 +3,6 @@ This repository contains analysis code for this project on the Open Science Fram
 
 # Data
 
-TODO: Resume summarizing comparisons at "Check session and date values in Sets A and B" in "02_prepare_item_data.R"
-
-
-
-
-
 ## Clean
 
 - Has 807 participants (no test accounts)
@@ -31,13 +25,18 @@ TODO: Resume summarizing comparisons at "Check session and date values in Sets A
          -1         -61          -1           0         -44         -61          -1           0
 ```
 </details>
+
 - **Participant table**
   - Missing 36 participants in clean data listed as excluded from original analyses
   due to server error
-    - These participants are also missing in DASS-21-AS and OA tables in Set A but have DASS-21-AS and OA data in Set B
+    - These participants are also missing in DASS-21-AS and OA tables in Set A but 
+    have DASS-21-AS and OA data in Set B
       - And their baseline DASS-21-AS and OA data in Set B matches that in `R34_Cronbach.csv`
       file on main outcomes paper OSF project
     - These participants have the same number of rows in other tables in Sets A and B
+- **Task Log table**
+  - Has discrepancies between `session` and date-related values in this table versus 
+  `session` and `date` in other tables in both Sets A and B
 - **DASS-21-AS table**
   - Has `sessionId`, and session column at screening has both `ELIGIBLE` and blank values
 - **OASIS table**
@@ -63,6 +62,7 @@ TODO: Resume summarizing comparisons at "Check session and date values in Sets A
        -436        -434        -435        -436        -434        -429
 ```
 </details>
+
 - **No participant table**
 - **DASS-21-AS table**
   - Session column at screening has only `ELIGIBLE` values
