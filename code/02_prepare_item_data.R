@@ -1363,9 +1363,11 @@ flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 
 
 
-# Note: Also discrepancies between Set A "task_log" and Set B tables (example below)
+# Note: Set A "task_log" also has discrepancies with Set B tables and with clean
+# data (in example below, Set B table and clean data have same sessions)
 
 # View(flt_dat_b$oa[flt_dat_b$oa$participant_id == 623, ])
+# View(sep_dat$oa[sep_dat$oa$participant_id     == 623, ])
 
 # ---------------------------------------------------------------------------- #
 # Check for multiple entries in Set A ----
@@ -1630,8 +1632,7 @@ report_dups_list_b(flt_dat_b) # No duplicates
 #   (not above) and then takes the sum to generate the score
 # 
 # ## Get the latest entry for each participant
-# oasis_analysis = 
-#   oasis_analysis.sort_values(by="date").groupby(['participantID','session']).tail(1)
+# oasis_analysis = oasis_analysis.sort_values(by="date").groupby(['participantID','session']).tail(1)
 # 
 # task_log:
 # - Multiple SUDS at Sessions 1, 3, 6, 8 with no "tag"
@@ -1801,8 +1802,8 @@ all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[, bbsiq_items])))) %in% 0:4)
 # OASIS
 
   # Note: The summation used for "oa_total" below is incorrect because it treats 
-  # an item-level responses of NA as responses of 0, but this seems to be what was 
-  # done in "R34.ipynb" cleaning script
+  # item-level values of NA as responses of 0, but this seems to be what was done 
+  # in "R34.ipynb" cleaning script
 
   # For Set A
 
@@ -1930,7 +1931,7 @@ sep_dat_comp_rest <- ls_rest[[2]]
 all(mapply(length_diff_participant_ids, flt_dat_comp_rest, sep_dat_comp_rest) == 0)
 all(mapply(length_diff_participant_ids, sep_dat_comp_rest, flt_dat_comp_rest) == 0)
 
-# Sort tables by "participant_id" and "session"
+# Sort tables by participant and then session
 
   # Define function to sort by participant and then (if present) by a session column
 
@@ -1956,6 +1957,7 @@ sep_dat_comp_rest <- sort_by_part_then_session(sep_dat_comp_rest, "participant_i
 
 set_a_vs_cln_nrow <- data.frame(set_a = sapply(flt_dat_comp_rest, nrow),
                                 clean = sapply(sep_dat_comp_rest, nrow))
+set_a_vs_cln_nrow$diff <- set_a_vs_cln_nrow$set_a - set_a_vs_cln_nrow$clean
 
 # TODO: Use natural join to restrict to shared time points for "oa" table. The
 # discrepancies for 19 participants seem due to potential recoding of "session"
