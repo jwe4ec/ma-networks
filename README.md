@@ -1,7 +1,9 @@
 # ma-networks
 This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
 
-***TODO: Resume summarizing issues at "Compare clean data and Set A"***
+***TODO: Resolve issue with repeated participant IDs in `sep_dat$dass_as` at Line 2143***
+
+***TODO: Resume summarizing issues at Line 2155***
 
 
 
@@ -58,6 +60,7 @@ This repository contains analysis code for this project on the Open Science Fram
       - And their baseline DASS-21-AS and OA data in Set B matches that in `R34_Cronbach.csv`
       file on main outcomes paper OSF project
     - These participants have the same number of rows in other tables in Sets A and B
+  - Otherwise, CBM condition is same as in clean data
 - **Task Log table**
   - Has `corrected_datetime` in addition to `date`
   - Has discrepancies between `session` and date-related values (inc. `corrected_datetime`)
@@ -67,10 +70,21 @@ This repository contains analysis code for this project on the Open Science Fram
   - Has `sessionId`, and session column at screening has both `ELIGIBLE` and blank values
 - **OASIS table**
   - After restricting to shared participants in clean OASIS data, total scores are
-  discrepant for 19 participants
-    - Seems due to potential recoding of session to resolve multiple entries in clean data
-    (vs. keeping the most recent entry)
-      - TODO: Is it due to `R34.ipynb`'s sorting lexicographically rather than chronologically?
+  discrepant for 19 participants, all of which in Set A are missing a session and
+  have two entries for another session
+    - And participants who happen to have same total scores still have missing and
+    multiple entries in Set A
+    - Seems due to potential recoding of session to resolve multiple (and missing) 
+    entries in clean data (vs. keeping most recent), and doesn't seem merely 
+    due to potential lexicographical sorting by `R34.ipynb`
+      - TODO: Does clean data show any skipped sessions?
+      - TODO: Was `task_log` used to correct the session values?
+    - When excluding all 41 participants with multiple entries in OASIS table, all
+    total scores in Set A are the same as those in clean data
+  - Session dates in OASIS table are inconsistent with those in RR table, even
+  though the RR data matches values in clean data
+    - Suggests that session values in OASIS table may be wrong (and indeed, they 
+    don't match those in clean data)
 - **RR table**
   - Matches values in clean data
 - **BBSIQ table**
@@ -89,7 +103,18 @@ This repository contains analysis code for this project on the Open Science Fram
        -436        -434        -435        -436        -434        -429
       ```
   - Has no unexpected multiple entries
-
+  - After restricting to shared participants in each table, Set B has more rows in some 
+  tables and fewer rows in others (especially for `dass21_as`) than clean data:
+    ```
+    > set_b_vs_cln_nrow
+                set_b clean diff
+    bbsiq        1232  1229    3
+    dass21_as     807   913 -106
+    dass21_ds    1174  1174    0
+    demographic   807   807    0
+    oa           2661  2679  -18
+    rr           1185  1183    2
+    ```
 - **No participant table**
 - **DASS-21-AS table**
   - Session column at screening has only `ELIGIBLE` values

@@ -1959,6 +1959,8 @@ set_a_vs_cln_nrow <- data.frame(set_a = sapply(flt_dat_comp_rest, nrow),
                                 clean = sapply(sep_dat_comp_rest, nrow))
 set_a_vs_cln_nrow$diff <- set_a_vs_cln_nrow$set_a - set_a_vs_cln_nrow$clean
 
+set_a_vs_cln_nrow
+
 # TODO: Use natural join to restrict to shared time points for "oa" table. The
 # discrepancies for 19 participants seem due to potential recoding of "session"
 # to resolve multiple entries in clean data (vs. keeping the most recent entry).
@@ -1984,7 +1986,7 @@ view_oa <- function(participant_id) {
   View(merge_oa[merge_oa$participant_id     == participant_id, ])
 }
 
-  # Run function
+  # Run function for the 19 participants with discrepant scores
 
 # view_oa(14)  # Missing S5 but has two S8
 # view_oa(16)  # Missing S5 but has two S8
@@ -2006,15 +2008,17 @@ view_oa <- function(participant_id) {
 # view_oa(662) # Missing S1 but has two S3
 # view_oa(684) # Missing S1 but has two S3
 
-  # 41 duplicated rows for table: oa
-  # With these ' participant_id ':  8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 
-  # 532, 539, 541, 552, 582, 590, 597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 
-  # 662, 669, 674, 683, 684, 687, 701, 708, 710, 712, 719, 723, 727, 731, 745
+  # And other participants with same scores still have missing/multiple entries in
+  # Set A but not in clean data. Consider some other participants with unexpected 
+  # multiple entries (from list below).
+    # - 41 duplicated rows for table: oa
+    # With these ' participant_id ':  8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 
+    # 532, 539, 541, 552, 582, 590, 597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 
+    # 662, 669, 674, 683, 684, 687, 701, 708, 710, 712, 719, 723, 727, 731, 745
+    # - Likely more not shown below
 
 # view_oa(8)   # Missing S7 but has two S8
 # view_oa(600) # Missing S1 but has two S2
-
-  # Likely more not shown above
 
   # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points. 
@@ -2132,10 +2136,17 @@ sep_dat_comp_rest_b <- sort_by_part_then_session(sep_dat_comp_rest_b, "participa
 
 set_b_vs_cln_nrow <- data.frame(set_b = sapply(flt_dat_comp_rest_b, nrow),
                                 clean = sapply(sep_dat_comp_rest_b, nrow))
+set_b_vs_cln_nrow$diff <- set_b_vs_cln_nrow$set_b - set_b_vs_cln_nrow$clean
 
-  # TODO: Compare to Set A vs. clean data
+set_b_vs_cln_nrow
 
-set_a_vs_cln_nrow
+  # TODO: How can there be repeated participant IDs in "sep_dat$dass_as"
+  # when "cln_dat" has only 807 rows?
+
+nrow(cln_dat) == 807
+length(sep_dat$dass_as$participant_id) == 913
+length(unique(sep_dat$dass_as$participant_id)) == 807
+sum(is.na(sep_dat$dass_as$participant_id)) == 0
 
 
 
