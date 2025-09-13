@@ -2140,24 +2140,11 @@ set_b_vs_cln_nrow$diff <- set_b_vs_cln_nrow$set_b - set_b_vs_cln_nrow$clean
 
 set_b_vs_cln_nrow
 
-  # TODO: How can there be repeated participant IDs in "sep_dat$dass_as"
-  # when "cln_dat" has only 807 rows?
-
-nrow(cln_dat) == 807
-length(sep_dat$dass_as$participant_id) == 913
-length(unique(sep_dat$dass_as$participant_id)) == 807
-sum(is.na(sep_dat$dass_as$participant_id)) == 0
-
-
-
-
-
-# TODO: Use natural join to restrict to shared time points for "oa" table. The
-# discrepancies for 24 participants seem due to INSERT
-
-
-
-
+# TODO: Use natural join to restrict to shared time points for "oa" table. For 
+# each of the 24 participants with discrepancies, the scores are actually the 
+# same but the session column in the clean data skips Session 1 (i.e., lists 
+# Session 2 instead), whereas the session column in Set B lists all consecutive 
+# sessions (i.e., lists Session 1 where the clean data lists Session 2)
 
 merge_oa_b <- merge(flt_dat_comp_rest_b$oa, 
                     sep_dat_comp_rest_b$oa,
@@ -2188,8 +2175,27 @@ view_oa_b <- function(participant_id) {
 # view_oa_b(431) # Scores same but sessions mismatch
 # view_oa_b(434) # Scores same but sessions mismatch
 # view_oa_b(449) # Scores same but sessions mismatch
-
-  # Likely more not shown above
+# view_oa_b(460) # Scores same but sessions mismatch
+# view_oa_b(462) # Scores same but sessions mismatch
+# view_oa_b(471) # Scores same but sessions mismatch
+# view_oa_b(476) # Scores same but sessions mismatch
+# view_oa_b(477) # Scores same but sessions mismatch
+# view_oa_b(491) # Scores same but sessions mismatch
+# view_oa_b(503) # Scores same but sessions mismatch
+# view_oa_b(505) # Scores same but sessions mismatch
+# view_oa_b(514) # Scores same but sessions mismatch
+# view_oa_b(520) # Scores same but sessions mismatch
+# view_oa_b(523) # Scores same but sessions mismatch
+# view_oa_b(529) # Scores same but sessions mismatch
+# view_oa_b(531) # Scores same but sessions mismatch
+# view_oa_b(549) # Scores same but sessions mismatch
+# view_oa_b(550) # Scores same but sessions mismatch
+# view_oa_b(555) # Scores same but sessions mismatch
+# view_oa_b(584) # Scores same but sessions mismatch
+# view_oa_b(591) # Scores same but sessions mismatch
+# view_oa_b(615) # Scores same but sessions mismatch
+# view_oa_b(617) # Scores same but sessions mismatch
+# view_oa_b(695) # Scores same but sessions mismatch
 
   # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points.

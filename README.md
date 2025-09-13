@@ -1,14 +1,6 @@
 # ma-networks
 This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
 
-***TODO: Resolve issue with repeated participant IDs in `sep_dat$dass_as` at Line 2143***
-
-***TODO: Resume summarizing issues at Line 2155***
-
-
-
-
-
 # Data
 
 ## Clean
@@ -33,7 +25,7 @@ This repository contains analysis code for this project on the Open Science Fram
     - Has similar file names and same names of participant ID columns
     - But has fewer participants (so data are different), except for `demographic`
     and `task_log` tables (which have same number of participants):
-      ```
+      ```text
       > set_a_vs_r34.ipynb_Ns
       bbsiq   dass21_as   dass21_ds demographic          oa participant          rr    task_log 
          -1         -61          -1           0         -44         -61          -1           0
@@ -42,7 +34,7 @@ This repository contains analysis code for this project on the Open Science Fram
   `oa`, and `task_log` (involving both `suds` and other tasks) tables
   - After restricting to shared participants in each table, Set A has more rows
   in some tables and fewer rows in others (especially for `oa`) than clean data:
-    ```
+    ```text
     > set_a_vs_cln_nrow
                            set_a clean diff
     bbsiq                   1233  1229    4
@@ -97,7 +89,7 @@ This repository contains analysis code for this project on the Open Science Fram
   - Is less similar to tables loaded and described in `R34.ipynb`
     - Has different file names and some different names of participant ID columns
     - Has far fewer participants:
-      ```
+      ```text
       > set_b_vs_r34.ipynb_Ns
       bbsiq   dass21_as   dass21_ds demographic          oa          rr 
        -436        -434        -435        -436        -434        -429
@@ -105,7 +97,7 @@ This repository contains analysis code for this project on the Open Science Fram
   - Has no unexpected multiple entries
   - After restricting to shared participants in each table, Set B has more rows in some 
   tables and fewer rows in others (especially for `dass21_as`) than clean data:
-    ```
+    ```text
     > set_b_vs_cln_nrow
                 set_b clean diff
     bbsiq        1232  1229    3
@@ -115,6 +107,9 @@ This repository contains analysis code for this project on the Open Science Fram
     oa           2661  2679  -18
     rr           1185  1183    2
     ```
+  - Although `imagery_prime` table has `prime` condition, no table has CBM condition
+    - Perhaps could be derived from `trial_dao` table by computing proportion of
+    positive scenarios (see `positive` column)
 - **No participant table**
 - **DASS-21-AS table**
   - Session column at screening has only `ELIGIBLE` values
@@ -127,6 +122,12 @@ This repository contains analysis code for this project on the Open Science Fram
     - See [MT-Data-ManagingAnxietyStudy](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy)
     Issues [1](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/1#issue-403285089)
     and [2](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/2#issue-403285690)
+  - After restricting to shared participants in clean OASIS data, total scores seem
+  discrepant for 24 participants (different from the 19 participants discrepant in 
+  Set A). However, in each case the total scores are actually the same, but sessions
+  are mismatched. The session column in clean data skips Session 1 (i.e., lists Session 
+  2 instead), whereas Set B lists consecutive sessions (i.e., lists Session 1).
+  - Unlike in Set A, session dates in OASIS table are consistent with those in RR table
 - **RR table**
   - Matches values in clean data
 - **BBSIQ table**
