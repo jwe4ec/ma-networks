@@ -2157,9 +2157,84 @@ sum(merge_oa_b$oa_total != merge_oa_b$oasis_score) == 38
 discrep_ids_b <- unique(merge_oa_b[merge_oa_b$oa_total != merge_oa_b$oasis_score, ]$participant_id)
 length(discrep_ids_b) == 24
 
-  # None of these discrepant IDs are in Set A
+  # None of these discrepant IDs are those discrepant in Set A
 
 length(intersect(discrep_ids, discrep_ids_b)) == 0
+
+
+
+
+
+  # All 41 participants with multiple OA entries in Set A, including 19 with discrepancies 
+  # with clean data, are in Set B and lack discrepancies with clean data
+
+all(multiple_oa_entry_participant_ids %in% merge_oa_b$participant_id)
+all(discrep_ids %in% merge_oa_b$participant_id)
+
+    # It seems that in Set A, multiple OA entries were not resolved by keeping the
+    # most recent entry, but by sorting each participant's entries chronologically
+    # and then recoding the session column so that it reflects the expected session
+    # order for the number of entries present for that participant. After recoding
+    # session this way, the sessions for Set A and Set B are the same.
+
+sel_dat_multiple_set_a_oa_entries   <- sel_dat$oa[sel_dat$oa$participant_id     %in% multiple_oa_entry_participant_ids, ]
+sel_dat_b_multiple_set_a_oa_entries <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% multiple_oa_entry_participant_ids, ]
+
+session_order <- c("PRE", paste0("SESSION", 1:8), "POST")
+sel_dat_multiple_set_a_oa_entries$session_only   <- factor(sel_dat_multiple_set_a_oa_entries$session_only,
+                                                           levels = session_order)
+sel_dat_b_multiple_set_a_oa_entries$session_only <- factor(sel_dat_b_multiple_set_a_oa_entries$session_only,
+                                                           levels = session_order)
+
+sel_dat_multiple_set_a_oa_entries <- 
+  sel_dat_multiple_set_a_oa_entries[order(sel_dat_multiple_set_a_oa_entries$participant_id,
+                                          sel_dat_multiple_set_a_oa_entries$date_as_POSIXct), ]
+sel_dat_b_multiple_set_a_oa_entries <- 
+  sel_dat_b_multiple_set_a_oa_entries[order(sel_dat_b_multiple_set_a_oa_entries$participant_id,
+                                            sel_dat_b_multiple_set_a_oa_entries$date_as_POSIXct), ]
+
+all(sel_dat_multiple_set_a_oa_entries$date_as_POSIXct == sel_dat_b_multiple_set_a_oa_entries$date_as_POSIXct)
+
+sel_dat_multiple_set_a_oa_entries_split <- split(sel_dat_multiple_set_a_oa_entries,
+                                                 sel_dat_multiple_set_a_oa_entries$participant_id)
+
+sel_dat_multiple_set_a_oa_entries_split <- lapply(sel_dat_multiple_set_a_oa_entries_split, function(x) {
+  oa_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
+  
+  number_oa_sessions_done <- nrow(x)
+  
+  oa_sessions_done <- oa_sessions[1:number_oa_sessions_done]
+  
+  x$session_only <- oa_sessions_done
+  
+  return(x)
+})
+sel_dat_multiple_set_a_oa_entries <- do.call(rbind, sel_dat_multiple_set_a_oa_entries_split)
+
+all(sel_dat_multiple_set_a_oa_entries$session_only == sel_dat_b_multiple_set_a_oa_entries$session_only)
+
+    # After recoding session in the OA table in this way for Set A, the OA table's
+    # session dates seem consistent with those in the RR table
+
+sel_dat_rr_multiple_set_a_oa_entries <- sel_dat$rr[sel_dat$rr$participant_id %in% multiple_oa_entry_participant_ids, ]
+sel_dat_rr_multiple_set_a_oa_entries$session_only <- factor(sel_dat_rr_multiple_set_a_oa_entries$session_only,
+                                                            levels = c("PRE", paste0("SESSION", c(3, 6, 8)), "POST"))
+sel_dat_rr_multiple_set_a_oa_entries <- 
+  sel_dat_rr_multiple_set_a_oa_entries[order(sel_dat_rr_multiple_set_a_oa_entries$participant_id,
+                                             sel_dat_rr_multiple_set_a_oa_entries$session_only), ]
+
+sel_dat_oa_discrep_ids_sessions <- 
+  sel_dat_multiple_set_a_oa_entries[sel_dat_multiple_set_a_oa_entries$participant_id       %in% discrep_ids,
+                       c("participant_id", "date_as_POSIXct", "session_only")]
+sel_dat_rr_discrep_ids_sessions <- 
+  sel_dat_rr_multiple_set_a_oa_entries[sel_dat_rr_multiple_set_a_oa_entries$participant_id %in% discrep_ids, 
+                       c("participant_id", "date_as_POSIXct", "session_only")]
+
+    # TODO: Try recoding session in Set A OASIS table using above approach
+
+
+
+
 
   # Define function to view "oa" table from relevant lists for given participant in Set B
 
@@ -2197,7 +2272,7 @@ view_oa_b <- function(participant_id) {
 # view_oa_b(617) # Scores same but sessions mismatch
 # view_oa_b(695) # Scores same but sessions mismatch
 
-  # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
+  # Compare session dates between "oa" and "rr" tables in Set B, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points.
   # The session dates are consistent across tables.
 

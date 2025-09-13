@@ -1,6 +1,15 @@
 # ma-networks
 This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
 
+***TODO: Figure out what to do for 24 discrepant participants in Set B***
+
+- ***Figure out if they are in Set A, and if so, if their sessions match clean data***
+  - ***Then decide which session values makes the most sense***
+
+
+
+
+
 # Data
 
 ## Clean
@@ -69,14 +78,15 @@ This repository contains analysis code for this project on the Open Science Fram
     - Seems due to potential recoding of session to resolve multiple (and missing) 
     entries in clean data (vs. keeping most recent), and doesn't seem merely 
     due to potential lexicographical sorting by `R34.ipynb`
-      - TODO: Does clean data show any skipped sessions?
-      - TODO: Was `task_log` used to correct the session values?
+      - Seems that session was recoded by sorting each participant's OASIS entries chronologically
+      and then recoding to reflect the expected session order for the number of entries present
     - When excluding all 41 participants with multiple entries in OASIS table, all
     total scores in Set A are the same as those in clean data
   - Session dates in OASIS table are inconsistent with those in RR table, even
   though the RR data matches values in clean data
     - Suggests that session values in OASIS table may be wrong (and indeed, they 
     don't match those in clean data)
+    - After recoding session as described above, the session dates are consistent
 - **RR table**
   - Matches values in clean data
 - **BBSIQ table**
