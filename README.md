@@ -50,7 +50,7 @@ This repository contains analysis code for this project on the Open Science Fram
     dass21_as                871   875   -4
     dass21_ds               1175  1174    1
     demographic              807   807    0
-    oa                      2533  2592  -59
+    oa                      2574  2592  -18
     participant_export_dao   771   771    0
     rr                      1186  1183    3
     ```
@@ -70,23 +70,23 @@ This repository contains analysis code for this project on the Open Science Fram
 - **DASS-21-AS table**
   - Has `sessionId`, and session column at screening has both `ELIGIBLE` and blank values
 - **OASIS table**
-  - After restricting to shared participants in clean OASIS data, total scores are
-  discrepant for 19 participants, all of which in Set A are missing a session and
-  have two entries for another session
-    - And participants who happen to have same total scores still have missing and
-    multiple entries in Set A
-    - Seems due to potential recoding of session to resolve multiple (and missing) 
-    entries in clean data (vs. keeping most recent), and doesn't seem merely 
-    due to potential lexicographical sorting by `R34.ipynb`
-      - Seems that session was recoded by sorting each participant's OASIS entries chronologically
-      and then recoding to reflect the expected session order for the number of entries present
-    - When excluding all 41 participants with multiple entries in OASIS table, all
-    total scores in Set A are the same as those in clean data
-  - Session dates in OASIS table are inconsistent with those in RR table, even
-  though the RR data matches values in clean data
+  - Matches values in clean data
+    - After handling multiple entries for 41 participants (all of which in Set A 
+    were missing a session and had two entries for another session)
+      - Rather than keeping most recent entry, this was done by sorting each participant's 
+      OASIS entries chronologically and then recoding to reflect the expected session order 
+      for the number of entries present
+  - TODO (check for all participants; this was the case for participants with multiple
+  OA entries but after resolving the multiple entries the session dates are consistent
+  for those participants): Session dates in OASIS table are inconsistent with those in RR 
+  table, even though the RR data matches values in clean data
     - Suggests that session values in OASIS table may be wrong (and indeed, they 
     don't match those in clean data)
-    - After recoding session as described above, the session dates are consistent
+    
+    
+    
+    
+    
 - **RR table**
   - Matches values in clean data
 - **BBSIQ table**
@@ -133,11 +133,16 @@ This repository contains analysis code for this project on the Open Science Fram
     Issues [1](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/1#issue-403285089)
     and [2](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/2#issue-403285690)
   - After restricting to shared participants in clean OASIS data, total scores seem
-  discrepant for 24 participants (different from the 19 participants discrepant in 
-  Set A). However, in each case the total scores are actually the same, but sessions
-  are mismatched. The session column in clean data skips Session 1 (i.e., lists Session 
-  2 instead), whereas Set B lists consecutive sessions (i.e., lists Session 1).
-  - Unlike in Set A, session dates in OASIS table are consistent with those in RR table
+  discrepant for 24 participants. However, in each case the total scores are actually 
+  the same, but sessions are mismatched. The session column in clean data skips Session 
+  1 (i.e., lists Session 2 instead), whereas Set B lists consecutive sessions (i.e., lists Session 1).
+  - TODO (check for all participants in Set A): Unlike in Set A, session dates in OASIS table are 
+  consistent with those in RR table
+  
+  
+  
+  
+  
 - **RR table**
   - Matches values in clean data
 - **BBSIQ table**

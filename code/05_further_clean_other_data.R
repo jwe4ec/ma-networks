@@ -38,6 +38,12 @@ load("./data/intermediate/net_dat_all_to_s6.RData")
 
 # Import restricted credibility data
 
+  # TODO: Update with new "_rest.csv" file (instead of "_rest.csv")
+
+
+
+
+
 credibility_raw_rest2 <- read.csv("./data/intermediate/credibility_raw_rest2.csv")
 
 # ---------------------------------------------------------------------------- #

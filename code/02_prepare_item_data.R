@@ -1525,89 +1525,64 @@ report_dups_list <- function(dat) {
 report_dups_list(flt_dat)
 
 # ---------------------------------------------------------------------------- #
-# Check for multiple entries in Set B ----
+# Resolve multiple entries for "oa" table in Set A ----
 # ---------------------------------------------------------------------------- #
 
-# For rows that have duplicated values on every meaningful column (i.e., every
-# column except "X" [only in "dass21_ds"]; no Set B tables contain "id" at this 
-# point), keep only the last row after sorting by "date_as_POSIXct"
+# Investigation of multiple entries revealed that those in "oa" table were not
+# resolved by keeping the most recent entry, but by sorting each participant's 
+# entries chronologically and then recoding the session column so that it reflects 
+# the expected session order for the number of entries present for that participant
 
-flt_dat_b_nrow_before <- sapply(flt_dat_b, nrow)
+  # TODO (use more robust approach to get these): Collect participants with multiple 
+  # "oa" entries from "report_dups_list()" above
 
-for (i in 1:length(flt_dat_b)) {
-  meaningful_cols <- names(flt_dat_b[[i]])[names(flt_dat_b[[i]]) != "X"]
+multiple_oa_entry_participant_ids <- 
+  c(8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 532, 539, 541, 552, 582, 590, 
+    597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
+    687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
+
+
+
+
+
+  # Sort by participant and then date
+
+flt_dat$oa <- flt_dat$oa[order(flt_dat$oa$participant_id, flt_dat$oa$date_as_POSIXct), ]
+
+  # For participants with multiple entries, recode session so it reflects the
+  # expected session order for number of entries present for each participant
+
+flt_dat_oa_split <- split(flt_dat$oa, flt_dat$oa$participant_id)
+
+flt_dat_oa_split <- lapply(flt_dat_oa_split, function(x) {
+  participant_id <- unique(x$participant_id)
   
-  if ("date_as_POSIXct" %in% names(flt_dat_b[[i]])) {
-    flt_dat_b[[i]] <- flt_dat_b[[i]][order(flt_dat_b[[i]][, "date_as_POSIXct"]), ]
+  if (participant_id %in% multiple_oa_entry_participant_ids) {
+    oa_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
     
-    flt_dat_b[[i]] <- flt_dat_b[[i]][!duplicated(flt_dat_b[[i]][, meaningful_cols], fromLast = TRUE), ]
-  } else {
-    stop(paste0("Table ", names(flt_dat_b[i]), "needs to be checked for duplicates"))
+    number_oa_sessions_done <- nrow(x)
+    
+    oa_sessions_done <- oa_sessions[1:number_oa_sessions_done]
+    
+    x$session_only <- oa_sessions_done
   }
-}
+  
+  return(x)
+})
+flt_dat$oa <- do.call(rbind, flt_dat_oa_split)
 
-flt_dat_b_nrow_after <- sapply(flt_dat_b, nrow)
+# Recheck for multiple unexpected entries in "oa" table
 
-flt_dat_b_nrow_rm <- flt_dat_b_nrow_before - flt_dat_b_nrow_after
-all(flt_dat_b_nrow_rm == 0) # No exact duplicates
-
-# Define functions to report duplicated rows on target columns. "report_dups_df" 
-# defined for Set A above is used within "report_dups_list_b" for Set B.
-
-report_dups_list_b <- function(dat) {
-  for (i in 1:length(dat)) {
-    if (names(dat[i]) == "dass21_as") {
-      duplicated_rows_eligibility <- 
-        dat[[i]][dat[[i]][, "session_only"] == "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
-      duplicated_rows_other <-
-        dat[[i]][dat[[i]][, "session_only"] != "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
-      duplicated_rows <- rbind(duplicated_rows_eligibility, duplicated_rows_other)
-      
-      if (nrow(duplicated_rows) > 0) {
-        p_ids <- duplicated_rows_eligibility[!is.na(duplicated_rows_eligibility$participant_id),
-                                             "participant_id"]
-
-        cat(nrow(duplicated_rows_eligibility), 
-            "duplicated rows at Eligibility for table:", names(dat[i]), "\n")
-        cat("With these ", length(p_ids), "'participant_id': ", p_ids, "\n")
-        cat(nrow(duplicated_rows_other), 
-            "duplicated rows at other time points for table:", names(dat[i]))
-        if (nrow(duplicated_rows_other) > 0) {
-          cat("\nWith these 'participant_id': ", duplicated_rows_other$participant_id)
-        }
-        cat("\n-------------------------\n")
-      } else {
-        cat("No duplicated rows for table:", names(dat[i]))
-        cat("\n-------------------------\n")
-      }
-    } else {
-      report_dups_df(dat[[i]],
-                     names(dat[i]), 
-                     c("participant_id", "session_only"), 
-                     "participant_id")
-    }
-  }
-}
-
-# Run function
-
-report_dups_list_b(flt_dat_b) # No duplicates
+report_dups_list(flt_dat) # None
 
 # ---------------------------------------------------------------------------- #
-# Resolve multiple entries in Set A ----
+# Resolve multiple entries for other tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # TODO: Describe what was done in R34 main outcomes paper. Script "R34.ipynb"
 # seems to inadequately sort by "date" (does not first convert to "datetime") 
 # when  keeping most recent entry, but see if it's an issue once the scale scores 
-# are regenerated (not an issue for the participant below).
-
-# test <- flt_dat$oa[flt_dat$oa$participant_id == 620, ]
-# View(test[order(test$id), ])
-# 
-# View(sep_dat$oa[sep_dat$oa$participant_id == 620, ])
+# are regenerated
 
 
 
@@ -1620,19 +1595,14 @@ report_dups_list_b(flt_dat_b) # No duplicates
 #   most recent date for each session)
 # 
 # oa:
-#   41 duplicated rows for table: oa
-# With these ' participant_id ':  8 14 17 432 425 16 421 445 485 539 532 623 620 
-# 683 598 712 674 582 669 745 625 684 723 644 627 659 590 731 708 701 727 687 662 
-# 541 719 597 710 640 552 435 600
-# 
-# - "R34_cleaning_script.R" says all duplicates are for scam/test accounts, but none 
-#   of these are test accounts based on Sonia's manually identified list of test accounts
-# - Other script says "get the latest entry for each participant" (does so by most 
-#   recent date for each session) and notes that 1767 has duplicated values at PRE 
-#   (not above) and then takes the sum to generate the score
-# 
-# ## Get the latest entry for each participant
-# oasis_analysis = oasis_analysis.sort_values(by="date").groupby(['participantID','session']).tail(1)
+# - Despite what the following scripts say, the method above was ultimately used
+#   - "R34_cleaning_script.R" says all duplicates are for scam/test accounts, but none 
+#     of these are test accounts based on Sonia's manually identified list of test accounts
+#   - Other script says "get the latest entry for each participant" (does so by most 
+#     recent date for each session) and notes that 1767 has duplicated values at PRE 
+#     (not above) and then takes the sum to generate the score
+#     - ## Get the latest entry for each participant
+#     - oasis_analysis = oasis_analysis.sort_values(by="date").groupby(['participantID','session']).tail(1)
 # 
 # task_log:
 # - Multiple SUDS at Sessions 1, 3, 6, 8 with no "tag"
@@ -1703,6 +1673,77 @@ keep_recent_entry_list <- function(dat) {
 # Run function
 
 flt_dat <- keep_recent_entry_list(flt_dat)
+
+# ---------------------------------------------------------------------------- #
+# Check for multiple entries in Set B ----
+# ---------------------------------------------------------------------------- #
+
+# For rows that have duplicated values on every meaningful column (i.e., every
+# column except "X" [only in "dass21_ds"]; no Set B tables contain "id" at this 
+# point), keep only the last row after sorting by "date_as_POSIXct"
+
+flt_dat_b_nrow_before <- sapply(flt_dat_b, nrow)
+
+for (i in 1:length(flt_dat_b)) {
+  meaningful_cols <- names(flt_dat_b[[i]])[names(flt_dat_b[[i]]) != "X"]
+  
+  if ("date_as_POSIXct" %in% names(flt_dat_b[[i]])) {
+    flt_dat_b[[i]] <- flt_dat_b[[i]][order(flt_dat_b[[i]][, "date_as_POSIXct"]), ]
+    
+    flt_dat_b[[i]] <- flt_dat_b[[i]][!duplicated(flt_dat_b[[i]][, meaningful_cols], fromLast = TRUE), ]
+  } else {
+    stop(paste0("Table ", names(flt_dat_b[i]), "needs to be checked for duplicates"))
+  }
+}
+
+flt_dat_b_nrow_after <- sapply(flt_dat_b, nrow)
+
+flt_dat_b_nrow_rm <- flt_dat_b_nrow_before - flt_dat_b_nrow_after
+all(flt_dat_b_nrow_rm == 0) # No exact duplicates
+
+# Define functions to report duplicated rows on target columns. "report_dups_df" 
+# defined for Set A above is used within "report_dups_list_b" for Set B.
+
+report_dups_list_b <- function(dat) {
+  for (i in 1:length(dat)) {
+    if (names(dat[i]) == "dass21_as") {
+      duplicated_rows_eligibility <- 
+        dat[[i]][dat[[i]][, "session_only"] == "Eligibility" &
+                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
+      duplicated_rows_other <-
+        dat[[i]][dat[[i]][, "session_only"] != "Eligibility" &
+                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
+      duplicated_rows <- rbind(duplicated_rows_eligibility, duplicated_rows_other)
+      
+      if (nrow(duplicated_rows) > 0) {
+        p_ids <- duplicated_rows_eligibility[!is.na(duplicated_rows_eligibility$participant_id),
+                                             "participant_id"]
+        
+        cat(nrow(duplicated_rows_eligibility), 
+            "duplicated rows at Eligibility for table:", names(dat[i]), "\n")
+        cat("With these ", length(p_ids), "'participant_id': ", p_ids, "\n")
+        cat(nrow(duplicated_rows_other), 
+            "duplicated rows at other time points for table:", names(dat[i]))
+        if (nrow(duplicated_rows_other) > 0) {
+          cat("\nWith these 'participant_id': ", duplicated_rows_other$participant_id)
+        }
+        cat("\n-------------------------\n")
+      } else {
+        cat("No duplicated rows for table:", names(dat[i]))
+        cat("\n-------------------------\n")
+      }
+    } else {
+      report_dups_df(dat[[i]],
+                     names(dat[i]), 
+                     c("participant_id", "session_only"), 
+                     "participant_id")
+    }
+  }
+}
+
+# Run function
+
+report_dups_list_b(flt_dat_b) # No duplicates
 
 # ---------------------------------------------------------------------------- #
 # Define scale items in Sets A and B ----
@@ -1961,75 +2002,22 @@ set_a_vs_cln_nrow$diff <- set_a_vs_cln_nrow$set_a - set_a_vs_cln_nrow$clean
 
 set_a_vs_cln_nrow
 
-# TODO: Use natural join to restrict to shared time points for "oa" table. The
-# discrepancies for 19 participants seem due to potential recoding of "session"
-# to resolve multiple entries in clean data (vs. keeping the most recent entry).
-# Asked Sonia on 12/3/21 to confirm how she resolved multiple entries.
+# Use natural join to restrict to shared time points for "oa" table. All scores
+# are the same.
 
 merge_oa <- merge(flt_dat_comp_rest$oa, 
                   sep_dat_comp_rest$oa,
                   by = c("participant_id", "session_only"),
                   all = FALSE)
 
-sum(merge_oa$oa_total == merge_oa$oasis_score) == 2474
-sum(merge_oa$oa_total != merge_oa$oasis_score) == 59
+all(merge_oa$oa_total == merge_oa$oasis_score)
 
-discrep_ids <- unique(merge_oa[merge_oa$oa_total != merge_oa$oasis_score, ]$participant_id)
-length(discrep_ids) == 19
-
-  # Define function to view "oa" table from relevant lists for given participant in Set A
-
-view_oa <- function(participant_id) {
-  View(sel_dat$oa[sel_dat$oa$participant_id == participant_id, ])
-  View(flt_dat$oa[flt_dat$oa$participant_id == participant_id, ])
-  View(sep_dat$oa[sep_dat$oa$participant_id == participant_id, ])
-  View(merge_oa[merge_oa$participant_id     == participant_id, ])
-}
-
-  # Run function for the 19 participants with discrepant scores
-
-# view_oa(14)  # Missing S5 but has two S8
-# view_oa(16)  # Missing S5 but has two S8
-# view_oa(17)  # Missing S4 but has two S8
-# view_oa(421) # Missing S1 but has two S8
-# view_oa(425) # Missing S1 but has two S8
-# view_oa(432) # Missing S1 but has two S8
-# view_oa(445) # Missing S1 but has two S8
-# view_oa(485) # Missing S1 but has two S8
-# view_oa(532) # Missing S1 but has two S8
-# view_oa(539) # Missing S1 but has two S8
-# view_oa(541) # Missing S1 but has two S8
-# view_oa(552) # Missing S1 but has two S4
-# view_oa(582) # Missing S1 but has two S7
-# view_oa(598) # Missing S1 but has two S5
-# view_oa(625) # Missing S1 but has two S4
-# view_oa(627) # Missing S1 but has two S3
-# view_oa(644) # Missing S1 but has two S3
-# view_oa(662) # Missing S1 but has two S3
-# view_oa(684) # Missing S1 but has two S3
-
-  # And other participants with same scores still have missing/multiple entries in
-  # Set A but not in clean data. Consider some other participants with unexpected 
-  # multiple entries (from list below).
-    # - 41 duplicated rows for table: oa
-    # With these ' participant_id ':  8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 
-    # 532, 539, 541, 552, 582, 590, 597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 
-    # 662, 669, 674, 683, 684, 687, 701, 708, 710, 712, 719, 723, 727, 731, 745
-    # - Likely more not shown below
-
-# view_oa(8)   # Missing S7 but has two S8
-# view_oa(600) # Missing S1 but has two S2
-
-  # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
+  # TODO: Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points. 
   # The session dates are inconsistent between these tables.
 
-flt_dat_comp_rest_oa_sessions <- 
-  flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% discrep_ids,
-                       c("participant_id", "date_as_POSIXct", "session_only")]
-flt_dat_comp_rest_rr_sessions <- 
-  flt_dat_comp_rest$rr[flt_dat_comp_rest$rr$participant_id %in% discrep_ids, 
-                       c("participant_id", "date_as_POSIXct", "session_only")]
+flt_dat_comp_rest_oa_sessions <- flt_dat_comp_rest$oa[c("participant_id", "date_as_POSIXct", "session_only")]
+flt_dat_comp_rest_rr_sessions <- flt_dat_comp_rest$rr[c("participant_id", "date_as_POSIXct", "session_only")]
 
 
 
@@ -2059,40 +2047,26 @@ merge_bbsiq <- merge(flt_dat_comp_rest$bbsiq,
 all(sum(round(merge_bbsiq$bbsiq_int_ratio, 7) != round(merge_bbsiq$bbsiq_physical_score, 7)) == 0,
     sum(round(merge_bbsiq$bbsiq_ext_ratio, 7) != round(merge_bbsiq$bbsiq_threat_score,   7)) == 0)
 
-# Until discrepancies with "oa" table are resolved, remove 41 participants with
-# multiple entries in "oa" table. After doing so, all scores are the same.
+# Extract relevant tables named to reflect their source
 
-multiple_oa_entry_participant_ids <- 
-  c(8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 532, 539, 541, 552, 582, 590, 
-    597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
-    687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
+merge_oa_rest         <- merge_oa
+merge_rr_rest         <- merge_rr
+merge_bbsiq_rest      <- merge_bbsiq
 
-merge_oa_rest2 <- merge_oa[!(merge_oa$participant_id %in% multiple_oa_entry_participant_ids), ]
-merge_rr_rest2 <- merge_rr[!(merge_rr$participant_id %in% multiple_oa_entry_participant_ids), ]
+participant_raw_rest  <- flt_dat_comp_rest$participant_export_dao
+participant_cln_rest  <- sep_dat_comp_rest$participant
 
-participant_raw_rest2 <- flt_dat_comp_rest$participant_export_dao[!(flt_dat_comp_rest$participant_export_dao %in%
-                                                                      multiple_oa_entry_participant_ids), ]
-participant_cln_rest2 <- sep_dat_comp_rest$participant[!(sep_dat_comp_rest$participant %in%
-                                                           multiple_oa_entry_participant_ids), ]
-
-demographics_raw_rest2 <- flt_dat_comp_rest$demographic[!(flt_dat_comp_rest$demographic$participant_id %in%
-                                                            multiple_oa_entry_participant_ids), ]
-demographics_cln_rest2 <- sep_dat_comp_rest$demographic[!(sep_dat_comp_rest$demographic$participant_id %in%
-                                                            multiple_oa_entry_participant_ids), ]
+demographics_raw_rest <- flt_dat_comp_rest$demographic
+demographics_cln_rest <- sep_dat_comp_rest$demographic
 
   # Credibility table is not in clean data, so obtain it from raw data ("flt_dat") above
-  # but still remove participants with multiple entries in "oa" table
 
-credibility_raw_rest2 <- flt_dat$credibility[!(flt_dat$credibility$participant_id %in% 
-                                                 multiple_oa_entry_participant_ids), ]
-
-  # All OA scores are now the same
-
-sum(merge_oa_rest2$oa_total != merge_oa_rest2$oasis_score) == 0
+credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
+                                               sep_dat$participant$participant_id, ]
 
 # Compare CBM condition
 
-sum(participant_raw_rest2$cbmCondition != participant_cln_rest2$participant_cbm_condition) == 0
+sum(participant_raw_rest$cbmCondition != participant_cln_rest$participant_cbm_condition) == 0
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set B ----
@@ -2157,80 +2131,12 @@ sum(merge_oa_b$oa_total != merge_oa_b$oasis_score) == 38
 discrep_ids_b <- unique(merge_oa_b[merge_oa_b$oa_total != merge_oa_b$oasis_score, ]$participant_id)
 length(discrep_ids_b) == 24
 
-  # None of these discrepant IDs are those discrepant in Set A
+  # All 24 participants are in Set A and lack discrepancies with clean data
 
-length(intersect(discrep_ids, discrep_ids_b)) == 0
+all(discrep_ids_b %in% merge_oa$participant_id)
 
-
-
-
-
-  # All 41 participants with multiple OA entries in Set A, including 19 with discrepancies 
-  # with clean data, are in Set B and lack discrepancies with clean data
-
-all(multiple_oa_entry_participant_ids %in% merge_oa_b$participant_id)
-all(discrep_ids %in% merge_oa_b$participant_id)
-
-    # It seems that in Set A, multiple OA entries were not resolved by keeping the
-    # most recent entry, but by sorting each participant's entries chronologically
-    # and then recoding the session column so that it reflects the expected session
-    # order for the number of entries present for that participant. After recoding
-    # session this way, the sessions for Set A and Set B are the same.
-
-sel_dat_multiple_set_a_oa_entries   <- sel_dat$oa[sel_dat$oa$participant_id     %in% multiple_oa_entry_participant_ids, ]
-sel_dat_b_multiple_set_a_oa_entries <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% multiple_oa_entry_participant_ids, ]
-
-session_order <- c("PRE", paste0("SESSION", 1:8), "POST")
-sel_dat_multiple_set_a_oa_entries$session_only   <- factor(sel_dat_multiple_set_a_oa_entries$session_only,
-                                                           levels = session_order)
-sel_dat_b_multiple_set_a_oa_entries$session_only <- factor(sel_dat_b_multiple_set_a_oa_entries$session_only,
-                                                           levels = session_order)
-
-sel_dat_multiple_set_a_oa_entries <- 
-  sel_dat_multiple_set_a_oa_entries[order(sel_dat_multiple_set_a_oa_entries$participant_id,
-                                          sel_dat_multiple_set_a_oa_entries$date_as_POSIXct), ]
-sel_dat_b_multiple_set_a_oa_entries <- 
-  sel_dat_b_multiple_set_a_oa_entries[order(sel_dat_b_multiple_set_a_oa_entries$participant_id,
-                                            sel_dat_b_multiple_set_a_oa_entries$date_as_POSIXct), ]
-
-all(sel_dat_multiple_set_a_oa_entries$date_as_POSIXct == sel_dat_b_multiple_set_a_oa_entries$date_as_POSIXct)
-
-sel_dat_multiple_set_a_oa_entries_split <- split(sel_dat_multiple_set_a_oa_entries,
-                                                 sel_dat_multiple_set_a_oa_entries$participant_id)
-
-sel_dat_multiple_set_a_oa_entries_split <- lapply(sel_dat_multiple_set_a_oa_entries_split, function(x) {
-  oa_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
-  
-  number_oa_sessions_done <- nrow(x)
-  
-  oa_sessions_done <- oa_sessions[1:number_oa_sessions_done]
-  
-  x$session_only <- oa_sessions_done
-  
-  return(x)
-})
-sel_dat_multiple_set_a_oa_entries <- do.call(rbind, sel_dat_multiple_set_a_oa_entries_split)
-
-all(sel_dat_multiple_set_a_oa_entries$session_only == sel_dat_b_multiple_set_a_oa_entries$session_only)
-
-    # After recoding session in the OA table in this way for Set A, the OA table's
-    # session dates seem consistent with those in the RR table
-
-sel_dat_rr_multiple_set_a_oa_entries <- sel_dat$rr[sel_dat$rr$participant_id %in% multiple_oa_entry_participant_ids, ]
-sel_dat_rr_multiple_set_a_oa_entries$session_only <- factor(sel_dat_rr_multiple_set_a_oa_entries$session_only,
-                                                            levels = c("PRE", paste0("SESSION", c(3, 6, 8)), "POST"))
-sel_dat_rr_multiple_set_a_oa_entries <- 
-  sel_dat_rr_multiple_set_a_oa_entries[order(sel_dat_rr_multiple_set_a_oa_entries$participant_id,
-                                             sel_dat_rr_multiple_set_a_oa_entries$session_only), ]
-
-sel_dat_oa_discrep_ids_sessions <- 
-  sel_dat_multiple_set_a_oa_entries[sel_dat_multiple_set_a_oa_entries$participant_id       %in% discrep_ids,
-                       c("participant_id", "date_as_POSIXct", "session_only")]
-sel_dat_rr_discrep_ids_sessions <- 
-  sel_dat_rr_multiple_set_a_oa_entries[sel_dat_rr_multiple_set_a_oa_entries$participant_id %in% discrep_ids, 
-                       c("participant_id", "date_as_POSIXct", "session_only")]
-
-    # TODO: Try recoding session in Set A OASIS table using above approach
+  # TODO: Which session values make the most sense? The consecutive sessions in
+  # Set B are consistent across tables in terms of session dates (see below).
 
 
 
@@ -2317,24 +2223,20 @@ all(sum(round(merge_bbsiq_b$bbsiq_int_ratio, 7) != round(merge_bbsiq_b$bbsiq_phy
 
 dir.create("./data/intermediate/")
 
-# Export merged, restricted item-level OA and RR data
+# Export merged, restricted item-level OA, RR, and BBSIQ data
 
-write.csv(merge_oa_rest2, file = "./data/intermediate/merge_oa_rest2.csv", 
-          row.names = FALSE)
-write.csv(merge_rr_rest2, file = "./data/intermediate/merge_rr_rest2.csv", 
-          row.names = FALSE)
+write.csv(merge_oa_rest,    file = "./data/intermediate/merge_oa_rest.csv",    row.names = FALSE)
+write.csv(merge_rr_rest,    file = "./data/intermediate/merge_rr_rest.csv",    row.names = FALSE)
+write.csv(merge_bbsiq_rest, file = "./data/intermediate/merge_bbsiq_rest.csv", row.names = FALSE)
 
 # Export raw restricted participant data (contains more columns than clean data)
 
-write.csv(participant_raw_rest2, file = "./data/intermediate/participant_raw_rest2.csv", 
-          row.names = FALSE)
+write.csv(participant_raw_rest, file = "./data/intermediate/participant_raw_rest.csv", row.names = FALSE)
 
 # Export clean restricted demographics data (cleaner than raw data)
 
-write.csv(demographics_cln_rest2, file = "./data/intermediate/demographics_cln_rest2.csv", 
-          row.names = FALSE)
+write.csv(demographics_cln_rest, file = "./data/intermediate/demographics_cln_rest.csv", row.names = FALSE)
 
 # Export raw restricted credibility data (not available in clean data)
 
-write.csv(credibility_raw_rest2, file = "./data/intermediate/credibility_raw_rest2.csv", 
-          row.names = FALSE)
+write.csv(credibility_raw_rest, file = "./data/intermediate/credibility_raw_rest.csv", row.names = FALSE)

@@ -32,6 +32,12 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
+# TODO: Update with new "_rest.csv" files (instead of "_rest2.csv")
+
+
+
+
+
 mrg_oa      <- read.csv("./data/intermediate/merge_oa_rest2.csv")
 participant <- read.csv("./data/intermediate/participant_raw_rest2.csv")
 mrg_rr      <- read.csv("./data/intermediate/merge_rr_rest2.csv")
