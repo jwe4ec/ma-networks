@@ -2014,11 +2014,69 @@ all(merge_oa$oa_total == merge_oa$oasis_score)
 
   # TODO: Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points. 
-  # The session dates are inconsistent between these tables.
+  # The session dates are inconsistent for 30 participants between these tables.
 
 flt_dat_comp_rest_oa_sessions <- flt_dat_comp_rest$oa[c("participant_id", "date_as_POSIXct", "session_only")]
 flt_dat_comp_rest_rr_sessions <- flt_dat_comp_rest$rr[c("participant_id", "date_as_POSIXct", "session_only")]
 
+flt_dat_comp_rest_oa_sessions$date_only_as_POSIXct_oa <- 
+  as.Date(format(flt_dat_comp_rest_oa_sessions$date_as_POSIXct, "%Y-%m-%d"))
+flt_dat_comp_rest_rr_sessions$date_only_as_POSIXct_rr <- 
+  as.Date(format(flt_dat_comp_rest_rr_sessions$date_as_POSIXct, "%Y-%m-%d"))
+
+flt_dat_comp_rest_oa_rr_sessions_merge <- merge(flt_dat_comp_rest_oa_sessions, 
+                                                flt_dat_comp_rest_rr_sessions,
+                                                by = c("participant_id", "session_only"),
+                                                suffixes = c("_oa", "_rr"),
+                                                all = FALSE)
+
+set_a_inconsistent_session_dates_idx <- 
+  which(flt_dat_comp_rest_oa_rr_sessions_merge$date_only_as_POSIXct_oa != 
+        flt_dat_comp_rest_oa_rr_sessions_merge$date_only_as_POSIXct_rr)
+
+set_a_inconsistent_session_dates_pids <-
+  sort(unique(flt_dat_comp_rest_oa_rr_sessions_merge$participant_id[set_a_inconsistent_session_dates_idx]))
+
+length(set_a_inconsistent_session_dates_pids) == 30
+
+class(flt_dat_comp_rest_oa_sessions$participant_id) == "integer"
+flt_dat_comp_rest_rr_sessions$participant_id <- as.integer(flt_dat_comp_rest_rr_sessions$participant_id)
+flt_dat_comp_rest_rr_sessions <- 
+  flt_dat_comp_rest_rr_sessions[order(flt_dat_comp_rest_rr_sessions$participant_id), ]
+
+# View(flt_dat_comp_rest_oa_sessions[flt_dat_comp_rest_oa_sessions$participant_id %in%
+#                                      set_a_inconsistent_session_dates_pids, ])
+# View(flt_dat_comp_rest_rr_sessions[flt_dat_comp_rest_rr_sessions$participant_id %in%
+#                                      set_a_inconsistent_session_dates_pids, ])
+
+
+
+
+
+  # TODO: Look for skipped sessions in OASIS table in Set A
+
+possible_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
+
+flt_dat_comp_rest_oa_sessions$session_only <- factor(flt_dat_comp_rest_oa_sessions$session_only,
+                                                     levels = possible_sessions)
+flt_dat_comp_rest_oa_sessions <- flt_dat_comp_rest_oa_sessions[order(flt_dat_comp_rest_oa_sessions$participant_id,
+                                                                     flt_dat_comp_rest_oa_sessions$session_only), ]
+
+flt_dat_comp_rest_oa_sessions_split <- split(flt_dat_comp_rest_oa_sessions, 
+                                             flt_dat_comp_rest_oa_sessions$participant_id)
+
+skipped_oa_session <- sapply(flt_dat_comp_rest_oa_sessions_split, function(x) {
+  obs <- x$session_only
+  idx <- match(obs, possible_sessions)
+  any(diff(idx) != 1)
+})
+
+skipped_oa_session_pids <- as.integer(names(skipped_oa_session)[skipped_oa_session])
+
+length(skipped_oa_session_pids) == 111
+
+# View(flt_dat_comp_rest_oa_sessions[flt_dat_comp_rest_oa_sessions$participant_id %in%
+#                                      skipped_oa_session_pids, ])
 
 
 
@@ -2134,6 +2192,14 @@ length(discrep_ids_b) == 24
   # All 24 participants are in Set A and lack discrepancies with clean data
 
 all(discrep_ids_b %in% merge_oa$participant_id)
+
+  # Only 10 of them are those in Set A with inconsistencies in session dates
+  # between Set A OASIS and RR tables, but all of them are in those in Set A
+  # with at least 1 skipped session in Set A OASIS table
+
+length(intersect(discrep_ids_b, set_a_inconsistent_session_dates_pids)) == 10
+
+all(discrep_ids_b %in% skipped_oa_session_pids)
 
   # TODO: Which session values make the most sense? The consecutive sessions in
   # Set B are consistent across tables in terms of session dates (see below).
