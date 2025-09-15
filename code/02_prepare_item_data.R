@@ -2053,30 +2053,91 @@ flt_dat_comp_rest_rr_sessions <-
 
 
 
-  # TODO: Look for skipped sessions in OASIS table in Set A
+  # TODO: Identify participants with sessions skipped in OASIS table in Set A
 
-possible_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
+    # Define function to identify participant IDs with a given number of nonconsecutive 
+    # expected "session_only" values (or any number, which is the default) in a table
 
-flt_dat_comp_rest_oa_sessions$session_only <- factor(flt_dat_comp_rest_oa_sessions$session_only,
-                                                     levels = possible_sessions)
-flt_dat_comp_rest_oa_sessions <- flt_dat_comp_rest_oa_sessions[order(flt_dat_comp_rest_oa_sessions$participant_id,
-                                                                     flt_dat_comp_rest_oa_sessions$session_only), ]
+identify_skipped_session_pids <- function(df, expected_session_order, n_sessions_skipped = "any") {
+  df_split <- split(df, df$participant_id)
+  
+  skipped_session <- sapply(df_split, function(x) {
+    obs_sessions <- x$session_only
+    obs_sessions_idx <- sort(match(obs_sessions, expected_session_order))
 
-flt_dat_comp_rest_oa_sessions_split <- split(flt_dat_comp_rest_oa_sessions, 
-                                             flt_dat_comp_rest_oa_sessions$participant_id)
+    if (any(diff(obs_sessions_idx) == 0)) warning("At least one repeated 'session_only' value")
+    
+    obs_n_sessions_skipped <- sum(diff(obs_sessions_idx) > 1)
 
-skipped_oa_session <- sapply(flt_dat_comp_rest_oa_sessions_split, function(x) {
-  obs <- x$session_only
-  idx <- match(obs, possible_sessions)
-  any(diff(idx) != 1)
-})
+    if (n_sessions_skipped == "any") {
+      obs_n_sessions_skipped >= 1
+    } else {
+      obs_n_sessions_skipped == n_sessions_skipped
+    }
+    
+  })
+  
+  skipped_session_pids <- as.integer(names(skipped_session)[skipped_session])
+  
+  return(skipped_session_pids)
+}
 
-skipped_oa_session_pids <- as.integer(names(skipped_oa_session)[skipped_oa_session])
+    # Run function. All skipped only one session.
 
-length(skipped_oa_session_pids) == 111
+possible_sessions_oa <- c("PRE", paste0("SESSION", 1:8), "POST")
 
-# View(flt_dat_comp_rest_oa_sessions[flt_dat_comp_rest_oa_sessions$participant_id %in%
-#                                      skipped_oa_session_pids, ])
+skipped_any_oa_session_set_a_pids    <- identify_skipped_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, "any")
+skipped_only_1_oa_session_set_a_pids <- identify_skipped_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, 1)
+
+setequal(skipped_any_oa_session_set_a_pids, skipped_only_1_oa_session_set_a_pids)
+
+length(skipped_only_1_oa_session_set_a_pids) == 111
+
+  # Determine which session was skipped
+
+    # Define function to identify participant IDs with a specific "session_only"
+    # value skipped in a table (i.e., have an observed session after the specific
+    # session but lack the specific session)
+
+identify_skipped_specific_session_pids <- function(df, expected_session_order, specific_session) {
+  specific_session_idx <- match(specific_session, expected_session_order)
+  last_expected_session_idx <- length(expected_session_order)
+
+  if (specific_session_idx == last_expected_session_idx) {
+    stop("Can't 'skip' the last expected session. Change 'specific_session'.")
+  }
+  
+  df_split <- split(df, df$participant_id)
+  
+  skipped_specific_session <- sapply(df_split, function(x) {
+    obs_sessions <- x$session_only
+    obs_sessions_idx <- sort(match(obs_sessions, expected_session_order))
+    max_obs_session_idx <- max(obs_sessions_idx)
+
+    if (max_obs_session_idx > specific_session_idx) {
+      !(specific_session %in% obs_sessions)
+    } else {
+      FALSE
+    }
+    
+  })
+  
+  skipped_specific_session_pids <- as.integer(names(skipped_specific_session)[skipped_specific_session])
+  
+  return(skipped_specific_session_pids)
+}
+
+    # Run function. Of the 111 with a session skipped, 109 have only S1 skipped, 
+    # and 2 have only S3 skipped
+
+skipped_oa_S1_set_a_pids <- identify_skipped_specific_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, "SESSION1")
+skipped_oa_S3_set_a_pids <- identify_skipped_specific_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, "SESSION3")
+
+skipped_only_oa_S1_set_a_pids <- intersect(skipped_only_1_oa_session_set_a_pids, skipped_oa_S1_set_a_pids)
+length(skipped_only_oa_S1_set_a_pids) == 109
+
+skipped_only_oa_S3_set_a_pids <- intersect(skipped_only_1_oa_session_set_a_pids, skipped_oa_S3_set_a_pids)
+length(skipped_only_oa_S3_set_a_pids) == 2
 
 
 
@@ -2194,15 +2255,27 @@ length(discrep_ids_b) == 24
 all(discrep_ids_b %in% merge_oa$participant_id)
 
   # Only 10 of them are those in Set A with inconsistencies in session dates
-  # between Set A OASIS and RR tables, but all of them are in those in Set A
-  # with at least 1 skipped session in Set A OASIS table
+  # between Set A OASIS and RR tables, but all of them are in the 109 in Set A
+  # with skipped Session 1 value in "session_only" in OASIS table
 
 length(intersect(discrep_ids_b, set_a_inconsistent_session_dates_pids)) == 10
 
-all(discrep_ids_b %in% skipped_oa_session_pids)
+all(discrep_ids_b %in% skipped_oa_S1_set_a_pids)
+
+  # No participants have skipped sessions in Set B OASIS table
+
+skipped_oa_session_set_b_pids <- identify_skipped_session_pids(flt_dat_comp_rest_b$oa, possible_sessions_oa, "any")
+
+length(skipped_oa_session_set_b_pids) == 0
 
   # TODO: Which session values make the most sense? The consecutive sessions in
   # Set B are consistent across tables in terms of session dates (see below).
+
+View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+View(sep_dat_comp_rest$oa[sep_dat_comp_rest$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+
+View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
+View(sep_dat_comp_rest$oa[sep_dat_comp_rest$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
 
 
 

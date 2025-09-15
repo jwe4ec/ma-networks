@@ -3,9 +3,6 @@ This repository contains analysis code for this project on the Open Science Fram
 
 ***TODO: Figure out what to do for 24 discrepant participants in Set B***
 
-- ***Figure out if they are in Set A, and if so, if their sessions match clean data***
-  - ***Then decide which session values makes the most sense***
-
 
 
 
@@ -70,12 +67,11 @@ This repository contains analysis code for this project on the Open Science Fram
 - **DASS-21-AS table**
   - Has `sessionId`, and session column at screening has both `ELIGIBLE` and blank values
 - **OASIS table**
-  - Matches values in clean data
-    - After handling multiple entries for 41 participants (all of which in Set A 
-    were missing a session and had two entries for another session)
-      - Rather than keeping most recent entry, this was done by sorting each participant's 
-      OASIS entries chronologically and then recoding to reflect the expected session order 
-      for the number of entries present
+  - Matches values in clean data after handling multiple entries for 41 participants 
+  (all of which in Set A were missing a session and had two entries for another session)
+    - Rather than keeping most recent entry, this was done by sorting each participant's 
+    OASIS entries chronologically and then recoding to reflect the expected session order 
+    for the number of entries present
   - TODO (check for all participants; this was the case for participants with multiple
   OA entries but after resolving the multiple entries the session dates are consistent
   for those participants): Session dates in OASIS table are inconsistent with those in RR 
@@ -133,9 +129,10 @@ This repository contains analysis code for this project on the Open Science Fram
     Issues [1](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/1#issue-403285089)
     and [2](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/2#issue-403285690)
   - After restricting to shared participants in clean OASIS data, total scores seem
-  discrepant for 24 participants. However, in each case the total scores are actually 
-  the same, but sessions are mismatched. The session column in clean data skips Session 
-  1 (i.e., lists Session 2 instead), whereas Set B lists consecutive sessions (i.e., lists Session 1).
+  discrepant for 24 participants. However, in each case the total scores are the same, 
+  but sessions are mismatched. The session column in clean data skips Session 1 (i.e., 
+  lists Session 2 instead), whereas Set B lists consecutive sessions.
+    - No participants in Set B have skipped session values for OASIS
   - TODO (check for all participants in Set A): Unlike in Set A, session dates in OASIS table are 
   consistent with those in RR table
   
