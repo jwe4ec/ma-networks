@@ -2016,28 +2016,44 @@ all(merge_oa$oa_total == merge_oa$oasis_score)
   # was assessed at every time point and "rr" was assessed at fewer time points. 
   # The session dates are inconsistent for 30 participants between these tables.
 
+    # Define function to identify participant IDs whose session dates between two
+    # tables are unequal
+
+get_unequal_session_dates_pids <- function(df1, df2,
+                                           df1_subscript, df2_subscript,
+                                           df1_date_as_POSIXct_col, df2_date_as_POSIXct_col) {
+  df1_date_only_as_POSIXct_name <- paste0("date_only_as_POSIXct", df1_subscript)
+  df2_date_only_as_POSIXct_name <- paste0("date_only_as_POSIXct", df2_subscript)
+  
+  fmt <- "%Y-%m-%d"
+  
+  df1[[df1_date_only_as_POSIXct_name]] <- as.Date(format(df1[[df1_date_as_POSIXct_col]], fmt))
+  df2[[df2_date_only_as_POSIXct_name]] <- as.Date(format(df2[[df2_date_as_POSIXct_col]], fmt))
+  
+  mrg <- merge(df1, df2,
+               by = c("participant_id", "session_only"),
+               suffixes = c(df1_subscript, df2_subscript),
+               all = FALSE)
+  
+  unequal_session_dates_idx <- which(mrg[[df1_date_only_as_POSIXct_name]] != 
+                                       mrg[[df2_date_only_as_POSIXct_name]])
+
+  unequal_session_dates_pids <- sort(unique(mrg$participant_id[unequal_session_dates_idx]))
+  
+  return(unequal_session_dates_pids)
+}
+
+    # Run function
+
 flt_dat_comp_rest_oa_sessions <- flt_dat_comp_rest$oa[c("participant_id", "date_as_POSIXct", "session_only")]
 flt_dat_comp_rest_rr_sessions <- flt_dat_comp_rest$rr[c("participant_id", "date_as_POSIXct", "session_only")]
 
-flt_dat_comp_rest_oa_sessions$date_only_as_POSIXct_oa <- 
-  as.Date(format(flt_dat_comp_rest_oa_sessions$date_as_POSIXct, "%Y-%m-%d"))
-flt_dat_comp_rest_rr_sessions$date_only_as_POSIXct_rr <- 
-  as.Date(format(flt_dat_comp_rest_rr_sessions$date_as_POSIXct, "%Y-%m-%d"))
+set_a_unequal_oa_rr_session_dates_pids <- 
+  get_unequal_session_dates_pids(flt_dat_comp_rest_oa_sessions, flt_dat_comp_rest_rr_sessions,
+                                 "_oa", "_rr",
+                                 "date_as_POSIXct", "date_as_POSIXct")
 
-flt_dat_comp_rest_oa_rr_sessions_merge <- merge(flt_dat_comp_rest_oa_sessions, 
-                                                flt_dat_comp_rest_rr_sessions,
-                                                by = c("participant_id", "session_only"),
-                                                suffixes = c("_oa", "_rr"),
-                                                all = FALSE)
-
-set_a_inconsistent_session_dates_idx <- 
-  which(flt_dat_comp_rest_oa_rr_sessions_merge$date_only_as_POSIXct_oa != 
-        flt_dat_comp_rest_oa_rr_sessions_merge$date_only_as_POSIXct_rr)
-
-set_a_inconsistent_session_dates_pids <-
-  sort(unique(flt_dat_comp_rest_oa_rr_sessions_merge$participant_id[set_a_inconsistent_session_dates_idx]))
-
-length(set_a_inconsistent_session_dates_pids) == 30
+length(set_a_unequal_oa_rr_session_dates_pids) == 30
 
 class(flt_dat_comp_rest_oa_sessions$participant_id) == "integer"
 flt_dat_comp_rest_rr_sessions$participant_id <- as.integer(flt_dat_comp_rest_rr_sessions$participant_id)
@@ -2045,9 +2061,35 @@ flt_dat_comp_rest_rr_sessions <-
   flt_dat_comp_rest_rr_sessions[order(flt_dat_comp_rest_rr_sessions$participant_id), ]
 
 # View(flt_dat_comp_rest_oa_sessions[flt_dat_comp_rest_oa_sessions$participant_id %in%
-#                                      set_a_inconsistent_session_dates_pids, ])
+#                                      set_a_unequal_oa_rr_session_dates_pids, ])
 # View(flt_dat_comp_rest_rr_sessions[flt_dat_comp_rest_rr_sessions$participant_id %in%
-#                                      set_a_inconsistent_session_dates_pids, ])
+#                                      set_a_unequal_oa_rr_session_dates_pids, ])
+
+
+
+
+
+  # TODO (check this): Compare session dates between "oa" and "task_log" tables in Set A
+
+flt_dat_task_log_oa_sessions <- flt_dat$task_log[flt_dat$task_log$task_name == "OA",
+                                                 c("participant_id",
+                                                   "corrected_datetime_as_POSIXct", 
+                                                   "session_only")]
+flt_dat_task_log_oa_sessions <- 
+  flt_dat_task_log_oa_sessions[order(flt_dat_task_log_oa_sessions$participant_id,
+                                     flt_dat_task_log_oa_sessions$corrected_datetime_as_POSIXct), ]
+
+set_a_unequal_oa_tl_session_dates_pids <- 
+  get_unequal_session_dates_pids(flt_dat_comp_rest_oa_sessions, flt_dat_task_log_oa_sessions,
+                                 "_oa", "_tl",
+                                 "date_as_POSIXct", "corrected_datetime_as_POSIXct")
+
+length(set_a_unequal_oa_tl_session_dates_pids) == 60
+
+# View(flt_dat_comp_rest_oa_sessions[flt_dat_comp_rest_oa_sessions$participant_id %in%
+#                                      set_a_unequal_oa_tl_session_dates_pids, ])
+# View(flt_dat_task_log_oa_sessions[flt_dat_task_log_oa_sessions$participant_id %in%
+#                                     set_a_unequal_oa_tl_session_dates_pids, ])
 
 
 
@@ -2127,8 +2169,9 @@ identify_skipped_specific_session_pids <- function(df, expected_session_order, s
   return(skipped_specific_session_pids)
 }
 
-    # Run function. Of the 111 with a session skipped, 109 have only S1 skipped, 
-    # and 2 have only S3 skipped
+    # Run function. Of the 111 with a session skipped, 109 have only S1 skipped
+    # (12 of these are those whose OASIS dates don't match their RR dates for the
+    # same session), and 2 have only S3 skipped
 
 skipped_oa_S1_set_a_pids <- identify_skipped_specific_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, "SESSION1")
 skipped_oa_S3_set_a_pids <- identify_skipped_specific_session_pids(flt_dat_comp_rest$oa, possible_sessions_oa, "SESSION3")
@@ -2136,8 +2179,11 @@ skipped_oa_S3_set_a_pids <- identify_skipped_specific_session_pids(flt_dat_comp_
 skipped_only_oa_S1_set_a_pids <- intersect(skipped_only_1_oa_session_set_a_pids, skipped_oa_S1_set_a_pids)
 length(skipped_only_oa_S1_set_a_pids) == 109
 
+length(intersect(set_a_unequal_oa_rr_session_dates_pids, skipped_oa_S1_set_a_pids)) == 12
+
 skipped_only_oa_S3_set_a_pids <- intersect(skipped_only_1_oa_session_set_a_pids, skipped_oa_S3_set_a_pids)
 length(skipped_only_oa_S3_set_a_pids) == 2
+
 
 
 
@@ -2258,7 +2304,7 @@ all(discrep_ids_b %in% merge_oa$participant_id)
   # between Set A OASIS and RR tables, but all of them are in the 109 in Set A
   # with skipped Session 1 value in "session_only" in OASIS table
 
-length(intersect(discrep_ids_b, set_a_inconsistent_session_dates_pids)) == 10
+length(intersect(discrep_ids_b, set_a_unequal_oa_rr_session_dates_pids)) == 10
 
 all(discrep_ids_b %in% skipped_oa_S1_set_a_pids)
 
@@ -2268,14 +2314,41 @@ skipped_oa_session_set_b_pids <- identify_skipped_session_pids(flt_dat_comp_rest
 
 length(skipped_oa_session_set_b_pids) == 0
 
-  # TODO: Which session values make the most sense? The consecutive sessions in
-  # Set B are consistent across tables in terms of session dates (see below).
+  # Session values of Set B are identical to Set A OASIS entries in "task_log".
+  # Thus, it seems session was corrected in Set B at some point.
 
-View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
-View(sep_dat_comp_rest$oa[sep_dat_comp_rest$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+flt_dat_task_log_oa <- flt_dat$task_log[flt_dat$task_log$task_name == "OA", ]
+flt_dat_task_log_oa <- flt_dat_task_log_oa[order(flt_dat_task_log_oa$participant_id,
+                                                 flt_dat_task_log_oa$corrected_datetime_as_POSIXct), ]
+flt_dat_task_log_oa$corrected_date_only_as_POSIXct <-
+  as.Date(format(flt_dat_task_log_oa$corrected_datetime_as_POSIXct, "%Y-%m-%d"))
 
-View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
-View(sep_dat_comp_rest$oa[sep_dat_comp_rest$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
+flt_dat_task_log_oa_test <- flt_dat_task_log_oa[flt_dat_task_log_oa$participant_id %in% skipped_oa_S1_set_a_pids, 
+                                                c("participant_id", "session_only", "task_name", 
+                                                  "corrected_datetime_as_POSIXct", "corrected_date_only_as_POSIXct")]
+row.names(flt_dat_task_log_oa_test) <- 1:nrow(flt_dat_task_log_oa_test)
+
+flt_dat_comp_rest_b_oa_test <- flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% 
+                                                        skipped_oa_S1_set_a_pids, ]
+row.names(flt_dat_comp_rest_b_oa_test) <- 1:nrow(flt_dat_comp_rest_b_oa_test)
+
+identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 
+          flt_dat_comp_rest_b_oa_test[c("participant_id", "session_only")])
+
+
+
+
+
+  # TODO: Which session values make the most sense? Seems that recoding Set A
+  # OASIS sessions to be consecutive (as in Set B) would be most plausible.
+
+# View(flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+# View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+# View(sep_dat_comp_rest$oa[sep_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
+# 
+# View(flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
+# View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
+# View(sep_dat_comp_rest$oa[sep_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
 
 
 
