@@ -1382,20 +1382,47 @@ identical(test1[, c("participant_id", "session_only", dass21_as_items)],
           test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
 
 # ---------------------------------------------------------------------------- #
-# Add OASIS and DASS-21-AS data for some participants in Set A from Set B ----
+# Add data missing for some participants in Set A ----
 # ---------------------------------------------------------------------------- #
 
+# Define function for labeling all rows of dataset with name of dataset's source
+
+label_dataset <- function(dat, dataset_name) {
+  dat <- lapply(dat, function(x) {
+    x$dataset <- dataset_name
+    
+    return(x)
+  })
+  
+  return(dat)
+}
+
+# Run function for Sets A and B and clean data
+
+sel_dat   <- label_dataset(sel_dat,   "raw_dat_son_a")
+sel_dat_b <- label_dataset(sel_dat_b, "raw_dat_son_b")
+sep_dat   <- label_dataset(sep_dat,   "dat_main_lg_scales")
+
+# Add Set B OASIS and DASS-21-AS data for participants missing such data in Set A
+# due to server error
+
+sel_dat_add <- sel_dat
+
+sel_dat_add$oa        <- merge(sel_dat_add$oa,
+                               sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ],
+                               all = TRUE, sort = FALSE)
+
+sel_dat_add$dass21_as <- merge(sel_dat_add$dass21_as,
+                               sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids, ],
+                               all = TRUE, sort = FALSE)
+
+# TODO: Add additional DASS-21-AS data for such participants in Set A from "R34_Cronbach.csv"
 
 
 
 
 
-
-# ---------------------------------------------------------------------------- #
-# Add DASS-21-AS data for some participants in Set A from "R34_Cronbach.csv" ----
-# ---------------------------------------------------------------------------- #
-
-# TODO
+# TODO: Add these participants and their condition to "participant" table from clean data
 
 
 
