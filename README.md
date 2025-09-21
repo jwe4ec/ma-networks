@@ -75,15 +75,15 @@ This repository contains analysis code for this project on the Open Science Fram
     - As a result, session dates in OASIS table are inconsistent with those in 
     RR table for 12 participants
       - (18 other participants have different [but not inconsistent] dates for other reasons)
-    - Sessions in OASIS table differ from those for OASIS entries in Task Log table
-      - ***TODO: Show this in code***
+    - Sessions in OASIS table differ from those for OASIS entries in Task Log table,
+    unless sessions in OASIS table are recoded to be consecutive
+      - In Set B, the session values in OASIS table seem to have been recoded to be consecutive
     - Seems implausible that, per sessions in OASIS table, in many cases S2 OASIS 
     was completed a few min after pretx OASIS. Seems more plausible that S1 OASIS 
     was completed a few min after pretx OASIS.
       - (Participants could start S1 right after pretx but had to wait 2 days after
       completing S1 to start S2)
-    - In Set B, the session values in OASIS table seem to have been recoded to be consecutive
-      - ***TODO: Seems we should recode sessions in Set A OASIS table to be consecutive.
+    - ***TODO: Seems we should recode sessions in Set A OASIS table to be consecutive.
       Asked Julie/Sonia/Laura/Bethany about this on 9/15/2025.***
 - **RR table**
   - Matches values in clean data

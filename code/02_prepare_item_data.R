@@ -1548,31 +1548,43 @@ multiple_oa_entry_participant_ids <-
 
 
 
+# Define function to recode session in "oa" table for certain participants so that it 
+# reflects the expected session order for number of entries present for each participant
+
+recode_oa_session_to_expected_order <- function(oa_tbl, participant_ids) {
   # Sort by participant and then date
-
-flt_dat$oa <- flt_dat$oa[order(flt_dat$oa$participant_id, flt_dat$oa$date_as_POSIXct), ]
-
-  # For participants with multiple entries, recode session so it reflects the
-  # expected session order for number of entries present for each participant
-
-flt_dat_oa_split <- split(flt_dat$oa, flt_dat$oa$participant_id)
-
-flt_dat_oa_split <- lapply(flt_dat_oa_split, function(x) {
-  participant_id <- unique(x$participant_id)
   
-  if (participant_id %in% multiple_oa_entry_participant_ids) {
-    oa_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
-    
-    number_oa_sessions_done <- nrow(x)
-    
-    oa_sessions_done <- oa_sessions[1:number_oa_sessions_done]
-    
-    x$session_only <- oa_sessions_done
-  }
+  oa_tbl <- oa_tbl[order(oa_tbl$participant_id, oa_tbl$date_as_POSIXct), ]
   
-  return(x)
-})
-flt_dat$oa <- do.call(rbind, flt_dat_oa_split)
+  # For specified participants, recode session so it reflects the expected session 
+  # order for number of entries present for each participant
+  
+  oa_split <- split(oa_tbl, oa_tbl$participant_id)
+  
+  oa_split <- lapply(oa_split, function(x) {
+    participant_id <- unique(x$participant_id)
+    
+    if (participant_id %in% participant_ids) {
+      oa_sessions <- c("PRE", paste0("SESSION", 1:8), "POST")
+      
+      number_oa_sessions_done <- nrow(x)
+      
+      oa_sessions_done <- oa_sessions[1:number_oa_sessions_done]
+      
+      x$session_only <- oa_sessions_done
+    }
+    
+    return(x)
+  })
+  oa_tbl <- do.call(rbind, oa_split)
+  row.names(oa_tbl) <- 1:nrow(oa_tbl)
+
+  return(oa_tbl)
+}
+
+# Run function for participants with multiple entries
+
+flt_dat$oa <- recode_oa_session_to_expected_order(flt_dat$oa, multiple_oa_entry_participant_ids)
 
 # Recheck for multiple unexpected entries in "oa" table
 
@@ -2338,9 +2350,25 @@ row.names(flt_dat_comp_rest_b_oa_test) <- 1:nrow(flt_dat_comp_rest_b_oa_test)
 identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 
           flt_dat_comp_rest_b_oa_test[c("participant_id", "session_only")])
 
+  # By contrast, session values of Set A OASIS table are different from Set A
+  # OASIS entries in "task_log"
 
+flt_dat_comp_rest_oa_test <- flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% 
+                                                    skipped_oa_S1_set_a_pids, ]
+flt_dat_comp_rest_oa_test <- flt_dat_comp_rest_oa_test[order(flt_dat_comp_rest_oa_test$participant_id,
+                                                             flt_dat_comp_rest_oa_test$session_only), ]
+row.names(flt_dat_comp_rest_oa_test) <- 1:nrow(flt_dat_comp_rest_oa_test)
 
+identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 
+          flt_dat_comp_rest_oa_test[c("participant_id", "session_only")]) == FALSE
 
+    # But when session is recoded to expected order, session values of Set A OASIS
+    # table match those from Set A OASIS entries in "task_log"
+
+flt_dat_comp_rest_oa_test <- recode_oa_session_to_expected_order(flt_dat_comp_rest_oa_test, skipped_oa_S1_set_a_pids)
+
+identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 
+          flt_dat_comp_rest_oa_test[c("participant_id", "session_only")])
 
   # TODO: Which session values make the most sense? Seems that recoding Set A
   # OASIS sessions to be consecutive (as in Set B) would be most plausible.
