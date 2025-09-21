@@ -1251,6 +1251,30 @@ lapply(sel_dat_b, function(x) sum(unique(x$participant_id) %in% miss_ids))
 lapply(sel_dat,   function(x) nrow(x[x$participant_id %in% miss_ids, ]))
 lapply(sel_dat_b, function(x) nrow(x[x$participant_id %in% miss_ids, ]))
 
+    # TODO: Inspect "task_log" entries for OASIS
+
+sel_dat_task_log_oa_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
+                                                   sel_dat$task_log$task_name == "OA", ]
+sel_dat_task_log_oa_miss_ids <- 
+  sel_dat_task_log_oa_miss_ids[order(sel_dat_task_log_oa_miss_ids$participant_id,
+                                     sel_dat_task_log_oa_miss_ids$session_only), ]
+
+# View(sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ])
+
+
+
+
+
+    # TODO: Inspect "task_log" entries for DASS-21-AS
+
+sel_dat_task_log_dass21_as_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
+                                                          sel_dat$task_log$task_name == "DASS21_AS", ]
+sel_dat_task_log_dass21_as_miss_ids <- 
+  sel_dat_task_log_dass21_as_miss_ids[order(sel_dat_task_log_dass21_as_miss_ids$participant_id,
+                                            sel_dat_task_log_dass21_as_miss_ids$session_only), ]
+
+# View(sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids, ])
+
 
 
 
