@@ -31,11 +31,14 @@
 #    available. However, the file was likely created by adjusting the script "R34.ipynb" 
 #    in the study's Data Cleaning folder (https://bit.ly/3CLi5It) on GitHub.
 
-# 2. Raw data files obtained from Sonia Baee on 9/3/2020 (called Set A in this script),
-#    who stated on that date that they represent the latest version of the database on
-#    the R34 server and that she obtained them from Claudia Calicho-Mamani
+# 2. 26 raw data files obtained from Sonia Baee on 9/3/2020, who stated on that 
+#    date that they represent the latest version of the database on the R34 server 
+#    and that she obtained them from Claudia Calicho-Mamani. These are Set A from
+#    "public-v1.0.0.zip" on the Public Component (https://osf.io/2x3jq/) of the
+#    OSF project for the Managing Anxiety study (https://osf.io/pvd67/).
 
-# 3. A partial set of raw data files obtained from Sonia Baee on 1/18/2023 (called Set B)
+# 3. A partial set of 20 raw data files obtained from Sonia Baee on 1/18/2023.
+#    These are Set B from "public-v1.0.0.zip".
 
 # It also imports "notes.csv" obtained from Sonia Baee on 11/24/2021. A "notes.csv" is
 # loaded by the "R34.ipynb" script on GitHub (whose last commit "b3c370b" was 4/16/2020).
@@ -441,54 +444,54 @@ raw_dat_b$DD_FU_02_02_2019 <- NULL
 # Shorten table names in Set A ----
 # ---------------------------------------------------------------------------- #
 
-names(raw_dat)[names(raw_dat) == "AnxietyTriggers_recovered_Feb_02_2019"]      <- "anxiety_triggers"
-names(raw_dat)[names(raw_dat) == "BBSIQ_recovered_Feb_02_2019"]                <- "bbsiq"
-names(raw_dat)[names(raw_dat) == "CC_recovered_Feb_02_2019"]                   <- "cc"
-names(raw_dat)[names(raw_dat) == "CIHS_Feb_02_2019_FIXED"]                     <- "cihs"
-names(raw_dat)[names(raw_dat) == "Credibility_recovered_Feb_02_2019"]          <- "credibility"
-names(raw_dat)[names(raw_dat) == "DASS21_AS_recovered_Feb_02_2019"]            <- "dass21_as"
-names(raw_dat)[names(raw_dat) == "DASS21_DS_recovered_Feb_02_2019_FIXED"]      <- "dass21_ds"
-names(raw_dat)[names(raw_dat) == "DD_recovered_Feb_02_2019"]                   <- "dd"
-names(raw_dat)[names(raw_dat) == "Demographic_recovered_Feb_02_2019"]          <- "demographic"
-names(raw_dat)[names(raw_dat) == "EmailLogDAO_recovered_Feb_02_2019"]          <- "email_log"
-names(raw_dat)[names(raw_dat) == "GiftLogDAO_recovered_Feb_02_2019"]           <- "gift_log"
-names(raw_dat)[names(raw_dat) == "ImageryPrime_recovered_Feb_02_2019"]         <- "imagery_prime"
-names(raw_dat)[names(raw_dat) == "ImpactAnxiousImagery_recovered_Feb_02_2019"] <- "impact_anxious_imagery"
-names(raw_dat)[names(raw_dat) == "MentalHealthHxTx_recovered_Feb_02_2019"]     <- "mental_health_hx_tx"
-names(raw_dat)[names(raw_dat) == "MultiUserExperience_recovered_Feb_02_2019"]  <- "multi_user_experience"
-names(raw_dat)[names(raw_dat) == "OA_recovered_Feb_02_2019"]                   <- "oa"
-names(raw_dat)[names(raw_dat) == "ParticipantExportDAO_recovered_Feb_02_2019"] <- "participant_export_dao"
-names(raw_dat)[names(raw_dat) == "QOL_recovered_Feb_02_2019"]                  <- "qol"
-names(raw_dat)[names(raw_dat) == "ReturnIntention_recovered_Feb_02_2019"]      <- "return_intention"
-names(raw_dat)[names(raw_dat) == "RR_recovered_Feb_02_2019"]                   <- "rr"
-names(raw_dat)[names(raw_dat) == "SUDS_recovered_Feb_02_2019"]                 <- "suds"
-names(raw_dat)[names(raw_dat) == "TaskLog_final_FIXED"]                        <- "task_log"
-names(raw_dat)[names(raw_dat) == "TrialDAO_recovered_Feb_02_2019"]             <- "trial_dao"
-names(raw_dat)[names(raw_dat) == "VisitDAO_recovered_Feb_02_2019"]             <- "visit_dao"
+names(raw_dat)[names(raw_dat) == "AnxietyTriggers_recovered_Feb_02_2019"]       <- "anxiety_triggers"
+names(raw_dat)[names(raw_dat) == "BBSIQ_recovered_Feb_02_2019"]                 <- "bbsiq"
+names(raw_dat)[names(raw_dat) == "CC_recovered_Feb_02_2019"]                    <- "cc"
+names(raw_dat)[names(raw_dat) == "CIHS_Feb_02_2019_FIXED"]                      <- "cihs"
+names(raw_dat)[names(raw_dat) == "Credibility_recovered_Feb_02_2019"]           <- "credibility"
+names(raw_dat)[names(raw_dat) == "DASS21_AS_recovered_Feb_02_2019"]             <- "dass21_as"
+names(raw_dat)[names(raw_dat) == "DASS21_DS_recovered_Feb_02_2019_FIXED"]       <- "dass21_ds"
+names(raw_dat)[names(raw_dat) == "DD_recovered_Feb_02_2019"]                    <- "dd"
+names(raw_dat)[names(raw_dat) == "Demographic_recovered_Feb_02_2019"]           <- "demographic"
+names(raw_dat)[names(raw_dat) == "EmailLogDAO_recovered_Feb_02_2019"]           <- "email_log"
+names(raw_dat)[names(raw_dat) == "GiftLogDAO_recovered_Feb_02_2019_redacted"]   <- "gift_log"
+names(raw_dat)[names(raw_dat) == "ImageryPrime_recovered_Feb_02_2019_redacted"] <- "imagery_prime"
+names(raw_dat)[names(raw_dat) == "ImpactAnxiousImagery_recovered_Feb_02_2019"]  <- "impact_anxious_imagery"
+names(raw_dat)[names(raw_dat) == "MentalHealthHxTx_recovered_Feb_02_2019"]      <- "mental_health_hx_tx"
+names(raw_dat)[names(raw_dat) == "MultiUserExperience_recovered_Feb_02_2019"]   <- "multi_user_experience"
+names(raw_dat)[names(raw_dat) == "OA_recovered_Feb_02_2019"]                    <- "oa"
+names(raw_dat)[names(raw_dat) == "ParticipantExportDAO_recovered_Feb_02_2019"]  <- "participant_export_dao"
+names(raw_dat)[names(raw_dat) == "QOL_recovered_Feb_02_2019"]                   <- "qol"
+names(raw_dat)[names(raw_dat) == "ReturnIntention_recovered_Feb_02_2019"]       <- "return_intention"
+names(raw_dat)[names(raw_dat) == "RR_recovered_Feb_02_2019"]                    <- "rr"
+names(raw_dat)[names(raw_dat) == "SUDS_recovered_Feb_02_2019"]                  <- "suds"
+names(raw_dat)[names(raw_dat) == "TaskLog_final_FIXED"]                         <- "task_log"
+names(raw_dat)[names(raw_dat) == "TrialDAO_recovered_Feb_02_2019"]              <- "trial_dao"
+names(raw_dat)[names(raw_dat) == "VisitDAO_recovered_Feb_02_2019"]              <- "visit_dao"
 
 # ---------------------------------------------------------------------------- #
 # Shorten table names in Set B ----
 # ---------------------------------------------------------------------------- #
 
-names(raw_dat_b)[names(raw_dat_b) == "AnxietyTriggers_02_02_2019"]      <- "anxiety_triggers"
-names(raw_dat_b)[names(raw_dat_b) == "BBSIQ_02_02_2019"]                <- "bbsiq"
-names(raw_dat_b)[names(raw_dat_b) == "CC_02_02_2019"]                   <- "cc"
-names(raw_dat_b)[names(raw_dat_b) == "CIHS_02_02_2019"]                 <- "cihs"
-names(raw_dat_b)[names(raw_dat_b) == "Credibility_02_02_2019"]          <- "credibility"
-names(raw_dat_b)[names(raw_dat_b) == "DASS21_AS_02_02_2019"]            <- "dass21_as"
-names(raw_dat_b)[names(raw_dat_b) == "DASS21_DS_02_02_2019"]            <- "dass21_ds"
-names(raw_dat_b)[names(raw_dat_b) == "DD_02_02_2019"]                   <- "dd"
-names(raw_dat_b)[names(raw_dat_b) == "Demographics_02_02_2019"]         <- "demographic"
-names(raw_dat_b)[names(raw_dat_b) == "ImageryPrime_02_02_2019"]         <- "imagery_prime"
-names(raw_dat_b)[names(raw_dat_b) == "ImpactAnxiousImagery_02_02_2019"] <- "impact_anxious_imagery"
-names(raw_dat_b)[names(raw_dat_b) == "MentalHealthHxTx_02_02_2019"]     <- "mental_health_hx_tx"
-names(raw_dat_b)[names(raw_dat_b) == "MultiUserExperience_02_02_2019"]  <- "multi_user_experience"
-names(raw_dat_b)[names(raw_dat_b) == "OA_02_02_2019"]                   <- "oa"
-names(raw_dat_b)[names(raw_dat_b) == "QOL_02_02_2019"]                  <- "qol"
-names(raw_dat_b)[names(raw_dat_b) == "ReturnIntention_02_02_2019"]      <- "return_intention"
-names(raw_dat_b)[names(raw_dat_b) == "RR_02_02_2019"]                   <- "rr"
-names(raw_dat_b)[names(raw_dat_b) == "SUDS_02_02_2019"]                 <- "suds"
-names(raw_dat_b)[names(raw_dat_b) == "TrialDAO_02_02_2019"]             <- "trial_dao"
+names(raw_dat_b)[names(raw_dat_b) == "AnxietyTriggers_02_02_2019"]       <- "anxiety_triggers"
+names(raw_dat_b)[names(raw_dat_b) == "BBSIQ_02_02_2019"]                 <- "bbsiq"
+names(raw_dat_b)[names(raw_dat_b) == "CC_02_02_2019"]                    <- "cc"
+names(raw_dat_b)[names(raw_dat_b) == "CIHS_02_02_2019"]                  <- "cihs"
+names(raw_dat_b)[names(raw_dat_b) == "Credibility_02_02_2019"]           <- "credibility"
+names(raw_dat_b)[names(raw_dat_b) == "DASS21_AS_02_02_2019"]             <- "dass21_as"
+names(raw_dat_b)[names(raw_dat_b) == "DASS21_DS_02_02_2019"]             <- "dass21_ds"
+names(raw_dat_b)[names(raw_dat_b) == "DD_02_02_2019"]                    <- "dd"
+names(raw_dat_b)[names(raw_dat_b) == "Demographics_02_02_2019"]          <- "demographic"
+names(raw_dat_b)[names(raw_dat_b) == "ImageryPrime_02_02_2019_redacted"] <- "imagery_prime"
+names(raw_dat_b)[names(raw_dat_b) == "ImpactAnxiousImagery_02_02_2019"]  <- "impact_anxious_imagery"
+names(raw_dat_b)[names(raw_dat_b) == "MentalHealthHxTx_02_02_2019"]      <- "mental_health_hx_tx"
+names(raw_dat_b)[names(raw_dat_b) == "MultiUserExperience_02_02_2019"]   <- "multi_user_experience"
+names(raw_dat_b)[names(raw_dat_b) == "OA_02_02_2019"]                    <- "oa"
+names(raw_dat_b)[names(raw_dat_b) == "QOL_02_02_2019"]                   <- "qol"
+names(raw_dat_b)[names(raw_dat_b) == "ReturnIntention_02_02_2019"]       <- "return_intention"
+names(raw_dat_b)[names(raw_dat_b) == "RR_02_02_2019"]                    <- "rr"
+names(raw_dat_b)[names(raw_dat_b) == "SUDS_02_02_2019"]                  <- "suds"
+names(raw_dat_b)[names(raw_dat_b) == "TrialDAO_02_02_2019"]              <- "trial_dao"
 
 # ---------------------------------------------------------------------------- #
 # Restrict raw data tables to those relevant to present analysis for Sets A and B ----
