@@ -1255,11 +1255,12 @@ lapply(sel_dat_b, function(x) nrow(x[x$participant_id %in% miss_ids, ]))
 
 sel_dat_task_log_oa_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
                                                    sel_dat$task_log$task_name == "OA", ]
-sel_dat_task_log_oa_miss_ids <- 
-  sel_dat_task_log_oa_miss_ids[order(sel_dat_task_log_oa_miss_ids$participant_id,
-                                     sel_dat_task_log_oa_miss_ids$session_only), ]
+sel_dat_task_log_oa_miss_ids <- sort_by_part_then_session(sel_dat_task_log_oa_miss_ids,
+                                                          "participant_id", "session_only")
 
-# View(sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ])
+sel_dat_b_oa_miss_ids <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ]
+sel_dat_b_oa_miss_ids <- sort_by_part_then_session(sel_dat_b_oa_miss_ids,
+                                                   "participant_id", "session_only")
 
 
 
@@ -1269,9 +1270,8 @@ sel_dat_task_log_oa_miss_ids <-
 
 sel_dat_task_log_dass21_as_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
                                                           sel_dat$task_log$task_name == "DASS21_AS", ]
-sel_dat_task_log_dass21_as_miss_ids <- 
-  sel_dat_task_log_dass21_as_miss_ids[order(sel_dat_task_log_dass21_as_miss_ids$participant_id,
-                                            sel_dat_task_log_dass21_as_miss_ids$session_only), ]
+sel_dat_task_log_dass21_as_miss_ids <- sort_by_part_then_session(sel_dat_task_log_dass21_as_miss_ids,
+                                                                 "participant_id", "session_only")
 
 # View(sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids, ])
 
@@ -2013,23 +2013,6 @@ all(mapply(length_diff_participant_ids, sep_dat_comp_rest, flt_dat_comp_rest) ==
 
 # Sort tables by participant and then session
 
-  # Define function to sort by participant and then (if present) by a session column
-
-sort_by_part_then_session <- function(dat, part_col, session_col) {
-  for (i in 1:length(dat)) {
-    if (session_col %in% names(dat[[i]])) {
-      dat[[i]] <- dat[[i]][order(dat[[i]][, part_col],
-                                 dat[[i]][, session_col]), ]
-    } else {
-      dat[[i]] <- dat[[i]][order(dat[[i]][, part_col]), ]
-    }
-  }
-  
-  return(dat)
-}
-
-  # Run function
-
 flt_dat_comp_rest <- sort_by_part_then_session(flt_dat_comp_rest, "participant_id", "session_only")
 sep_dat_comp_rest <- sort_by_part_then_session(sep_dat_comp_rest, "participant_id", "session_only")
 
@@ -2379,8 +2362,8 @@ identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")],
 
 flt_dat_comp_rest_oa_test <- flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% 
                                                     skipped_oa_S1_set_a_pids, ]
-flt_dat_comp_rest_oa_test <- flt_dat_comp_rest_oa_test[order(flt_dat_comp_rest_oa_test$participant_id,
-                                                             flt_dat_comp_rest_oa_test$session_only), ]
+flt_dat_comp_rest_oa_test <- sort_by_part_then_session(flt_dat_comp_rest_oa_test,
+                                                       "participant_id", "session_only")
 row.names(flt_dat_comp_rest_oa_test) <- 1:nrow(flt_dat_comp_rest_oa_test)
 
 identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 

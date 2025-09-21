@@ -68,3 +68,29 @@ identify_cols <- function(df, grep_pattern, exclude_cols = NULL) {
     df_colnames[select_idx]
   }
 }
+
+# ---------------------------------------------------------------------------- #
+# Define sort_by_part_then_session() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to sort a data frame (or each data frame in a list) by participant 
+# and then (if present) by a session column
+
+sort_by_part_then_session <- function(dat, part_col, session_col) {
+  sort_df <- function(df) {
+    if (session_col %in% names(df)) {
+      df <- df[order(df[, part_col], df[, session_col]), ]
+    } else {
+      df <- df[order(df[, part_col]), ]
+    }
+    return(df)
+  }
+  
+  if (is.list(dat) & !is.data.frame(dat)) {
+    dat <- lapply(dat, sort_df)
+  } else {
+    dat <- sort_df(dat)
+  }
+  
+  return(dat)
+}
