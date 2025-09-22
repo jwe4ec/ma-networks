@@ -104,24 +104,17 @@ notes <- read.csv("./data/source/notes_from_sonia/notes.csv")
 # Decide which data to use for network analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Decide whether to add raw data from Set B to raw data from Set A (see Lines
-# 930-1021 below). For now, use only raw data from Set A. However, "cln_dat" is also
-# used in some operations below, so define it here too.
-
-raw_dat <- raw_dat_son_a
-
-cln_dat <- dat_main_lg_scales
+# TODO: Document decisions
 
 
 
 
-# TODO: Also consider Set B
 
+cln_dat_bl <- dat_main_bl_items
+cln_dat    <- dat_main_lg_scales
+
+raw_dat   <- raw_dat_son_a
 raw_dat_b <- raw_dat_son_b
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Clean "notes.csv" ----
@@ -155,7 +148,7 @@ length(server_error_pids) == 36
 
 
 # ---------------------------------------------------------------------------- #
-# Extract clean data into separate tables ----
+# Extract clean longitudinal scale data into separate tables ----
 # ---------------------------------------------------------------------------- #
 
 # Remove renamed columns, computed columns (besides "score"-related columns), and 
@@ -199,7 +192,25 @@ rr_cols          <- names(cln_dat)[grep("RR_",          names(cln_dat), ignore.c
 setdiff(names(cln_dat), c(bbsiq_cols, dass_as_cols, dass_ds_cols, demographic_cols,
                           oa_cols, participant_cols, rr_cols))
 
-# Extract data into separate tables
+# Define function to extract data into separate tables
+
+create_sep_dat <- function(dat, table_cols) {
+  sep_dat <- vector("list", length = length(table_cols))
+  
+  for (i in 1:length(table_cols)) {
+    if ("participant_id" %in% table_cols[[i]]) {
+      sep_dat[[i]] <- dat[, table_cols[[i]]]
+    } else {
+      sep_dat[[i]] <- dat[, c("participant_id", table_cols[[i]])]
+    }
+  }
+  
+  names(sep_dat) <- names(table_cols)
+  
+  return(sep_dat)
+}
+
+# Run function
 
 table_cols <- list(bbsiq       = bbsiq_cols,
                    dass_as     = dass_as_cols,
@@ -209,20 +220,10 @@ table_cols <- list(bbsiq       = bbsiq_cols,
                    participant = participant_cols,
                    rr          = rr_cols)
 
-sep_dat_wide <- vector("list", length = length(table_cols))
-
-for (i in 1:length(table_cols)) {
-  if ("participant_id" %in% table_cols[[i]]) {
-    sep_dat_wide[[i]] <- cln_dat[, table_cols[[i]]]
-  } else {
-    sep_dat_wide[[i]] <- cln_dat[, c("participant_id", table_cols[[i]])]
-  }
-}
-
-names(sep_dat_wide) <- names(table_cols)
+sep_dat_wide <- create_sep_dat(cln_dat, table_cols)
 
 # ---------------------------------------------------------------------------- #
-# Convert clean data tables into long format ----
+# Convert clean longitudinal scales data tables into long format ----
 # ---------------------------------------------------------------------------- #
 
 # Alphabetize columns of each table and then sort them by time point, retaining
@@ -338,7 +339,7 @@ names(sep_dat$participant)[names(sep_dat$participant) == "participant_cbm_condit
 names(sep_dat$participant)[names(sep_dat$participant) == "participant_prime"]         <- "prime"
 
 # ---------------------------------------------------------------------------- #
-# Compute "session_only" in clean data ----
+# Compute "session_only" in clean longitudinal scales data ----
 # ---------------------------------------------------------------------------- #
 
 # Given that "session" column in "dass21_as" table may contain both session information 
@@ -1671,7 +1672,29 @@ report_dups_list_b <- function(dat) {
 report_dups_list_b(flt_dat_b) # No duplicates
 
 # ---------------------------------------------------------------------------- #
-# Define scale items in Sets A and B ----
+# Rename and recode columns in clean item-level baseline data ----
+# ---------------------------------------------------------------------------- #
+
+# Rename "participantID" as "participant_id" and "session" as "session_only"
+
+names(cln_dat_bl)[names(cln_dat_bl) == "participantID"] <- "participant_id"
+names(cln_dat_bl)[names(cln_dat_bl) == "session"]       <- "session_only"
+
+# Confirm all rows are at baseline
+
+all(cln_dat_bl$session_only == "PRE")
+
+# Remove "id" and "date", which are ambiguous
+
+cln_dat_bl[c("id", "date")] <- NULL
+
+# Remove prefixes from OA and DASS-21-AS columns
+
+names(cln_dat_bl) <- sub("^OA_",    "", names(cln_dat_bl))
+names(cln_dat_bl) <- sub("^DASSA_", "", names(cln_dat_bl))
+
+# ---------------------------------------------------------------------------- #
+# Define scale items in Sets A and B and in clean baseline item-level data ----
 # ---------------------------------------------------------------------------- #
 
 # OASIS
@@ -1682,6 +1705,7 @@ length(oa_items) == 5
 
 all(oa_items %in% names(flt_dat$oa))
 all(oa_items %in% names(flt_dat_b$oa))
+all(oa_items %in% names(cln_dat_bl))
 
 # Recognition Ratings
 
@@ -1697,6 +1721,7 @@ length(rr_items) == 36
 
 all(rr_items %in% names(flt_dat$rr))
 all(rr_items %in% names(flt_dat_b$rr))
+all(rr_items %in% names(cln_dat_bl))
 
 # BBSIQ
 
@@ -1725,9 +1750,73 @@ length(bbsiq_ben_items) == 28
 
 all(bbsiq_items %in% names(flt_dat$bbsiq))
 all(bbsiq_items %in% names(flt_dat_b$bbsiq))
+all(bbsiq_items %in% names(cln_dat_bl))
+
+# DASS-21-AS
+
+dass21_as_items <- c("breathing", "dryness", "heart", "panic", "scared", "trembling", "worry")
+
+length(dass21_as_items) == 7
+
+all(dass21_as_items %in% names(flt_dat$dass21_as))
+all(dass21_as_items %in% names(flt_dat_b$dass21_as))
+all(dass21_as_items %in% names(cln_dat_bl))
 
 # ---------------------------------------------------------------------------- #
-# Recode "prefer not to answer" values in Sets A and B ----
+# Extract clean item-level baseline data into separate tables ----
+# ---------------------------------------------------------------------------- #
+
+setdiff(names(cln_dat_bl), c(bbsiq_items, dass21_as_items, oa_items, rr_items))
+
+# Extract data into separate tables using function created for clean longitudinal
+# scales data above
+
+table_cols_bl <- list(bbsiq       = bbsiq_items,
+                      dass_as     = dass21_as_items,
+                      oa          = oa_items,
+                      participant = "participant_id",
+                      rr          = rr_items)
+
+sep_dat_bl <- create_sep_dat(cln_dat_bl, table_cols_bl)
+sep_dat_bl$participant <- as.data.frame(sep_dat_bl$participant)
+
+# Alphabetize columns of each table, retaining "participant_id" as first column
+
+for (i in 1:length(sep_dat_bl)) {
+  if (names(sep_dat_bl[i]) == "participant") {
+    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
+  } else {
+    sep_dat_bl[[i]] <- sep_dat_bl[[i]][, c("participant_id", 
+                                           setdiff(sort(names(sep_dat_bl[[i]])), "participant_id"))]
+  }
+}
+
+# Add "session_only" reflecting baseline value for each table
+
+for (i in 1:length(sep_dat_bl)) {
+  if (names(sep_dat_bl[i]) == "participant") {
+    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
+  } else if (names(sep_dat_bl[i]) == "dass_as") {
+    sep_dat_bl[[i]][, "session_only"] <- "Eligibility"
+  } else {
+    sep_dat_bl[[i]][, "session_only"] <- "PRE"
+  }
+}
+
+# Remove rows that contain only NAs for all items
+
+for (i in 1:length(sep_dat_bl)) {
+  if (names(sep_dat_bl[i]) == "participant") {
+    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
+  } else {
+    item_cols <- setdiff(names(sep_dat_bl[[i]]), c("participant_id", "session_only"))
+    
+    sep_dat_bl[[i]] <- sep_dat_bl[[i]][rowSums(is.na(sep_dat_bl[[i]][item_cols])) != length(item_cols), ]
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+# Recode "prefer not to answer" values in Sets A and B and clean item-level baseline data ----
 # ---------------------------------------------------------------------------- #
 
 # In Set A, recode 555 and -1 ("prefer not to answer") as NA
@@ -1742,8 +1831,17 @@ flt_dat$bbsiq[, bbsiq_items][flt_dat$bbsiq[, bbsiq_items] == 555] <- NA
 
 # In Set B, no values in "oa", "rr", or "bbsiq" tables are 555 or -1 (already recoded as NA)
 
+# In clean item-level baseline data, recode 555 and -1 as NA
+
+sum(sep_dat_bl$oa[, oa_items] == 555)
+sum(sep_dat_bl$rr[, rr_items] %in% c(-1, 555), na.rm = TRUE) == 0 # None
+sum(sep_dat_bl$bbsiq[, bbsiq_items] == 555)
+
+sep_dat_bl$oa[, oa_items][sep_dat_bl$oa[, oa_items]             == 555] <- NA
+sep_dat_bl$bbsiq[, bbsiq_items][sep_dat_bl$bbsiq[, bbsiq_items] == 555] <- NA
+
 # ---------------------------------------------------------------------------- #
-# Check response ranges in Sets A and B ----
+# Check response ranges in Sets A and B and clean item-level baseline data ----
 # ---------------------------------------------------------------------------- #
 
 # Note: In present Managing Anxiety study, RR response options were 0:3, whereas 
@@ -1761,8 +1859,14 @@ all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[, oa_items]))))       %in% 0:4)
 all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[, rr_items]))))       %in% 0:3)
 all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[, bbsiq_items])))) %in% 0:4)
 
+# For clean item-level baseline data
+
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$oa[, oa_items]))))       %in% 0:4)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$rr[, rr_items]))))       %in% 0:3)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$bbsiq[, bbsiq_items])))) %in% 0:4)
+
 # ---------------------------------------------------------------------------- #
-# Compute selected scores in Sets A and B ----
+# Compute selected scores in Sets A and B and clean item-level baseline data ----
 # ---------------------------------------------------------------------------- #
 
 # OASIS
@@ -1785,6 +1889,13 @@ sum(rowSums(is.na(flt_dat_b$oa[, oa_items])) == ncol(flt_dat_b$oa[, oa_items]))
 
 flt_dat_b$oa$oa_total <- rowSums(flt_dat_b$oa[ , oa_items], na.rm = TRUE)
 
+  # For clean item-level baseline data
+
+# View(sep_dat_bl$oa[rowSums(is.na(sep_dat_bl$oa[, oa_items])) > 0, ])
+sum(rowSums(is.na(sep_dat_bl$oa[, oa_items])) == ncol(sep_dat_bl$oa[, oa_items]))
+
+sep_dat_bl$oa$oa_total <- rowSums(sep_dat_bl$oa[ , oa_items], na.rm = TRUE)
+
 # RR
 
   # Define function to compute RR scores
@@ -1798,10 +1909,11 @@ compute_rr_scores <- function(dat) {
   return(dat)
 }
 
-  # Run function for Sets A and B
+  # Run function for Sets A and B and clean item-level baseline data
 
-flt_dat   <- compute_rr_scores(flt_dat)
-flt_dat_b <- compute_rr_scores(flt_dat_b)
+flt_dat    <- compute_rr_scores(flt_dat)
+flt_dat_b  <- compute_rr_scores(flt_dat_b)
+sep_dat_bl <- compute_rr_scores(sep_dat_bl)
 
 # BBSIQ
 
@@ -1830,10 +1942,11 @@ compute_bbsiq_scores <- function(dat) {
   return(dat)
 }
 
-  # Run function for Sets A and B
+  # Run function for Sets A and B and clean item-level baseline data
 
-flt_dat   <- compute_bbsiq_scores(flt_dat)
-flt_dat_b <- compute_bbsiq_scores(flt_dat_b)
+flt_dat    <- compute_bbsiq_scores(flt_dat)
+flt_dat_b  <- compute_bbsiq_scores(flt_dat_b)
+sep_dat_bl <- compute_bbsiq_scores(sep_dat_bl)
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set A ----
@@ -2349,8 +2462,7 @@ setequal(miss_ids, server_error_pids)
 # most of them do have data in other tables. The participants do have "dass21_as" 
 # and "oa" data in the raw data in Set B, and the same number of rows of data in
 # other tables as in Set A. The participants also seem to have baseline data in 
-# the Managing Anxiety study main outcome paper's OSF project (https://osf.io/3b67v; 
-# note that DASS-21-AS items' names differ though).
+# in the clean item-level baseline data file "R34_Cronbach.csv".
 
 lapply(flt_dat,   function(x) sum(unique(x$participant_id) %in% miss_ids))
 lapply(flt_dat_b, function(x) sum(unique(x$participant_id) %in% miss_ids))
@@ -2397,70 +2509,41 @@ row.names(flt_dat_b_dass21_as_miss_ids_sessions_after_elig) <- 1:nrow(flt_dat_b_
 
 identical(flt_dat_task_log_dass21_as_miss_ids_sessions, flt_dat_b_dass21_as_miss_ids_sessions_after_elig)
 
-# After some cleaning, the missing participants' baseline data for "oa" items in
-# Set B is the same as the baseline data for "oa" items for these participants in 
-# Sonia's "R34_Cronbach.csv" file in the Managing Anxiety study main outcome paper's 
-# OSF project. This suggests that the data from Set B can be used for "oa" items at 
-# other time points for the missing participants.
+# The missing participants' baseline data for "oa" items in Set B is the same as 
+# that in "R34_Cronbach.csv". This suggests that the data from Set B can be used 
+# for "oa" items at other time points for the missing participants.
 
-bl_items_sonia <- dat_main_bl_items
+flt_dat_b_oa_miss_ids_bl <- flt_dat_b_oa_miss_ids[flt_dat_b_oa_miss_ids$session_only == "PRE", ]
+row.names(flt_dat_b_oa_miss_ids_bl) <- 1:nrow(flt_dat_b_oa_miss_ids_bl)
 
-test1 <- flt_dat_b$oa[flt_dat_b$oa$participant_id %in% miss_ids & flt_dat_b$oa$session == "PRE", ]
-test1 <- test1[order(test1$participant_id), ]
-row.names(test1) <- 1:nrow(test1)
+sep_dat_bl_oa_miss_ids <- sep_dat_bl$oa[sep_dat_bl$oa$participant_id %in% miss_ids, ]
+sep_dat_bl_oa_miss_ids <- sep_dat_bl_oa_miss_ids[order(sep_dat_bl_oa_miss_ids$participant_id), ]
+row.names(sep_dat_bl_oa_miss_ids) <- 1:nrow(sep_dat_bl_oa_miss_ids)
 
-long_oa_items <- names(bl_items_sonia)[grepl("OA_", names(bl_items_sonia))]
-test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
-                        c("participantID", "id", "session", "date", long_oa_items)]
-names(test2)[names(test2) == "session"]             <- "session_only"
-names(test2)[names(test2) == "OA_anxious_freq"]     <- "anxious_freq"
-names(test2)[names(test2) == "OA_anxious_sev"]      <- "anxious_sev"
-names(test2)[names(test2) == "OA_avoid"]            <- "avoid"
-names(test2)[names(test2) == "OA_interfere"]        <- "interfere"
-names(test2)[names(test2) == "OA_interfere_social"] <- "interfere_social"
-names(test2)[names(test2) == "participantID"]       <- "participant_id"
-oa_items <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
-sum(test2[, oa_items] == 555)
-test2[, oa_items][test2[, oa_items] == 555] <- NA
-test2 <- test2[order(test2$participant_id), ]
-row.names(test2) <- 1:nrow(test2)
-
-identical(test1[, c("participant_id", "session_only", oa_items)],
-          test2[, c("participant_id", "session_only", oa_items)])
+identical(flt_dat_b_oa_miss_ids_bl[, c("participant_id", "session_only", oa_items)],
+          sep_dat_bl_oa_miss_ids[,   c("participant_id", "session_only", oa_items)])
 
 # Same for baseline "dass21_as" items, except that Sonia's "R34_Cronbach.csv" file
 # has data for all 36 missing participants, whereas Set B has data for only 34
 
-test1 <- flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids & 
-                               flt_dat_b$dass21_as$session_only == "Eligibility", ]
-test1 <- test1[order(test1$participant_id), ]
-row.names(test1) <- 1:nrow(test1)
+flt_dat_b_dass21_as_miss_ids_bl <- 
+  flt_dat_b_dass21_as_miss_ids[flt_dat_b_dass21_as_miss_ids$session_only == "Eligibility", ]
+row.names(flt_dat_b_dass21_as_miss_ids_bl) <- 1:nrow(flt_dat_b_dass21_as_miss_ids_bl)
 
-long_dass21_as_items <- names(bl_items_sonia)[grepl("DASSA_", names(bl_items_sonia))]
-test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
-                        c("participantID", "id", "session", "date", long_dass21_as_items)]
-names(test2)[names(test2) == "participantID"]   <- "participant_id"
-names(test2)[names(test2) == "session"]         <- "session_only"
-names(test2)[names(test2) == "DASSA_breathing"] <- "breathing"
-names(test2)[names(test2) == "DASSA_dryness"]   <- "dryness"
-names(test2)[names(test2) == "DASSA_heart"]     <- "heart"
-names(test2)[names(test2) == "DASSA_panic"]     <- "panic"
-names(test2)[names(test2) == "DASSA_scared"]    <- "scared"
-names(test2)[names(test2) == "DASSA_trembling"] <- "trembling"
-names(test2)[names(test2) == "DASSA_worry"]     <- "worry"
-dass21_as_items <- c("breathing", "dryness", "heart", "panic", "scared", "trembling", "worry")
-sum(test2[, dass21_as_items] == 555) == 0
-test2$session_only[test2$session_only == "PRE"] <- "Eligibility"
-test2 <- test2[order(test2$participant_id), ]
+sep_dat_bl_dass_as_miss_ids <- sep_dat_bl$dass_as[sep_dat_bl$dass_as$participant_id %in% miss_ids, ]
+sep_dat_bl_dass_as_miss_ids <- sep_dat_bl_dass_as_miss_ids[order(sep_dat_bl_dass_as_miss_ids$participant_id), ]
+row.names(sep_dat_bl_dass_as_miss_ids) <- 1:nrow(sep_dat_bl_dass_as_miss_ids)
 
-setdiff(test1$participant_id, test2$participant_id)
-setdiff(test2$participant_id, test1$participant_id) == c(1929, 1932)
+setdiff(flt_dat_b_dass21_as_miss_ids_bl$participant_id, sep_dat_bl_dass_as_miss_ids$participant_id)
+(two_more_miss_ids_in_sep_dat_bl <- setdiff(sep_dat_bl_dass_as_miss_ids$participant_id, 
+                                            flt_dat_b_dass21_as_miss_ids_bl$participant_id)) == c(1929, 1932)
 
-test2_tmp <- test2[!(test2$participant_id %in% c(1929, 1932)), ]
-row.names(test2_tmp) <- 1:nrow(test2_tmp)
+sep_dat_bl_dass_as_miss_ids_tmp <- 
+  sep_dat_bl_dass_as_miss_ids[!(sep_dat_bl_dass_as_miss_ids$participant_id %in% two_more_miss_ids_in_sep_dat_bl), ]
+row.names(sep_dat_bl_dass_as_miss_ids_tmp) <- 1:nrow(sep_dat_bl_dass_as_miss_ids_tmp)
 
-identical(test1[, c("participant_id", "session_only", dass21_as_items)],
-          test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
+identical(flt_dat_b_dass21_as_miss_ids_bl[, c("participant_id", "session_only", dass21_as_items)],
+          sep_dat_bl_dass_as_miss_ids_tmp[, c("participant_id", "session_only", dass21_as_items)])
 
 # ---------------------------------------------------------------------------- #
 # Add data missing for some participants in Set A ----
@@ -2478,11 +2561,12 @@ label_dataset <- function(dat, dataset_name) {
   return(dat)
 }
 
-# Run function for Sets A and B and clean data
+# Run function for Sets A and B and clean datasets
 
-flt_dat   <- label_dataset(flt_dat,   "raw_dat_son_a")
-flt_dat_b <- label_dataset(flt_dat_b, "raw_dat_son_b")
-sep_dat   <- label_dataset(sep_dat,   "dat_main_lg_scales")
+flt_dat    <- label_dataset(flt_dat,    "raw_dat_son_a")
+flt_dat_b  <- label_dataset(flt_dat_b,  "raw_dat_son_b")
+sep_dat    <- label_dataset(sep_dat,    "dat_main_lg_scales")
+sep_dat_bl <- label_dataset(sep_dat_bl, "dat_main_bl_items")
 
 # Add Set B OASIS and DASS-21-AS data for participants missing such data in Set A
 # due to server error
@@ -2497,13 +2581,13 @@ flt_dat_add$dass21_as <- merge(flt_dat_add$dass21_as,
                                flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids, ],
                                all = TRUE, sort = FALSE)
 
-# TODO (clean "dat_main_bl_items" earlier in script): Add "R34_Cronbach.csv" 
-# baseline DASS-21-AS data for 2 additional participants missing such data in 
-# Set A due to server error (also not in Set B)
+# Add "R34_Cronbach.csv" baseline DASS-21-AS data for 2 additional participants 
+# missing such data in Set A due to server error (also not in Set B)
 
-
-
-
+flt_dat_add$dass21_as <- merge(flt_dat_add$dass21_as,
+                               sep_dat_bl$dass_as[sep_dat_bl$dass_as$participant_id %in% 
+                                                    two_more_miss_ids_in_sep_dat_bl, ],
+                               all = TRUE, sort = FALSE)
 
 # Add these participants and their condition to "participant" table from clean data
 
