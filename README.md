@@ -1,6 +1,14 @@
 # ma-networks
 This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
 
+***TODO: Reconcile differences between clean data and Set A with added data***
+***TODO: Recode session to be consecutive in OASIS table for Set A with added data***
+***TODO: Update README***
+
+
+
+
+
 # Data
 
 ## Clean

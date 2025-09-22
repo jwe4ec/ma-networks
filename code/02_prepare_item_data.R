@@ -2609,25 +2609,49 @@ sep_dat_comp_add <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic",
                               "oa", "participant", "rr")]
 
 # Using functions "diff_participant_ids" and "length_diff_participant_ids" defined
-# above for Set A, compare "participant_id"s for each table. "bbsiq" table in Set A 
-# with added data has 1 more participant (481) than that in clean data. By contrast, 
-# "oa" table in clean data has 1 more (1866) than that in Set A with added data.
+# above for Set A, compare "participant_id"s for each table
+
+  # TODO (retain it below): "bbsiq" table in Set A with added data has 1 more 
+  # participant (481) than that in clean data (but their data is in clean item-level 
+  # baseline data so should be retained).
 
 mapply(diff_participant_ids, flt_dat_comp_add, sep_dat_comp_add)
-mapply(diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
-
 mapply(length_diff_participant_ids, flt_dat_comp_add, sep_dat_comp_add)
+
+flt_dat_comp_add_id481 <- flt_dat_comp_add$bbsiq[flt_dat_comp_add$bbsiq$participant_id == 481, ]
+flt_dat_comp_add_id481$participant_id <- as.integer(flt_dat_comp_add_id481$participant_id)
+row.names(flt_dat_comp_add_id481) <- 1:nrow(flt_dat_comp_add_id481)
+
+sep_dat_bl_id481 <- sep_dat_bl$bbsiq[sep_dat_bl$bbsiq$participant_id == 481, ]
+row.names(sep_dat_bl_id481) <- 1:nrow(sep_dat_bl_id481)
+
+identical(flt_dat_comp_add_id481[c("participant_id", "session_only", bbsiq_items)],
+          sep_dat_bl_id481[c("participant_id", "session_only", bbsiq_items)])
+
+
+
+
+
+  # TODO (the baseline scores are in clean item-level baseline data, so get those): 
+  # By contrast, "oa" table in clean data has 1 more participant (1866) than that 
+  # in Set A with added data
+
+mapply(diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
 mapply(length_diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
+
+
+
+
 
 # Restrict to shared participant_ids in each table and confirm that is so
 
-# Run function defined for Set A
+  # Run function defined for Set A
 
 ls_rest_add <- restrict_to_shared_ps(flt_dat_comp_add, sep_dat_comp_add)
 flt_dat_comp_rest_add <- ls_rest_add[[1]]
 sep_dat_comp_rest_add <- ls_rest_add[[2]]
 
-# Confirm
+  # Confirm
 
 all(mapply(length_diff_participant_ids, flt_dat_comp_rest_add, sep_dat_comp_rest_add) == 0)
 all(mapply(length_diff_participant_ids, sep_dat_comp_rest_add, flt_dat_comp_rest_add) == 0)
@@ -2637,13 +2661,17 @@ all(mapply(length_diff_participant_ids, sep_dat_comp_rest_add, flt_dat_comp_rest
 flt_dat_comp_rest_add <- sort_by_part_then_session(flt_dat_comp_rest_add, "participant_id", "session_only")
 sep_dat_comp_rest_add <- sort_by_part_then_session(sep_dat_comp_rest_add, "participant_id", "session_only")
 
-# Compare numbers of observations. They differ between datasets.
+# TODO (reconcile these): Compare numbers of observations. They differ between datasets.
 
 set_add_vs_cln_nrow <- data.frame(set_add = sapply(flt_dat_comp_rest_add, nrow),
                                   clean   = sapply(sep_dat_comp_rest_add, nrow))
 set_add_vs_cln_nrow$diff <- set_add_vs_cln_nrow$set_add - set_add_vs_cln_nrow$clean
 
 set_add_vs_cln_nrow
+
+
+
+
 
 # TODO: Use natural join to restrict to shared time points for "oa" table. All
 # scores are the same, but consider recoding session for those who skipped one
@@ -2712,6 +2740,16 @@ credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id 
 
 sum(participant_raw_rest_add$cbmCondition != participant_cln_rest_add$cbmCondition) == 0
 sum(participant_raw_rest_add$prime        != participant_cln_rest_add$prime)        == 0
+
+# ---------------------------------------------------------------------------- #
+# Recode session in OASIS table for Set A with added data ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Recode session to be consecutive given findings above
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
