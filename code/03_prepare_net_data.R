@@ -32,7 +32,7 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Update with new "_rest.csv" files (instead of "_rest2.csv")
+# TODO: Update with new "_rest_add.csv" files (instead of "_rest2.csv")
 
 
 

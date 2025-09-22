@@ -58,7 +58,7 @@ net_dat_all_to_s6_wide <- read.csv(file = "./data/intermediate/net_dat_all_to_s6
 
 # Import restricted clean demographics data
 
-  # TODO: Update with new "_rest.csv" file (instead of "_rest.csv")
+  # TODO: Update with new "_rest_add.csv" file (instead of "_rest2.csv")
 
 
 

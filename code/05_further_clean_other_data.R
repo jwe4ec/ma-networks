@@ -38,7 +38,7 @@ load("./data/intermediate/net_dat_all_to_s6.RData")
 
 # Import restricted credibility data
 
-  # TODO: Update with new "_rest.csv" file (instead of "_rest.csv")
+  # TODO: Update with new "_rest.csv" file (instead of "_rest2.csv")
 
 
 

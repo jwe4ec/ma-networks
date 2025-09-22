@@ -332,6 +332,11 @@ for (i in 1:length(sep_dat)) {
   }
 }
 
+# Rename columns in "participant" table for comparability with Set A
+
+names(sep_dat$participant)[names(sep_dat$participant) == "participant_cbm_condition"] <- "cbmCondition"
+names(sep_dat$participant)[names(sep_dat$participant) == "participant_prime"]         <- "prime"
+
 # ---------------------------------------------------------------------------- #
 # Compute "session_only" in clean data ----
 # ---------------------------------------------------------------------------- #
@@ -1199,10 +1204,8 @@ for (i in 1:length(sel_dat_b)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Filter raw data in Sets A and B ----
+# Identify participant IDs in clean data ----
 # ---------------------------------------------------------------------------- #
-
-# Identify participant IDs in clean data
 
 cln_participant_ids <- sep_dat$participant$participant_id
 
@@ -1229,6 +1232,10 @@ all(test_notes %in% test_manual)
 
 sum(cln_participant_ids %in% c(test_manual, test_notes)) == 0
 
+# ---------------------------------------------------------------------------- #
+# Filter raw data in Sets A and B ----
+# ---------------------------------------------------------------------------- #
+
 # Define function to filter raw data based on participant_ids in clean data
 
 filter_all_data <- function(dat, participant_ids) {
@@ -1248,185 +1255,8 @@ filter_all_data <- function(dat, participant_ids) {
 
 # Run function for Sets A and B
 
-flt_dat   <- filter_all_data(sel_dat,   cln_participant_ids)
-flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
-
-# ---------------------------------------------------------------------------- #
-# Look for data missing for some participants in Set A ----
-# ---------------------------------------------------------------------------- #
-
-# 36 participants in clean data are missing from "participant_export_dao" table 
-# in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists these 
-# participant IDs as "not included in original dataset due to server error." Asked
-# Sonia about this on 11/24/21 (no response).
-
-miss_ids <- setdiff(cln_participant_ids, sel_dat$participant_export_dao$participant_id)
-
-setequal(miss_ids, server_error_pids)
-
-# None of the missing participants have data in "dass21_as" or "oa" in Set A, but 
-# most of them do have data in other tables. The participants do have "dass21_as" 
-# and "oa" data in the raw data in Set B, and the same number of rows of data in
-# other tables as in Set A. The participants also seem to have baseline data in 
-# the Managing Anxiety study main outcome paper's OSF project (https://osf.io/3b67v; 
-# note that DASS-21-AS items' names differ though).
-
-lapply(sel_dat,   function(x) sum(unique(x$participant_id) %in% miss_ids))
-lapply(sel_dat_b, function(x) sum(unique(x$participant_id) %in% miss_ids))
-
-lapply(sel_dat,   function(x) nrow(x[x$participant_id %in% miss_ids, ]))
-lapply(sel_dat_b, function(x) nrow(x[x$participant_id %in% miss_ids, ]))
-
-# Set B OASIS sessions match unique sessions for OASIS entries in Set A "task_log"
-
-sel_dat_task_log_oa_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
-                                                   sel_dat$task_log$task_name == "OA", ]
-sel_dat_task_log_oa_miss_ids <- sort_by_part_then_session(sel_dat_task_log_oa_miss_ids,
-                                                          "participant_id", "session_only")
-sel_dat_task_log_oa_miss_ids_sessions <- unique(sel_dat_task_log_oa_miss_ids[c("participant_id", "session_only")])
-row.names(sel_dat_task_log_oa_miss_ids_sessions) <- 1:nrow(sel_dat_task_log_oa_miss_ids_sessions)
-
-sel_dat_b_oa_miss_ids <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ]
-sel_dat_b_oa_miss_ids <- sort_by_part_then_session(sel_dat_b_oa_miss_ids,
-                                                   "participant_id", "session_only")
-sel_dat_b_oa_miss_ids_sessions <- sel_dat_b_oa_miss_ids[c("participant_id", "session_only")]
-row.names(sel_dat_b_oa_miss_ids_sessions) <- 1:nrow(sel_dat_b_oa_miss_ids_sessions)
-
-identical(sel_dat_task_log_oa_miss_ids_sessions, sel_dat_b_oa_miss_ids_sessions)
-
-# Set B DASS-21-AS sessions after eligibility screening match sessions for DASS-21-AS 
-# entries in Set A "task_log" (which has no DASS-21-AS entries at eligibility screening)
-
-sel_dat_task_log_dass21_as_miss_ids <- sel_dat$task_log[sel_dat$task_log$participant_id %in% miss_ids &
-                                                          sel_dat$task_log$task_name == "DASS21_AS", ]
-sel_dat_task_log_dass21_as_miss_ids <- sort_by_part_then_session(sel_dat_task_log_dass21_as_miss_ids,
-                                                                 "participant_id", "session_only")
-sel_dat_task_log_dass21_as_miss_ids_sessions <- sel_dat_task_log_dass21_as_miss_ids[c("participant_id", "session_only")]
-row.names(sel_dat_task_log_dass21_as_miss_ids_sessions) <- 1:nrow(sel_dat_task_log_dass21_as_miss_ids_sessions)
-
-all(sel_dat_task_log_dass21_as_miss_ids_sessions$session_only != "Eligibility")
-
-sel_dat_b_dass21_as_miss_ids <- sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids, ]
-sel_dat_b_dass21_as_miss_ids <- sort_by_part_then_session(sel_dat_b_dass21_as_miss_ids,
-                                                          "participant_id", "session_only")
-sel_dat_b_dass21_as_miss_ids_sessions <- sel_dat_b_dass21_as_miss_ids[c("participant_id", "session_only")]
-sel_dat_b_dass21_as_miss_ids_sessions_after_elig <-
-  sel_dat_b_dass21_as_miss_ids_sessions[sel_dat_b_dass21_as_miss_ids_sessions$session_only != "Eligibility", ]
-row.names(sel_dat_b_dass21_as_miss_ids_sessions_after_elig) <- 1:nrow(sel_dat_b_dass21_as_miss_ids_sessions_after_elig)
-
-identical(sel_dat_task_log_dass21_as_miss_ids_sessions, sel_dat_b_dass21_as_miss_ids_sessions_after_elig)
-
-# After some cleaning, the missing participants' baseline data for "oa" items in
-# Set B is the same as the baseline data for "oa" items for these participants in 
-# Sonia's "R34_Cronbach.csv" file in the Managing Anxiety study main outcome paper's 
-# OSF project. This suggests that the data from Set B can be used for "oa" items at 
-# other time points for the missing participants.
-
-bl_items_sonia <- dat_main_bl_items
-
-test1 <- sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids & sel_dat_b$oa$session == "PRE", ]
-test1 <- test1[order(test1$participant_id), ]
-row.names(test1) <- 1:nrow(test1)
-
-long_oa_items <- names(bl_items_sonia)[grepl("OA_", names(bl_items_sonia))]
-test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
-                        c("participantID", "id", "session", "date", long_oa_items)]
-names(test2)[names(test2) == "session"]             <- "session_only"
-names(test2)[names(test2) == "OA_anxious_freq"]     <- "anxious_freq"
-names(test2)[names(test2) == "OA_anxious_sev"]      <- "anxious_sev"
-names(test2)[names(test2) == "OA_avoid"]            <- "avoid"
-names(test2)[names(test2) == "OA_interfere"]        <- "interfere"
-names(test2)[names(test2) == "OA_interfere_social"] <- "interfere_social"
-names(test2)[names(test2) == "participantID"]       <- "participant_id"
-oa_items <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
-sum(test2[, oa_items] == 555)
-test2[, oa_items][test2[, oa_items] == 555] <- NA
-test2 <- test2[order(test2$participant_id), ]
-row.names(test2) <- 1:nrow(test2)
-
-identical(test1[, c("participant_id", "session_only", oa_items)],
-          test2[, c("participant_id", "session_only", oa_items)])
-
-# Same for baseline "dass21_as" items, except that Sonia's "R34_Cronbach.csv" file
-# has data for all 36 missing participants, whereas Set B has data for only 34
-
-test1 <- sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids & 
-                               sel_dat_b$dass21_as$session_only == "Eligibility", ]
-test1 <- test1[order(test1$participant_id), ]
-row.names(test1) <- 1:nrow(test1)
-
-long_dass21_as_items <- names(bl_items_sonia)[grepl("DASSA_", names(bl_items_sonia))]
-test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
-                        c("participantID", "id", "session", "date", long_dass21_as_items)]
-names(test2)[names(test2) == "participantID"]   <- "participant_id"
-names(test2)[names(test2) == "session"]         <- "session_only"
-names(test2)[names(test2) == "DASSA_breathing"] <- "breathing"
-names(test2)[names(test2) == "DASSA_dryness"]   <- "dryness"
-names(test2)[names(test2) == "DASSA_heart"]     <- "heart"
-names(test2)[names(test2) == "DASSA_panic"]     <- "panic"
-names(test2)[names(test2) == "DASSA_scared"]    <- "scared"
-names(test2)[names(test2) == "DASSA_trembling"] <- "trembling"
-names(test2)[names(test2) == "DASSA_worry"]     <- "worry"
-dass21_as_items <- c("breathing", "dryness", "heart", "panic", "scared", "trembling", "worry")
-sum(test2[, dass21_as_items] == 555) == 0
-test2$session_only[test2$session_only == "PRE"] <- "Eligibility"
-test2 <- test2[order(test2$participant_id), ]
-
-setdiff(test1$participant_id, test2$participant_id)
-setdiff(test2$participant_id, test1$participant_id) == c(1929, 1932)
-
-test2_tmp <- test2[!(test2$participant_id %in% c(1929, 1932)), ]
-row.names(test2_tmp) <- 1:nrow(test2_tmp)
-
-identical(test1[, c("participant_id", "session_only", dass21_as_items)],
-          test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
-
-# ---------------------------------------------------------------------------- #
-# Add data missing for some participants in Set A ----
-# ---------------------------------------------------------------------------- #
-
-# Define function for labeling all rows of dataset with name of dataset's source
-
-label_dataset <- function(dat, dataset_name) {
-  dat <- lapply(dat, function(x) {
-    x$dataset <- dataset_name
-    
-    return(x)
-  })
-  
-  return(dat)
-}
-
-# Run function for Sets A and B and clean data
-
-sel_dat   <- label_dataset(sel_dat,   "raw_dat_son_a")
-sel_dat_b <- label_dataset(sel_dat_b, "raw_dat_son_b")
-sep_dat   <- label_dataset(sep_dat,   "dat_main_lg_scales")
-
-# Add Set B OASIS and DASS-21-AS data for participants missing such data in Set A
-# due to server error
-
-sel_dat_add <- sel_dat
-
-sel_dat_add$oa        <- merge(sel_dat_add$oa,
-                               sel_dat_b$oa[sel_dat_b$oa$participant_id %in% miss_ids, ],
-                               all = TRUE, sort = FALSE)
-
-sel_dat_add$dass21_as <- merge(sel_dat_add$dass21_as,
-                               sel_dat_b$dass21_as[sel_dat_b$dass21_as$participant_id %in% miss_ids, ],
-                               all = TRUE, sort = FALSE)
-
-# TODO: Add additional DASS-21-AS data for such participants in Set A from "R34_Cronbach.csv"
-
-
-
-
-
-# TODO: Add these participants and their condition to "participant" table from clean data
-
-
-
-
+flt_dat     <- filter_all_data(sel_dat,     cln_participant_ids)
+flt_dat_b   <- filter_all_data(sel_dat_b,   cln_participant_ids)
 
 # ---------------------------------------------------------------------------- #
 # Check session and date values in Sets A and B ----
@@ -2290,27 +2120,6 @@ merge_bbsiq <- merge(flt_dat_comp_rest$bbsiq,
 all(sum(round(merge_bbsiq$bbsiq_int_ratio, 7) != round(merge_bbsiq$bbsiq_physical_score, 7)) == 0,
     sum(round(merge_bbsiq$bbsiq_ext_ratio, 7) != round(merge_bbsiq$bbsiq_threat_score,   7)) == 0)
 
-# Extract relevant tables named to reflect their source
-
-merge_oa_rest         <- merge_oa
-merge_rr_rest         <- merge_rr
-merge_bbsiq_rest      <- merge_bbsiq
-
-participant_raw_rest  <- flt_dat_comp_rest$participant_export_dao
-participant_cln_rest  <- sep_dat_comp_rest$participant
-
-demographics_raw_rest <- flt_dat_comp_rest$demographic
-demographics_cln_rest <- sep_dat_comp_rest$demographic
-
-  # Credibility table is not in clean data, so obtain it from raw data ("flt_dat") above
-
-credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
-                                               sep_dat$participant$participant_id, ]
-
-# Compare CBM condition
-
-sum(participant_raw_rest$cbmCondition != participant_cln_rest$participant_cbm_condition) == 0
-
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set B ----
 # ---------------------------------------------------------------------------- #
@@ -2322,7 +2131,7 @@ sep_dat_comp_b <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic", "oa", 
 
 # Using functions "diff_participant_ids" and "length_diff_participant_ids" defined
 # above for Set A, compare "participant_id"s for each table. "bbsiq" table in Set B 
-# has 1 more participant (480) than that in clean data. By contrast, "oa" table in 
+# has 1 more participant (481) than that in clean data. By contrast, "oa" table in 
 # clean data has 1 more participant (1866) than that in Set B.
 
 mapply(diff_participant_ids, flt_dat_comp_b, sep_dat_comp_b)
@@ -2344,7 +2153,7 @@ sep_dat_comp_rest_b <- ls_rest_b[[2]]
 all(mapply(length_diff_participant_ids, flt_dat_comp_rest_b, sep_dat_comp_rest_b) == 0)
 all(mapply(length_diff_participant_ids, sep_dat_comp_rest_b, flt_dat_comp_rest_b) == 0)
 
-# Sort tables by participant and (if present) then session using function defined above for Set A
+# Sort tables by participant and (if present) then session
 
 flt_dat_comp_rest_b <- sort_by_part_then_session(flt_dat_comp_rest_b, "participant_id", "session_only")
 sep_dat_comp_rest_b <- sort_by_part_then_session(sep_dat_comp_rest_b, "participant_id", "session_only")
@@ -2524,6 +2333,303 @@ all(sum(round(merge_bbsiq_b$bbsiq_int_ratio, 7) != round(merge_bbsiq_b$bbsiq_phy
 # though, by computing the proportion of positive scenarios (see "positive" column)
 
 # ---------------------------------------------------------------------------- #
+# Look for data missing for some participants in Set A ----
+# ---------------------------------------------------------------------------- #
+
+# 36 participants in clean data are missing from "participant_export_dao" table 
+# in Set A. A "notes.csv" file obtained from Sonia Baee on 11/24/2021 lists these 
+# participant IDs as "not included in original dataset due to server error." Asked
+# Sonia about this on 11/24/21 (no response).
+
+miss_ids <- setdiff(cln_participant_ids, flt_dat$participant_export_dao$participant_id)
+
+setequal(miss_ids, server_error_pids)
+
+# None of the missing participants have data in "dass21_as" or "oa" in Set A, but 
+# most of them do have data in other tables. The participants do have "dass21_as" 
+# and "oa" data in the raw data in Set B, and the same number of rows of data in
+# other tables as in Set A. The participants also seem to have baseline data in 
+# the Managing Anxiety study main outcome paper's OSF project (https://osf.io/3b67v; 
+# note that DASS-21-AS items' names differ though).
+
+lapply(flt_dat,   function(x) sum(unique(x$participant_id) %in% miss_ids))
+lapply(flt_dat_b, function(x) sum(unique(x$participant_id) %in% miss_ids))
+
+lapply(flt_dat,   function(x) nrow(x[x$participant_id %in% miss_ids, ]))
+lapply(flt_dat_b, function(x) nrow(x[x$participant_id %in% miss_ids, ]))
+
+# Set B OASIS sessions match unique sessions for OASIS entries in Set A "task_log"
+
+flt_dat_task_log_oa_miss_ids <- flt_dat$task_log[flt_dat$task_log$participant_id %in% miss_ids &
+                                                   flt_dat$task_log$task_name == "OA", ]
+flt_dat_task_log_oa_miss_ids <- sort_by_part_then_session(flt_dat_task_log_oa_miss_ids,
+                                                          "participant_id", "session_only")
+flt_dat_task_log_oa_miss_ids_sessions <- unique(flt_dat_task_log_oa_miss_ids[c("participant_id", "session_only")])
+row.names(flt_dat_task_log_oa_miss_ids_sessions) <- 1:nrow(flt_dat_task_log_oa_miss_ids_sessions)
+
+flt_dat_b_oa_miss_ids <- flt_dat_b$oa[flt_dat_b$oa$participant_id %in% miss_ids, ]
+flt_dat_b_oa_miss_ids <- sort_by_part_then_session(flt_dat_b_oa_miss_ids,
+                                                   "participant_id", "session_only")
+flt_dat_b_oa_miss_ids_sessions <- flt_dat_b_oa_miss_ids[c("participant_id", "session_only")]
+row.names(flt_dat_b_oa_miss_ids_sessions) <- 1:nrow(flt_dat_b_oa_miss_ids_sessions)
+
+identical(flt_dat_task_log_oa_miss_ids_sessions, flt_dat_b_oa_miss_ids_sessions)
+
+# Set B DASS-21-AS sessions after eligibility screening match sessions for DASS-21-AS 
+# entries in Set A "task_log" (which has no DASS-21-AS entries at eligibility screening)
+
+flt_dat_task_log_dass21_as_miss_ids <- flt_dat$task_log[flt_dat$task_log$participant_id %in% miss_ids &
+                                                          flt_dat$task_log$task_name == "DASS21_AS", ]
+flt_dat_task_log_dass21_as_miss_ids <- sort_by_part_then_session(flt_dat_task_log_dass21_as_miss_ids,
+                                                                 "participant_id", "session_only")
+flt_dat_task_log_dass21_as_miss_ids_sessions <- flt_dat_task_log_dass21_as_miss_ids[c("participant_id", "session_only")]
+row.names(flt_dat_task_log_dass21_as_miss_ids_sessions) <- 1:nrow(flt_dat_task_log_dass21_as_miss_ids_sessions)
+
+all(flt_dat_task_log_dass21_as_miss_ids_sessions$session_only != "Eligibility")
+
+flt_dat_b_dass21_as_miss_ids <- flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids, ]
+flt_dat_b_dass21_as_miss_ids <- sort_by_part_then_session(flt_dat_b_dass21_as_miss_ids,
+                                                          "participant_id", "session_only")
+flt_dat_b_dass21_as_miss_ids_sessions <- flt_dat_b_dass21_as_miss_ids[c("participant_id", "session_only")]
+flt_dat_b_dass21_as_miss_ids_sessions_after_elig <-
+  flt_dat_b_dass21_as_miss_ids_sessions[flt_dat_b_dass21_as_miss_ids_sessions$session_only != "Eligibility", ]
+row.names(flt_dat_b_dass21_as_miss_ids_sessions_after_elig) <- 1:nrow(flt_dat_b_dass21_as_miss_ids_sessions_after_elig)
+
+identical(flt_dat_task_log_dass21_as_miss_ids_sessions, flt_dat_b_dass21_as_miss_ids_sessions_after_elig)
+
+# After some cleaning, the missing participants' baseline data for "oa" items in
+# Set B is the same as the baseline data for "oa" items for these participants in 
+# Sonia's "R34_Cronbach.csv" file in the Managing Anxiety study main outcome paper's 
+# OSF project. This suggests that the data from Set B can be used for "oa" items at 
+# other time points for the missing participants.
+
+bl_items_sonia <- dat_main_bl_items
+
+test1 <- flt_dat_b$oa[flt_dat_b$oa$participant_id %in% miss_ids & flt_dat_b$oa$session == "PRE", ]
+test1 <- test1[order(test1$participant_id), ]
+row.names(test1) <- 1:nrow(test1)
+
+long_oa_items <- names(bl_items_sonia)[grepl("OA_", names(bl_items_sonia))]
+test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
+                        c("participantID", "id", "session", "date", long_oa_items)]
+names(test2)[names(test2) == "session"]             <- "session_only"
+names(test2)[names(test2) == "OA_anxious_freq"]     <- "anxious_freq"
+names(test2)[names(test2) == "OA_anxious_sev"]      <- "anxious_sev"
+names(test2)[names(test2) == "OA_avoid"]            <- "avoid"
+names(test2)[names(test2) == "OA_interfere"]        <- "interfere"
+names(test2)[names(test2) == "OA_interfere_social"] <- "interfere_social"
+names(test2)[names(test2) == "participantID"]       <- "participant_id"
+oa_items <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
+sum(test2[, oa_items] == 555)
+test2[, oa_items][test2[, oa_items] == 555] <- NA
+test2 <- test2[order(test2$participant_id), ]
+row.names(test2) <- 1:nrow(test2)
+
+identical(test1[, c("participant_id", "session_only", oa_items)],
+          test2[, c("participant_id", "session_only", oa_items)])
+
+# Same for baseline "dass21_as" items, except that Sonia's "R34_Cronbach.csv" file
+# has data for all 36 missing participants, whereas Set B has data for only 34
+
+test1 <- flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids & 
+                               flt_dat_b$dass21_as$session_only == "Eligibility", ]
+test1 <- test1[order(test1$participant_id), ]
+row.names(test1) <- 1:nrow(test1)
+
+long_dass21_as_items <- names(bl_items_sonia)[grepl("DASSA_", names(bl_items_sonia))]
+test2 <- bl_items_sonia[bl_items_sonia$participantID %in% miss_ids, 
+                        c("participantID", "id", "session", "date", long_dass21_as_items)]
+names(test2)[names(test2) == "participantID"]   <- "participant_id"
+names(test2)[names(test2) == "session"]         <- "session_only"
+names(test2)[names(test2) == "DASSA_breathing"] <- "breathing"
+names(test2)[names(test2) == "DASSA_dryness"]   <- "dryness"
+names(test2)[names(test2) == "DASSA_heart"]     <- "heart"
+names(test2)[names(test2) == "DASSA_panic"]     <- "panic"
+names(test2)[names(test2) == "DASSA_scared"]    <- "scared"
+names(test2)[names(test2) == "DASSA_trembling"] <- "trembling"
+names(test2)[names(test2) == "DASSA_worry"]     <- "worry"
+dass21_as_items <- c("breathing", "dryness", "heart", "panic", "scared", "trembling", "worry")
+sum(test2[, dass21_as_items] == 555) == 0
+test2$session_only[test2$session_only == "PRE"] <- "Eligibility"
+test2 <- test2[order(test2$participant_id), ]
+
+setdiff(test1$participant_id, test2$participant_id)
+setdiff(test2$participant_id, test1$participant_id) == c(1929, 1932)
+
+test2_tmp <- test2[!(test2$participant_id %in% c(1929, 1932)), ]
+row.names(test2_tmp) <- 1:nrow(test2_tmp)
+
+identical(test1[, c("participant_id", "session_only", dass21_as_items)],
+          test2_tmp[, c("participant_id", "session_only", dass21_as_items)])
+
+# ---------------------------------------------------------------------------- #
+# Add data missing for some participants in Set A ----
+# ---------------------------------------------------------------------------- #
+
+# Define function for labeling all rows of dataset with name of dataset's source
+
+label_dataset <- function(dat, dataset_name) {
+  dat <- lapply(dat, function(x) {
+    x$dataset <- dataset_name
+    
+    return(x)
+  })
+  
+  return(dat)
+}
+
+# Run function for Sets A and B and clean data
+
+flt_dat   <- label_dataset(flt_dat,   "raw_dat_son_a")
+flt_dat_b <- label_dataset(flt_dat_b, "raw_dat_son_b")
+sep_dat   <- label_dataset(sep_dat,   "dat_main_lg_scales")
+
+# Add Set B OASIS and DASS-21-AS data for participants missing such data in Set A
+# due to server error
+
+flt_dat_add <- flt_dat
+
+flt_dat_add$oa        <- merge(flt_dat_add$oa,
+                               flt_dat_b$oa[flt_dat_b$oa$participant_id %in% miss_ids, ],
+                               all = TRUE, sort = FALSE)
+
+flt_dat_add$dass21_as <- merge(flt_dat_add$dass21_as,
+                               flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids, ],
+                               all = TRUE, sort = FALSE)
+
+# TODO (clean "dat_main_bl_items" earlier in script): Add "R34_Cronbach.csv" 
+# baseline DASS-21-AS data for 2 additional participants missing such data in 
+# Set A due to server error (also not in Set B)
+
+
+
+
+
+# Add these participants and their condition to "participant" table from clean data
+
+names(flt_dat_add)[names(flt_dat_add) == "participant_export_dao"] <- "participant"
+
+flt_dat_add$participant <- merge(flt_dat_add$participant,
+                                 sep_dat$participant[sep_dat$participant$participant_id %in% miss_ids, ],
+                                 all = TRUE, sort = FALSE)
+
+# ---------------------------------------------------------------------------- #
+# Compare clean data and Set A with added data ----
+# ---------------------------------------------------------------------------- #
+
+# Define lists with corresponding tables
+
+flt_dat_comp_add <- flt_dat_add[c("bbsiq", "dass21_as", "dass21_ds", "demographic", 
+                                  "oa", "participant", "rr")]
+sep_dat_comp_add <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic", 
+                              "oa", "participant", "rr")]
+
+# Using functions "diff_participant_ids" and "length_diff_participant_ids" defined
+# above for Set A, compare "participant_id"s for each table. "bbsiq" table in Set A 
+# with added data has 1 more participant (481) than that in clean data. By contrast, 
+# "oa" table in clean data has 1 more (1866) than that in Set A with added data.
+
+mapply(diff_participant_ids, flt_dat_comp_add, sep_dat_comp_add)
+mapply(diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
+
+mapply(length_diff_participant_ids, flt_dat_comp_add, sep_dat_comp_add)
+mapply(length_diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
+
+# Restrict to shared participant_ids in each table and confirm that is so
+
+# Run function defined for Set A
+
+ls_rest_add <- restrict_to_shared_ps(flt_dat_comp_add, sep_dat_comp_add)
+flt_dat_comp_rest_add <- ls_rest_add[[1]]
+sep_dat_comp_rest_add <- ls_rest_add[[2]]
+
+# Confirm
+
+all(mapply(length_diff_participant_ids, flt_dat_comp_rest_add, sep_dat_comp_rest_add) == 0)
+all(mapply(length_diff_participant_ids, sep_dat_comp_rest_add, flt_dat_comp_rest_add) == 0)
+
+# Sort tables by participant and (if present) then session
+
+flt_dat_comp_rest_add <- sort_by_part_then_session(flt_dat_comp_rest_add, "participant_id", "session_only")
+sep_dat_comp_rest_add <- sort_by_part_then_session(sep_dat_comp_rest_add, "participant_id", "session_only")
+
+# Compare numbers of observations. They differ between datasets.
+
+set_add_vs_cln_nrow <- data.frame(set_add = sapply(flt_dat_comp_rest_add, nrow),
+                                  clean   = sapply(sep_dat_comp_rest_add, nrow))
+set_add_vs_cln_nrow$diff <- set_add_vs_cln_nrow$set_add - set_add_vs_cln_nrow$clean
+
+set_add_vs_cln_nrow
+
+# TODO: Use natural join to restrict to shared time points for "oa" table. All
+# scores are the same, but consider recoding session for those who skipped one
+# (see above for Sets A and B).
+
+merge_oa_add <- merge(flt_dat_comp_rest_add$oa, 
+                      sep_dat_comp_rest_add$oa,
+                      by = c("participant_id", "session_only"),
+                      all = FALSE)
+
+all(merge_oa_add$oa_total == merge_oa_add$oasis_score)
+
+
+
+
+
+# Use natural join to restrict to shared time points for "rr" table. All scores
+# are the same when rounded to 9 decimal places.
+
+merge_rr_add <- merge(flt_dat_comp_rest_add$rr, 
+                      sep_dat_comp_rest_add$rr,
+                      by = c("participant_id", "session_only"),
+                      all = FALSE)
+
+all(sum(round(merge_rr_add$rr_nf_mean, 9) != round(merge_rr_add$RR_negative_nf_score, 9)) == 0,
+    sum(round(merge_rr_add$rr_ns_mean, 9) != round(merge_rr_add$RR_negative_ns_score, 9)) == 0,
+    sum(round(merge_rr_add$rr_pf_mean, 9) != round(merge_rr_add$RR_positive_pf_score, 9)) == 0,
+    sum(round(merge_rr_add$rr_ps_mean, 9) != round(merge_rr_add$RR_positive_ps_score, 9)) == 0)
+
+# Use natural join to restrict to shared time points for "bbsiq" table. All scores
+# are the same when rounded to 7 decimal places.
+
+merge_bbsiq_add <- merge(flt_dat_comp_rest_add$bbsiq, 
+                         sep_dat_comp_rest_add$bbsiq,
+                         by = c("participant_id", "session_only"),
+                         all = FALSE)
+
+all(sum(round(merge_bbsiq_add$bbsiq_int_ratio, 7) != round(merge_bbsiq_add$bbsiq_physical_score, 7)) == 0,
+    sum(round(merge_bbsiq_add$bbsiq_ext_ratio, 7) != round(merge_bbsiq_add$bbsiq_threat_score,   7)) == 0)
+
+# ---------------------------------------------------------------------------- #
+# Extract relevant tables named to reflect their source ----
+# ---------------------------------------------------------------------------- #
+
+merge_oa_rest_add    <- merge_oa_add
+merge_rr_rest_add    <- merge_rr_add
+merge_bbsiq_rest_add <- merge_bbsiq_add
+
+participant_raw_rest_add <- flt_dat_comp_rest_add$participant
+participant_cln_rest_add <- sep_dat_comp_rest_add$participant
+
+demographics_raw_rest_add <- flt_dat_comp_rest_add$demographic
+demographics_cln_rest_add <- sep_dat_comp_rest_add$demographic
+
+# TODO (compare credibility between Sets A and B): Credibility table is not in 
+# clean data, so obtain it from Set A above
+
+credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
+                                               sep_dat$participant$participant_id, ]
+
+
+
+
+
+# Compare CBM condition and anxiety imagery prime condition
+
+sum(participant_raw_rest_add$cbmCondition != participant_cln_rest_add$cbmCondition) == 0
+sum(participant_raw_rest_add$prime        != participant_cln_rest_add$prime)        == 0
+
+# ---------------------------------------------------------------------------- #
 # Export data ----
 # ---------------------------------------------------------------------------- #
 
@@ -2531,17 +2637,17 @@ dir.create("./data/intermediate/")
 
 # Export merged, restricted item-level OA, RR, and BBSIQ data
 
-write.csv(merge_oa_rest,    file = "./data/intermediate/merge_oa_rest.csv",    row.names = FALSE)
-write.csv(merge_rr_rest,    file = "./data/intermediate/merge_rr_rest.csv",    row.names = FALSE)
-write.csv(merge_bbsiq_rest, file = "./data/intermediate/merge_bbsiq_rest.csv", row.names = FALSE)
+write.csv(merge_oa_rest_add,    file = "./data/intermediate/merge_oa_rest_add.csv",    row.names = FALSE)
+write.csv(merge_rr_rest_add,    file = "./data/intermediate/merge_rr_rest_add.csv",    row.names = FALSE)
+write.csv(merge_bbsiq_rest_add, file = "./data/intermediate/merge_bbsiq_rest_add.csv", row.names = FALSE)
 
 # Export raw restricted participant data (contains more columns than clean data)
 
-write.csv(participant_raw_rest, file = "./data/intermediate/participant_raw_rest.csv", row.names = FALSE)
+write.csv(participant_raw_rest_add, file = "./data/intermediate/participant_raw_rest_add.csv", row.names = FALSE)
 
 # Export clean restricted demographics data (cleaner than raw data)
 
-write.csv(demographics_cln_rest, file = "./data/intermediate/demographics_cln_rest.csv", row.names = FALSE)
+write.csv(demographics_cln_rest_add, file = "./data/intermediate/demographics_cln_rest_add.csv", row.names = FALSE)
 
 # Export raw restricted credibility data (not available in clean data)
 
