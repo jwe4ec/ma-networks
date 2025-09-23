@@ -321,7 +321,10 @@ sep_dat$rr <- reshape(sep_dat_wide$rr,
                                   "RR_positive_pf_score", "RR_positive_ps_score"),
                       times = c("PRE", "SESSION3", "SESSION6", "SESSION8", "POST"))
 
-# Remove rows that contain only NAs for scores
+# Remove rows that have only NAs for all scores, as in most cases such rows would
+# mean either that the assessment was not administered at that time point or that
+# the participant did not complete the assessment at that time point (but it could
+# also mean that the participant chose "prefer not to answer" for all items)
 
 for (i in 1:length(sep_dat)) {
   if (names(sep_dat[i]) %in% c("demographic", "participant")) {
@@ -329,7 +332,7 @@ for (i in 1:length(sep_dat)) {
   } else {
     score_cols <- names(sep_dat[[i]])[grep("_score", names(sep_dat[[i]]))]
     
-    sep_dat[[i]] <- sep_dat[[i]][complete.cases(sep_dat[[i]][, score_cols]), ]
+    sep_dat[[i]] <- sep_dat[[i]][rowSums(is.na(sep_dat[[i]][score_cols])) != length(score_cols), ]
   }
 }
 
@@ -1959,8 +1962,8 @@ flt_dat_comp <- flt_dat[c("bbsiq", "dass21_as", "dass21_ds", "demographic",
 sep_dat_comp <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic", 
                           "oa", "participant", "rr")]
 
-# Compare participant_ids for each table. "bbsiq" table in "flt_dat" list has
-# 1 more "participant_id" than that in "sep_dat" list. By contrast, "dass_as",
+# Compare participant_ids for each table. "bbsiq" table in "flt_dat" list has 1 
+#more "participant_id" (481) than that in "sep_dat" list. By contrast, "dass_as",
 # "oa", and "participant" tables in "sep_dat" list have 36, 37, and 36 more
 # participant_ids than their corresponding tables in "flt_dat" list.
 
@@ -2230,8 +2233,9 @@ merge_bbsiq <- merge(flt_dat_comp_rest$bbsiq,
                      by = c("participant_id", "session_only"),
                      all = FALSE)
 
-all(sum(round(merge_bbsiq$bbsiq_int_ratio, 7) != round(merge_bbsiq$bbsiq_physical_score, 7)) == 0,
-    sum(round(merge_bbsiq$bbsiq_ext_ratio, 7) != round(merge_bbsiq$bbsiq_threat_score,   7)) == 0)
+all(sum(round(merge_bbsiq$bbsiq_int_ratio, 7)     != round(merge_bbsiq$bbsiq_physical_score, 7))               == 0,
+    sum(round(merge_bbsiq$bbsiq_ext_ratio, 7)     != round(merge_bbsiq$bbsiq_threat_score,   7), na.rm = TRUE) == 0,
+    sum(which(is.na(merge_bbsiq$bbsiq_ext_ratio)) != which(is.na(merge_bbsiq$bbsiq_threat_score)))             == 0)
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set B ----
@@ -2438,8 +2442,9 @@ merge_bbsiq_b <- merge(flt_dat_comp_rest_b$bbsiq,
                        by = c("participant_id", "session_only"),
                        all = FALSE)
 
-all(sum(round(merge_bbsiq_b$bbsiq_int_ratio, 7) != round(merge_bbsiq_b$bbsiq_physical_score, 7)) == 0,
-    sum(round(merge_bbsiq_b$bbsiq_ext_ratio, 7) != round(merge_bbsiq_b$bbsiq_threat_score,   7)) == 0)
+all(sum(round(merge_bbsiq_b$bbsiq_int_ratio, 7)     != round(merge_bbsiq_b$bbsiq_physical_score, 7))               == 0,
+    sum(round(merge_bbsiq_b$bbsiq_ext_ratio, 7)     != round(merge_bbsiq_b$bbsiq_threat_score,   7), na.rm = TRUE) == 0,
+    sum(which(is.na(merge_bbsiq_b$bbsiq_ext_ratio)) != which(is.na(merge_bbsiq_b$bbsiq_threat_score)))             == 0)
 
 # Although "imagery_prime" contains "prime" condition, no table in Set B seems to
 # indicate CBM condition. Perhaps it could be derived from the "trial_dao" table,
@@ -2663,21 +2668,58 @@ all(mapply(length_diff_participant_ids, sep_dat_comp_rest_add, flt_dat_comp_rest
 flt_dat_comp_rest_add <- sort_by_part_then_session(flt_dat_comp_rest_add, "participant_id", "session_only")
 sep_dat_comp_rest_add <- sort_by_part_then_session(sep_dat_comp_rest_add, "participant_id", "session_only")
 
-# TODO (reconcile these): Compare numbers of observations. They differ between datasets.
+# Compare numbers of observations. They differ between datasets.
 
 set_add_vs_cln_nrow <- data.frame(set_add = sapply(flt_dat_comp_rest_add, nrow),
                                   clean   = sapply(sep_dat_comp_rest_add, nrow))
 set_add_vs_cln_nrow$diff <- set_add_vs_cln_nrow$set_add - set_add_vs_cln_nrow$clean
 
 set_add_vs_cln_nrow
+  
+  # TODO (retain certain data below): Inspect rows in Set A with added data not in clean data
 
 
 
 
 
-# TODO: Use natural join to restrict to shared time points for "oa" table. All
-# scores are the same, but consider recoding session for those who skipped one
-# (see above for Sets A and B).
+key_cols <- c("participant_id", "session_only")
+
+# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$bbsiq,     sep_dat_comp_rest_add$bbsiq,   key_cols)) # Ps 532, 1385
+# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$dass21_ds, sep_dat_comp_rest_add$dass_ds, key_cols)) # P  532
+# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$rr,        sep_dat_comp_rest_add$rr,      key_cols)) # Ps 532, 1385
+
+    # P 532 lacks clean data at "PRE" for BBSIQ, DASS-21-DS, and RR. "notes.csv" says that they were 
+    # originally thought not to have RR data at "PRE" but do. Their "PRE" BBSIQ and RR data are the 
+    # same as those in clean item-level baseline data. Retain these data.
+
+flt_dat_comp_rest_add_id532_bbsiq_pre <- flt_dat_comp_rest_add$bbsiq[flt_dat_comp_rest_add$bbsiq$participant_id == 532 &
+                                                                       flt_dat_comp_rest_add$bbsiq$session_only == "PRE", ]
+flt_dat_comp_rest_add_id532_rr_pre    <- flt_dat_comp_rest_add$rr[flt_dat_comp_rest_add$rr$participant_id == 532 &
+                                                                    flt_dat_comp_rest_add$rr$session_only == "PRE", ]
+
+sep_dat_bl_id532_bbsiq <- sep_dat_bl$bbsiq[sep_dat_bl$bbsiq$participant_id == 532, ]
+sep_dat_bl_id532_rr    <- sep_dat_bl$rr[sep_dat_bl$rr$participant_id       == 532, ]
+
+all(flt_dat_comp_rest_add_id532_bbsiq_pre[c("participant_id", "session_only", bbsiq_items)] ==
+      sep_dat_bl_id532_bbsiq[c("participant_id", "session_only", bbsiq_items)])
+all(flt_dat_comp_rest_add_id532_rr_pre[c("participant_id", "session_only", rr_items)] ==
+      sep_dat_bl_id532_rr[c("participant_id", "session_only", rr_items)])
+
+    # P 1385 lacks clean data at Sessions 6 and 8 for BBSIQ and for RR. All of their items are NA 
+    # (originally 555 and -1, respectively, for "prefer not to answer"), and thus their rows were
+    # removed from the clean data by the present script. Retain these data.
+
+  # Inspect rows in clean data not in Set A with added data. In all cases, the
+  # clean data contains row(s) for session(s) beyond those available in Sets A
+  # or B. Most likely, the clean data was derived from raw data dumped from the
+  # server after Sets A and B were dumped from the server.
+
+# View(diff_df1_not_in_df2(sep_dat_comp_rest_add$dass_as, flt_dat_comp_rest_add$dass21_as, key_cols)) # Ps       1687, 1806,       1883,       1910
+# View(diff_df1_not_in_df2(sep_dat_comp_rest_add$oa,      flt_dat_comp_rest_add$oa,        key_cols)) # Ps 1273, 1687, 1806, 1866, 1883, 1889, 1910
+
+# Use natural join to restrict to shared time points for "oa" table. All scores 
+# are the same, but recode session in section below for participants who skipped 
+# one session (see above for Sets A and B).
 
 merge_oa_add <- merge(flt_dat_comp_rest_add$oa, 
                       sep_dat_comp_rest_add$oa,
@@ -2685,10 +2727,6 @@ merge_oa_add <- merge(flt_dat_comp_rest_add$oa,
                       all = FALSE)
 
 all(merge_oa_add$oa_total == merge_oa_add$oasis_score)
-
-
-
-
 
 # Use natural join to restrict to shared time points for "rr" table. All scores
 # are the same when rounded to 9 decimal places.
@@ -2711,8 +2749,24 @@ merge_bbsiq_add <- merge(flt_dat_comp_rest_add$bbsiq,
                          by = c("participant_id", "session_only"),
                          all = FALSE)
 
-all(sum(round(merge_bbsiq_add$bbsiq_int_ratio, 7) != round(merge_bbsiq_add$bbsiq_physical_score, 7)) == 0,
-    sum(round(merge_bbsiq_add$bbsiq_ext_ratio, 7) != round(merge_bbsiq_add$bbsiq_threat_score,   7)) == 0)
+all(sum(round(merge_bbsiq_add$bbsiq_int_ratio, 7)     != round(merge_bbsiq_add$bbsiq_physical_score, 7))               == 0,
+    sum(round(merge_bbsiq_add$bbsiq_ext_ratio, 7)     != round(merge_bbsiq_add$bbsiq_threat_score,   7), na.rm = TRUE) == 0,
+    sum(which(is.na(merge_bbsiq_add$bbsiq_ext_ratio)) != which(is.na(merge_bbsiq_add$bbsiq_threat_score)))             == 0)
+
+# Compare CBM condition and anxiety imagery prime condition
+
+all(flt_dat_comp_rest_add$participant$cbmCondition == sep_dat_comp_rest_add$participant$cbmCondition)
+all(flt_dat_comp_rest_add$participant$prime        == sep_dat_comp_rest_add$participant$prime)
+
+# ---------------------------------------------------------------------------- #
+# Recode session in OASIS table for Set A with added data ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Recode session to be consecutive given findings above
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Extract relevant tables named to reflect their source ----
@@ -2733,21 +2787,6 @@ demographics_cln_rest_add <- sep_dat_comp_rest_add$demographic
 
 credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
                                                sep_dat$participant$participant_id, ]
-
-
-
-
-
-# Compare CBM condition and anxiety imagery prime condition
-
-sum(participant_raw_rest_add$cbmCondition != participant_cln_rest_add$cbmCondition) == 0
-sum(participant_raw_rest_add$prime        != participant_cln_rest_add$prime)        == 0
-
-# ---------------------------------------------------------------------------- #
-# Recode session in OASIS table for Set A with added data ----
-# ---------------------------------------------------------------------------- #
-
-# TODO: Recode session to be consecutive given findings above
 
 
 

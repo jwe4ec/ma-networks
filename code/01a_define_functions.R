@@ -94,3 +94,17 @@ sort_by_part_then_session <- function(dat, part_col, session_col) {
   
   return(dat)
 }
+
+# ---------------------------------------------------------------------------- #
+# Define get_diff_df1_not_in_df2() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to identify rows in one data frame that are not in another
+# data frame based on specified key columns
+
+diff_df1_not_in_df2 <- function(df1, df2, key_cols) {
+  df1_interaction_key_cols <- interaction(df1[key_cols])
+  df2_interaction_key_cols <- interaction(df2[key_cols])
+  
+  df1_not_in_df2 <- df1[!df1_interaction_key_cols %in% df2_interaction_key_cols, ]
+}
