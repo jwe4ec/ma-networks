@@ -2568,8 +2568,9 @@ flt_dat_b  <- label_dataset(flt_dat_b,  "raw_dat_son_b")
 sep_dat    <- label_dataset(sep_dat,    "dat_main_lg_scales")
 sep_dat_bl <- label_dataset(sep_dat_bl, "dat_main_bl_items")
 
-# Add Set B OASIS and DASS-21-AS data for participants missing such data in Set A
-# due to server error
+# Add data for participants missing data in Set A due to server error
+
+  # Add Set B OASIS and DASS-21-AS data
 
 flt_dat_add <- flt_dat
 
@@ -2581,21 +2582,28 @@ flt_dat_add$dass21_as <- merge(flt_dat_add$dass21_as,
                                flt_dat_b$dass21_as[flt_dat_b$dass21_as$participant_id %in% miss_ids, ],
                                all = TRUE, sort = FALSE)
 
-# Add "R34_Cronbach.csv" baseline DASS-21-AS data for 2 additional participants 
-# missing such data in Set A due to server error (also not in Set B)
+  # Add "R34_Cronbach.csv" baseline DASS-21-AS data for 2 additional participants,
+  # for whom such data is not in Set B
 
 flt_dat_add$dass21_as <- merge(flt_dat_add$dass21_as,
                                sep_dat_bl$dass_as[sep_dat_bl$dass_as$participant_id %in% 
                                                     two_more_miss_ids_in_sep_dat_bl, ],
                                all = TRUE, sort = FALSE)
 
-# Add these participants and their condition to "participant" table from clean data
+  # Add these participants and their condition to "participant" table from clean data
 
 names(flt_dat_add)[names(flt_dat_add) == "participant_export_dao"] <- "participant"
 
 flt_dat_add$participant <- merge(flt_dat_add$participant,
                                  sep_dat$participant[sep_dat$participant$participant_id %in% miss_ids, ],
                                  all = TRUE, sort = FALSE)
+
+# Add "R34_Cronbach.csv" baseline OASIS data for 1 participant (1866) missing OASIS
+# data in Sets A and B (participant is already in Set A "participant" table)
+
+flt_dat_add$oa <- merge(flt_dat_add$oa,
+                        sep_dat_bl$oa[sep_dat_bl$oa$participant_id == 1866, ],
+                        all = TRUE, sort = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set A with added data ----
@@ -2609,7 +2617,7 @@ sep_dat_comp_add <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic",
                               "oa", "participant", "rr")]
 
 # Using functions "diff_participant_ids" and "length_diff_participant_ids" defined
-# above for Set A, compare "participant_id"s for each table
+# above for Set A, compare participant IDs for each table
 
   # TODO (retain it below): "bbsiq" table in Set A with added data has 1 more 
   # participant (481) than that in clean data (but their data is in clean item-level 
@@ -2632,16 +2640,10 @@ identical(flt_dat_comp_add_id481[c("participant_id", "session_only", bbsiq_items
 
 
 
-  # TODO (the baseline scores are in clean item-level baseline data, so get those): 
-  # By contrast, "oa" table in clean data has 1 more participant (1866) than that 
-  # in Set A with added data
+  # After adding "R34_Cronbach.csv" baseline OASIS data for 1 participant (1866)
+  # above, clean data has no participants not in Set A with added data
 
-mapply(diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
-mapply(length_diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add)
-
-
-
-
+all(mapply(length_diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add) == 0)
 
 # Restrict to shared participant_ids in each table and confirm that is so
 
