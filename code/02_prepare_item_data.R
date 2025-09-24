@@ -1291,25 +1291,22 @@ flt_dat_b   <- filter_all_data(sel_dat_b,   cln_participant_ids)
 # Check session and date values in Sets A and B ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: In Set A, seem to be discrepancies between "session" and date-related
-# values in "task_log" table and "session" and "date" in other tables (e.g., "oa"). 
-# - For example, for participant 623 "task_log" contains "OA" at "SESSION1" but this
-# data is not in "oa" table. In addition, "task_log" says "OA" at "SESSION2" was 
-# completed on 9/12/16, but "oa" says "SESSION2" was done on 9/10/16.
+# In Set A, there are discrepancies between "session" and date-related values in 
+# "task_log" table and "session" and "date" in OASIS table (e.g., P 623). This is
+# because participants with multiple entries (whose values also skip a session) have 
+# not yet been handled in the Set A OASIS table (they are handled in a section below).
 
 # View(flt_dat$oa[flt_dat$oa$participant_id == 623, ])
-# View(flt_dat$task_log[flt_dat$task_log$participant_id == 623 &
-#                         flt_dat$task_log$task_name == "OA", ])
-
-
-
-
-
-# Note: Set A "task_log" also has discrepancies with Set B tables and with clean
-# data (in example below, Set B table and clean data have same sessions)
-
+# View(flt_dat$task_log[flt_dat$task_log$participant_id == 623 & flt_dat$task_log$task_name == "OA", ])
 # View(flt_dat_b$oa[flt_dat_b$oa$participant_id == 623, ])
 # View(sep_dat$oa[sep_dat$oa$participant_id     == 623, ])
+
+# TODO: Continue documenting other differences in session and date values, including
+# those identified in sections below
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Check for multiple entries in Set A ----
@@ -2060,7 +2057,7 @@ merge_oa <- merge(flt_dat_comp_rest$oa,
 
 all(merge_oa$oa_total == merge_oa$oasis_score)
 
-  # TODO: Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
+  # Compare session dates between "oa" and "rr" tables in Set A, although "oa" 
   # was assessed at every time point and "rr" was assessed at fewer time points. 
   # The session dates are inconsistent for 30 participants between these tables.
 
@@ -2113,10 +2110,6 @@ flt_dat_comp_rest_rr_sessions <-
 # View(flt_dat_comp_rest_rr_sessions[flt_dat_comp_rest_rr_sessions$participant_id %in%
 #                                      set_a_unequal_oa_rr_session_dates_pids, ])
 
-
-
-
-
   # TODO (check this): Compare session dates between "oa" and "task_log" tables in Set A
 
 flt_dat_task_log_oa_sessions <- flt_dat$task_log[flt_dat$task_log$task_name == "OA",
@@ -2143,7 +2136,7 @@ length(set_a_unequal_oa_tl_session_dates_pids) == 60
 
 
 
-  # TODO: Identify participants with sessions skipped in OASIS table in Set A
+  # Identify participants with sessions skipped in OASIS table in Set A
 
     # Define function to identify participant IDs with a given number of nonconsecutive 
     # expected "session_only" values (or any number, which is the default) in a table
@@ -2231,10 +2224,6 @@ length(intersect(set_a_unequal_oa_rr_session_dates_pids, skipped_oa_S1_set_a_pid
 
 skipped_only_oa_S3_set_a_pids <- intersect(skipped_only_1_oa_session_set_a_pids, skipped_oa_S3_set_a_pids)
 length(skipped_only_oa_S3_set_a_pids) == 2
-
-
-
-
 
 # Use natural join to restrict to shared time points for "rr" table. All scores
 # are the same when rounded to 9 decimal places.
@@ -2327,7 +2316,7 @@ set_b_vs_cln_nrow$diff <- set_b_vs_cln_nrow$set_b - set_b_vs_cln_nrow$clean
 
 set_b_vs_cln_nrow
 
-# TODO: Use natural join to restrict to shared time points for "oa" table. For 
+# Use natural join to restrict to shared time points for "oa" table. For 
 # each of the 24 participants with discrepancies, the scores are actually the 
 # same but the session column in the clean data skips Session 1 (i.e., lists 
 # Session 2 instead), whereas the session column in Set B lists all consecutive 
@@ -2403,20 +2392,21 @@ flt_dat_comp_rest_oa_test <- recode_oa_session_to_expected_order(flt_dat_comp_re
 identical(flt_dat_task_log_oa_test[c("participant_id", "session_only")], 
           flt_dat_comp_rest_oa_test[c("participant_id", "session_only")])
 
-  # TODO: Which session values make the most sense? Seems that recoding Set A
-  # OASIS sessions to be consecutive (as in Set B) would be most plausible.
+  # Which session values make the most sense? Seems that recoding Set A OASIS sessions 
+  # to be consecutive (as in Set B) would be most plausible. Indeed, for participants
+  # whose session values in Set A skip Session 1, most of the dates are the same for
+  # the baseline and Session 2 values, which doesn't make sense because whereas Session
+  # 1 could be started right after baseline, Session 2 could not be started until 2 days
+  # after Session 1 was completed. OASIS session values are recoded to be consecutive for 
+  # participants whose values skip a session (Session 1 or 3) at the end of this script.
 
 # View(flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
 # View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
 # View(sep_dat_comp_rest$oa[sep_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S1_set_a_pids, ])
-# 
+
 # View(flt_dat_comp_rest$oa[flt_dat_comp_rest$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
 # View(flt_dat_comp_rest_b$oa[flt_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
 # View(sep_dat_comp_rest$oa[sep_dat_comp_rest_b$oa$participant_id %in% skipped_oa_S3_set_a_pids, ])
-
-
-
-
 
   # Define function to view "oa" table from relevant lists for given participant in Set B
 
@@ -2693,11 +2683,7 @@ set_add_vs_cln_nrow$diff <- set_add_vs_cln_nrow$set_add - set_add_vs_cln_nrow$cl
 
 set_add_vs_cln_nrow
   
-  # TODO (retain certain data below): Inspect rows in Set A with added data not in clean data
-
-
-
-
+  # Inspect rows in Set A with added data not in clean data
 
 key_cols <- c("participant_id", "session_only")
 
@@ -2767,10 +2753,30 @@ all(flt_dat_comp_rest_add$participant$cbmCondition == sep_dat_comp_rest_add$part
 all(flt_dat_comp_rest_add$participant$prime        == sep_dat_comp_rest_add$participant$prime)
 
 # ---------------------------------------------------------------------------- #
-# Recode session in OASIS table for Set A with added data ----
+# Finalize item-level data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Recode session to be consecutive given findings above
+# TODO (compare DASS-21-AS, DASS-21-DS, and demographics tables): Given that so far
+# the OA, RR, and BBSIQ scores in the clean data used in the main outcomes paper have 
+# been reproduced, restrict to those tables and to the participant and demographics tables. 
+# All these tables have the same participants as the clean data, but some have different 
+# numbers of rows (see section above comparing clean data and Set A with added data).
+
+flt_dat_final <- flt_dat_comp_rest_add[c("bbsiq", "demographic", "oa", "participant", "rr")]
+
+
+
+
+
+# Recode OASIS sessions to be consecutive for participants whose values skip one
+# session (i.e., Session 1 or 3) because this is more plausible than the original 
+# session values in Set A and in the clean data used for the main outcomes paper 
+# (see sections above comparing clean data with Sets A and B)
+
+flt_dat_final$oa <- recode_oa_session_to_expected_order(flt_dat_final$oa, skipped_only_1_oa_session_set_a_pids)
+
+# TODO: Rename or remove scores computed via the methods of main outcomes paper
+# because different scores should be used instead
 
 
 
@@ -2779,6 +2785,12 @@ all(flt_dat_comp_rest_add$participant$prime        == sep_dat_comp_rest_add$part
 # ---------------------------------------------------------------------------- #
 # Extract relevant tables named to reflect their source ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Update this section to use final data
+
+
+
+
 
 merge_oa_rest_add    <- merge_oa_add
 merge_rr_rest_add    <- merge_rr_add
@@ -2789,12 +2801,6 @@ participant_cln_rest_add <- sep_dat_comp_rest_add$participant
 
 demographics_raw_rest_add <- flt_dat_comp_rest_add$demographic
 demographics_cln_rest_add <- sep_dat_comp_rest_add$demographic
-
-# TODO: Compare DASS-21-AS data between datasets
-
-
-
-
 
 # TODO (compare credibility between Sets A and B): Credibility table is not in 
 # clean data, so obtain it from Set A above
