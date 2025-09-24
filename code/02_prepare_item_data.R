@@ -2332,6 +2332,16 @@ confirm_all_bbsiq_scores_same <- function(merge_bbsiq, digits) {
 
 confirm_all_bbsiq_scores_same(merge_bbsiq, 7) # TRUE
 
+# Use natural join to restrict to shared time points for "dass21_as" table. All scores
+# are the same.
+
+merge_dass21_as <- merge(flt_dat_comp_rest$dass21_as, 
+                         sep_dat_comp_rest$dass_as,
+                         by = c("participant_id", "session_only"),
+                         all = FALSE)
+
+all(merge_dass21_as$dass21_as_total_dbl == merge_dass21_as$dass_as_score) # TRUE
+
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set B ----
 # ---------------------------------------------------------------------------- #
@@ -2535,6 +2545,16 @@ merge_bbsiq_b <- merge(flt_dat_comp_rest_b$bbsiq,
                        all = FALSE)
 
 confirm_all_bbsiq_scores_same(merge_bbsiq_b, 7) # TRUE
+
+# Use natural join to restrict to shared time points for "dass21_as" table. All scores
+# are the same.
+
+merge_dass21_as_b <- merge(flt_dat_comp_rest_b$dass21_as, 
+                           sep_dat_comp_rest_b$dass_as,
+                           by = c("participant_id", "session_only"),
+                           all = FALSE)
+
+all(merge_dass21_as_b$dass21_as_total_dbl == merge_dass21_as_b$dass_as_score) # TRUE
 
 # Although "imagery_prime" contains "prime" condition, no table in Set B seems to
 # indicate CBM condition. Perhaps it could be derived from the "trial_dao" table,
@@ -2808,6 +2828,16 @@ merge_bbsiq_add <- merge(flt_dat_comp_rest_add$bbsiq,
 
 confirm_all_bbsiq_scores_same(merge_bbsiq_add, 7) # TRUE
 
+# Use natural join to restrict to shared time points for "dass21_as" table. All scores
+# are the same.
+
+merge_dass21_as_add <- merge(flt_dat_comp_rest_add$dass21_as, 
+                             sep_dat_comp_rest_add$dass_as,
+                             by = c("participant_id", "session_only"),
+                             all = FALSE)
+
+all(merge_dass21_as_add$dass21_as_total_dbl == merge_dass21_as_add$dass_as_score) # TRUE
+
 # Compare CBM condition and anxiety imagery prime condition
 
 all(flt_dat_comp_rest_add$participant$cbmCondition == sep_dat_comp_rest_add$participant$cbmCondition)
@@ -2817,13 +2847,13 @@ all(flt_dat_comp_rest_add$participant$prime        == sep_dat_comp_rest_add$part
 # Finalize item-level data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (compare DASS-21-AS, DASS-21-DS, and demographics tables): Given that so far
-# the OA, RR, and BBSIQ scores in the clean data used in the main outcomes paper have 
-# been reproduced, restrict to those tables and to the participant and demographics tables. 
-# All these tables have the same participants as the clean data, but some have different 
-# numbers of rows (see section above comparing clean data and Set A with added data).
+# TODO (compare DASS-21-DS and demographics tables): Given that so far the OA, RR, BBSIQ,
+# and DASS-21-AS scores in the clean data used in the main outcomes paper have been reproduced, 
+# restrict to those tables and to the participant and demographics tables. All these tables 
+# have the same participants as the clean data, but some have different numbers of rows (see 
+# section above comparing clean data and Set A with added data).
 
-flt_dat_final <- flt_dat_comp_rest_add[c("bbsiq", "demographic", "oa", "participant", "rr")]
+flt_dat_final <- flt_dat_comp_rest_add[c("bbsiq", "demographic", "dass21_as", "oa", "participant", "rr")]
 
 
 
