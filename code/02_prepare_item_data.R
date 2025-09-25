@@ -1787,6 +1787,18 @@ all(dass21_as_items %in% names(flt_dat$dass21_as))
 all(dass21_as_items %in% names(flt_dat_b$dass21_as))
 all(dass21_as_items %in% names(cln_dat_bl))
 
+# DASS-21-DS
+
+dass21_ds_items <- c("blue", "difficult", "hopeless", "meaningless", "noenthusiastic", 
+                     "nopositive", "noworth")
+
+length(dass21_ds_items) == 7
+
+  # Item-level data is only in Sets A and B
+
+all(dass21_ds_items %in% names(flt_dat$dass21_ds))
+all(dass21_ds_items %in% names(flt_dat_b$dass21_ds))
+
 # ---------------------------------------------------------------------------- #
 # Extract clean item-level baseline data into separate tables ----
 # ---------------------------------------------------------------------------- #
@@ -1857,13 +1869,16 @@ sum(flt_dat$oa[, oa_items]               == 555)
 sum(flt_dat$rr[, rr_items]               == -1)
 sum(flt_dat$bbsiq[, bbsiq_items]         == 555)
 sum(flt_dat$dass21_as[, dass21_as_items] == -1)
+sum(flt_dat$dass21_ds[, dass21_ds_items] == -1)
 
 flt_dat$oa[, oa_items][flt_dat$oa[, oa_items]                             == 555] <- NA
 flt_dat$rr[, rr_items][flt_dat$rr[, rr_items]                             == -1]  <- NA
 flt_dat$bbsiq[, bbsiq_items][flt_dat$bbsiq[, bbsiq_items]                 == 555] <- NA
 flt_dat$dass21_as[, dass21_as_items][flt_dat$dass21_as[, dass21_as_items] == -1]  <- NA
+flt_dat$dass21_ds[, dass21_ds_items][flt_dat$dass21_ds[, dass21_ds_items] == -1]  <- NA
 
-# In Set B, no values in "oa", "rr", "bbsiq", or "dass21_as" tables are 555 or -1 (already recoded as NA)
+# In Set B, no values in "oa", "rr", "bbsiq", "dass21_as", or "dass21_ds" tables 
+# are 555 or -1 (already recoded as NA)
 
 # In clean item-level baseline data, recode 555 and -1 as NA
 
@@ -1888,6 +1903,7 @@ all(sort(unique(as.vector(as.matrix(flt_dat$oa[, oa_items]))))               %in
 all(sort(unique(as.vector(as.matrix(flt_dat$rr[, rr_items]))))               %in% 0:3)
 all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items]))))         %in% 0:4)
 all(sort(unique(as.vector(as.matrix(flt_dat$dass21_as[, dass21_as_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$dass21_ds[, dass21_ds_items])))) %in% 0:3)
 
 # For Set B
 
@@ -1895,6 +1911,7 @@ all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[, oa_items]))))               %
 all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[, rr_items]))))               %in% 0:3)
 all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[, bbsiq_items]))))         %in% 0:4)
 all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_as[, dass21_as_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_ds[, dass21_ds_items])))) %in% 0:3)
 
 # For clean item-level baseline data
 
@@ -1986,17 +2003,17 @@ flt_dat    <- compute_bbsiq_scores(flt_dat)
 flt_dat_b  <- compute_bbsiq_scores(flt_dat_b)
 sep_dat_bl <- compute_bbsiq_scores(sep_dat_bl)
 
-# DASS-21-AS
+# Note: The DASS-21-AS and DASS-21-DS scores below are those per the Managing Anxiety 
+# main outcomes paper
+# - Imputing item-level NAs with the median of the item's column was done in "R34.ipynb"
+# - Multiplying the total score by 2 was also done in "R34.ipynb"
 
-  # Note: The scores below are those per the Managing Anxiety main outcomes paper
-  # - Imputing item-level NAs with the median of the item's column is what seems to
-  # have been done in "R34.ipynb" cleaning script
-  # - Multiplying the total score by 2 was also done in "R34.ipynb"
+  # DASS-21-AS
 
-  # Impute item-level NAs with median of the item's column in Set A (since column
-  # median depends on the number of rows)
+    # Impute item-level NAs with median of the item's column in Set A (since column
+    # median depends on the number of rows)
 
-    # Compute item medians in Set A
+      # Compute item medians in Set A
 
 flt_dat_dass21_as_item_medians <- sapply(dass21_as_items, function(x) {
   median(flt_dat$dass21_as[[x]], na.rm = TRUE)
@@ -2006,7 +2023,7 @@ names(flt_dat_dass21_as_item_medians) <- dass21_as_items
 nrow(flt_dat$dass21_as) == 871
 all(flt_dat_dass21_as_item_medians == c(1, 1, 2, 2, 2, 1, 2))
 
-    # Define function to impute item-level NAs with specified item medians
+      # Define function to impute item-level NAs with specified item medians
 
 impute_given_item_medians <- function(df, items, item_medians) {
   if (!all(items == names(item_medians))) stop("Items and medians have different names or order")
@@ -2022,17 +2039,37 @@ impute_given_item_medians <- function(df, items, item_medians) {
   return(df)
 }
 
-    # Run function for Sets A and B and clean item-level baseline data
+      # Run function for Sets A and B and clean item-level baseline data
 
 flt_dat$dass21_as   <- impute_given_item_medians(flt_dat$dass21_as,   dass21_as_items, flt_dat_dass21_as_item_medians)
 flt_dat_b$dass21_as <- impute_given_item_medians(flt_dat_b$dass21_as, dass21_as_items, flt_dat_dass21_as_item_medians)
 sep_dat_bl$dass_as  <- impute_given_item_medians(sep_dat_bl$dass_as,  dass21_as_items, flt_dat_dass21_as_item_medians)
 
-  # Compute doubled total score for Sets A and B and clean item-level baseline data
+    # Compute doubled total score for Sets A and B and clean item-level baseline data
 
 flt_dat$dass21_as$dass21_as_total_dbl   <- rowSums(flt_dat$dass21_as[, dass21_as_items]) * 2
 flt_dat_b$dass21_as$dass21_as_total_dbl <- rowSums(flt_dat_b$dass21_as[, dass21_as_items]) * 2
 sep_dat_bl$dass_as$dass21_as_total_dbl  <- rowSums(sep_dat_bl$dass_as[, dass21_as_items]) * 2
+
+  # DASS-21-DS
+
+    # Impute item-level NAs in Sets A and B with median of the item's column in Set A
+
+flt_dat_dass21_ds_item_medians <- sapply(dass21_ds_items, function(x) {
+  median(flt_dat$dass21_ds[[x]], na.rm = TRUE)
+})
+names(flt_dat_dass21_ds_item_medians) <- dass21_ds_items
+
+nrow(flt_dat$dass21_ds) == 1175
+all(flt_dat_dass21_ds_item_medians == c(1, 2, 1, 1, 1, 1, 1))
+
+flt_dat$dass21_ds   <- impute_given_item_medians(flt_dat$dass21_ds,   dass21_ds_items, flt_dat_dass21_ds_item_medians)
+flt_dat_b$dass21_ds <- impute_given_item_medians(flt_dat_b$dass21_ds, dass21_ds_items, flt_dat_dass21_ds_item_medians)
+
+    # Compute doubled total score for Sets A and B
+
+flt_dat$dass21_ds$dass21_ds_total_dbl   <- rowSums(flt_dat$dass21_ds[, dass21_ds_items]) * 2
+flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[, dass21_ds_items]) * 2
 
 # ---------------------------------------------------------------------------- #
 # Compare clean data and Set A ----
