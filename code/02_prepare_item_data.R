@@ -2072,10 +2072,10 @@ flt_dat$dass21_ds$dass21_ds_total_dbl   <- rowSums(flt_dat$dass21_ds[, dass21_ds
 flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[, dass21_ds_items]) * 2
 
 # ---------------------------------------------------------------------------- #
-# Clean demographics in Sets A and B and compare with clean data ----
+# Clean demographic table (with focus on Set A) and compare with clean data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Condense this code, document decisions further, and likely move it
+# TODO: Document decisions further
 
 
 
@@ -2095,8 +2095,15 @@ row.names(flt_dat$demographic)   <- 1:nrow(flt_dat$demographic)
 row.names(flt_dat_b$demographic) <- 1:nrow(flt_dat_b$demographic)
 row.names(sep_dat$demographic)   <- 1:nrow(sep_dat$demographic)
 
-# Recode birth years of 0 or 2222 to NA in Sets A and B (which was done in both
-# "R34_cleaning_script.R" and "R34.ipynb" cleaning scripts)
+# Sets A and B and clean data all contain the same participants
+
+identical(flt_dat$demographic$participant_id, flt_dat_b$demographic$participant_id,
+          sep_dat$demographic$participant_id)
+
+# For birth year:
+
+  # Recode values of 0 or 2222 to NA in Sets A and B (which was done in both
+  # "R34_cleaning_script.R" and "R34.ipynb" cleaning scripts)
 
 sum(flt_dat$demographic$birthYear   %in% c(0, 2222)) == 2
 sum(flt_dat_b$demographic$birthYear %in% c(0, 2222)) == 1
@@ -2104,9 +2111,9 @@ sum(flt_dat_b$demographic$birthYear %in% c(0, 2222)) == 1
 flt_dat$demographic$birthYear[flt_dat$demographic$birthYear     %in% c(0, 2222)] <- NA
 flt_dat_b$demographic$birthYear[flt_dat_b$demographic$birthYear %in% c(0, 2222)] <- NA
 
-# Some birth years in Set A are only 2 digits or longer than 4 digits. These seem
-# to have been corrected in Set B, whose birth years are all 4 digits. However, the
-# clean data doesn't include all of the corrected birth years (treats some as NA).
+  # Some values in Set A are only 2 digits or longer than 4 digits. These seem
+  # to have been corrected in Set B, whose values are all 4 digits. However, the
+  # clean data doesn't include all of the corrected values (treats some as NA).
 
 odd_birth_year_pids <- flt_dat$demographic$participant_id[!is.na(flt_dat$demographic$birthYear) &
                                                             nchar(flt_dat$demographic$birthYear) != 4]
@@ -2115,9 +2122,9 @@ odd_birth_year_pids <- flt_dat$demographic$participant_id[!is.na(flt_dat$demogra
 # View(flt_dat_b$demographic[flt_dat_b$demographic$participant_id %in% odd_birth_year_pids, ])
 # View(sep_dat$demographic[sep_dat$demographic$participant_id %in% odd_birth_year_pids, ])
 
-# Clean the birth years in Set A in accordance with those from Set B, after which
-# Sets A and B contain the same non-NA values and same number of NAs but the clean
-# data contains more NAs (but the same values that are non-NA across datasets)
+  # Clean the values in Set A in accordance with those from Set B, after which
+  # Sets A and B contain the same non-NA values and same number of NAs but the clean
+  # data contains more NAs (but the same values that are non-NA across datasets)
 
 flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001959] <- 1959
 flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001989] <- 1989
@@ -2149,7 +2156,7 @@ all(flt_dat$demographic$birthYear == sep_dat$demographic$demographic_birthYear, 
 sum(is.na(flt_dat$demographic$birthYear))             == 2
 sum(is.na(sep_dat$demographic$demographic_birthYear)) == 14
 
-# Compute age
+# Compute age in Set A
 
   # Define function to compute age from year of demographics data
 
@@ -2166,23 +2173,22 @@ compute_age <- function(df) {
 flt_dat$demographic   <- compute_age(flt_dat$demographic)
 flt_dat_b$demographic <- compute_age(flt_dat_b$demographic)
 
-  # non-NA values match those in clean data
+  # Non-NA values match those in clean data
 
-all(flt_dat$demographic$age   == sep_dat$demographic$demographic_age, na.rm = TRUE)
-all(flt_dat_b$demographic$age == sep_dat$demographic$demographic_age, na.rm = TRUE)
+identical(flt_dat$demographic$age, flt_dat_b$demographic$age)
 
-# Recode odd gender values in Sets A and B in ways that match those in clean data
+all(flt_dat$demographic$age == sep_dat$demographic$demographic_age, na.rm = TRUE)
+
+# For gender, given that Sets A and B are identical, recode odd values in Set A 
+# in ways that match those in clean data
+
+identical(flt_dat$demographic$gender, flt_dat_b$demographic$gender)
 
 flt_dat$demographic$gender[flt_dat$demographic$gender == "?"]       <- ""
 flt_dat$demographic$gender[flt_dat$demographic$gender == "Femmina"] <- "Female"
 flt_dat$demographic$gender[flt_dat$demographic$gender == "Mâle"]    <- "Male"
 
-flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "?"]       <- ""
-flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "Femmina"] <- "Female"
-flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "Mâle"]    <- "Male"
-
-all(flt_dat$demographic$gender == flt_dat_b$demographic$gender)
-all(flt_dat$demographic$gender == sep_dat$demographic$demographic_gender)
+identical(flt_dat$demographic$gender, sep_dat$demographic$demographic_gender)
 
   # But rather than retaining a blank value, recode it in Set A to reflect that 
   # it is missing due to an apparent server issue
@@ -2191,124 +2197,103 @@ missing_server_issue <- "Missing (server issue)"
 
 flt_dat$demographic$gender[flt_dat$demographic$gender == ""] <- missing_server_issue
 
-# Although education values are already nearly the same (except for one odd level) 
-# across Sets A and B and clean data, recode odd values in Sets A and B
+# For education, given that Sets A and B are identical, and nearly the same (except 
+# for one odd level) as clean data, recode odd values in Set A
 
-all(flt_dat$demographic$education[flt_dat$demographic$education != "Un lycée"] ==
-      flt_dat_b$demographic$education[flt_dat_b$demographic$education != "Un lycée"])
-all(flt_dat$demographic$education[flt_dat$demographic$education != "Un lycée"] ==
-      sep_dat$demographic$demographic_education[sep_dat$demographic$demographic_education != "Un lyc̩e"])
+identical(flt_dat$demographic$education, flt_dat_b$demographic$education)
+
+identical(flt_dat$demographic$education[flt_dat$demographic$education != "Un lycée"],
+          sep_dat$demographic$demographic_education[sep_dat$demographic$demographic_education != "Un lyc̩e"])
 
 flt_dat$demographic$education[flt_dat$demographic$education %in% c("", "????")] <- missing_server_issue
 flt_dat$demographic$education[flt_dat$demographic$education %in% 
                                 c("Diploma di scuola superiore", "Un lycée")]   <- "High School Graduate"
 
-flt_dat_b$demographic$education[flt_dat_b$demographic$education %in% c("", "????")] <- missing_server_issue
-flt_dat_b$demographic$education[flt_dat_b$demographic$education %in% 
-                                  c("Diploma di scuola superiore", "Un lycée")]     <- "High School Graduate"
+# For ethnicity, given that Sets A and B are identical, recode odd values in Set A
+# in ways that match those in clean data
 
-# Recode odd ethnicity values in Sets A and B in ways that match those in clean data
+identical(flt_dat$demographic$ethnicity, flt_dat_b$demographic$ethnicity)
 
 flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity == "??????????"]                  <- ""
 flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity %in% c("Inconnu", "Sconosciuto")] <- "Unknown"
 
-flt_dat_b$demographic$ethnicity[flt_dat_b$demographic$ethnicity == "??????????"]                  <- ""
-flt_dat_b$demographic$ethnicity[flt_dat_b$demographic$ethnicity %in% c("Inconnu", "Sconosciuto")] <- "Unknown"
+identical(flt_dat$demographic$ethnicity, sep_dat$demographic$demographic_ethnicity)
 
-all(flt_dat$demographic$ethnicity == flt_dat_b$demographic$demographic_ethnicity)
-all(flt_dat$demographic$ethnicity == sep_dat$demographic$demographic_ethnicity)
-
-  # But rather than retaining a blank value, recode it in Set A to reflect that 
-  # it is missing due to an apparent server issue
+  # But recode blank value in Set A to reflect that it's missing due to server issue
 
 flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity == ""] <- missing_server_issue
 
-# Recode odd employment status values in Sets A and B in ways that match those in clean data
+# For employment status, given that Sets A and B are identical, recode odd values
+# in Set A in ways that match those in clean data
+
+identical(flt_dat$demographic$employmentStatus, flt_dat_b$demographic$employmentStatus)
 
 flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "????"]             <- ""
 flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "Étudiant"]         <- "Student"
 flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "Lavoro part-time"] <- "Working part-time"
 
-flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "????"]             <- ""
-flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "Étudiant"]         <- "Student"
-flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "Lavoro part-time"] <- "Working part-time"
+identical(flt_dat$demographic$employmentStatus, sep_dat$demographic$demographic_employmentStatus)
 
-all(flt_dat$demographic$employmentStatus == flt_dat_b$demographic$employmentStatus)
-all(flt_dat$demographic$employmentStatus == sep_dat$demographic$demographic_employmentStatus)
-
-  # But rather than retaining a blank value, recode it in Set A to reflect that 
-  # it is missing due to an apparent server issue
+  # But recode blank value in Set A to reflect that it's missing due to server issue
 
 flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == ""] <- missing_server_issue
 
-# Recode odd income values in Sets A and B in ways that match those in clean data
+# For income, given that Sets A and B are identical, recode odd values in Set A 
+# in ways that match those in clean data
+
+identical(flt_dat$demographic$income, flt_dat_b$demographic$income)
 
 flt_dat$demographic$income[flt_dat$demographic$income == "Moins de 5 000 $"]   <- "Less than $5,000"
 flt_dat$demographic$income[flt_dat$demographic$income == "$ 5,000 a $ 11999"]  <- "$5,000 through $11,999"
 flt_dat$demographic$income[flt_dat$demographic$income == "$ 50,000??$ 74,999"] <- "$50,000 through $74,999"
 
-flt_dat_b$demographic$income[flt_dat_b$demographic$income == "Moins de 5 000 $"]   <- "Less than $5,000"
-flt_dat_b$demographic$income[flt_dat_b$demographic$income == "$ 5,000 a $ 11999"]  <- "$5,000 through $11,999"
-flt_dat_b$demographic$income[flt_dat_b$demographic$income == "$ 50,000??$ 74,999"] <- "$50,000 through $74,999"
+identical(flt_dat$demographic$income, sep_dat$demographic$demographic_income)
 
-all(flt_dat$demographic$income == flt_dat_b$demographic$income)
-all(flt_dat$demographic$income == sep_dat$demographic$demographic_income)
-
-  # But rather than retaining a blank value, recode it in Set A to reflect that 
-  # it is missing due to an apparent server issue
+  # But recode blank value in Set A to reflect that it's missing due to server issue
 
 flt_dat$demographic$income[flt_dat$demographic$income == ""] <- missing_server_issue
 
-# Recode odd marital status values in Sets A and B in ways that match those in clean data
+# For marital status, given that Sets A and B are identical, recode odd values in Set A 
+# in ways that match those in clean data
+
+identical(flt_dat$demographic$maritalStatus, flt_dat_b$demographic$maritalStatus)
 
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "??"]     <- ""
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == 
                                     "Single, ma attualmente fidanzato"]          <- "Single, but currently engaged to be married"
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "Unique"] <- "Single"
 
-flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == "??"]     <- ""
-flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == 
-                                    "Single, ma attualmente fidanzato"]              <- "Single, but currently engaged to be married"
-flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == "Unique"] <- "Single"
+identical(flt_dat$demographic$maritalStatus, sep_dat$demographic$demographic_maritalStatus)
 
-all(flt_dat$demographic$maritalStatus == flt_dat_b$demographic$maritalStatus)
-all(flt_dat$demographic$maritalStatus == sep_dat$demographic$demographic_maritalStatus)
-
-  # But rather than retaining a blank value, recode it in Set A to reflect that 
-  # it is missing due to an apparent server issue
+  # But recode blank value in Set A to reflect that it's missing due to server issue
 
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == ""] <- missing_server_issue
 
-# Recode odd race values in Sets A and B in ways that match those in clean data
+# For race, given that Sets A and B are identical, recode odd values in Set A 
+# in ways that match those in clean data
+
+identical(flt_dat$demographic$race, flt_dat_b$demographic$race)
 
 flt_dat$demographic$race[flt_dat$demographic$race == "?/????"]                          <- ""
 flt_dat$demographic$race[flt_dat$demographic$race %in% 
                            c("Bianco / origine europea", "Blanc / origine européenne")] <- "White/European origin"
 
-flt_dat_b$demographic$race[flt_dat_b$demographic$race == "?/????"]                        <- ""
-flt_dat_b$demographic$race[flt_dat_b$demographic$race %in% 
-                             c("Bianco / origine europea", "Blanc / origine européenne")] <- "White/European origin"
+identical(flt_dat$demographic$race, sep_dat$demographic$demographic_race)
 
-all(flt_dat$demographic$race == flt_dat_b$demographic$race)
-all(flt_dat$demographic$race == sep_dat$demographic$race)
-
-  # But rather than retaining a blank value, recode it in Set A to reflect that 
-  # it is missing due to an apparent server issue
+  # But recode blank value in Set A to reflect that it's missing due to server issue
 
 flt_dat$demographic$race[flt_dat$demographic$race == ""] <- missing_server_issue
 
-# Although country values are already the same across Sets A and B and clean data, 
-# rather than retaining a blank value, recode it in Set A to reflect that it is
-# missing due to an apparent server issue
+# For country, given that Sets A and B and clean data are identical, recode blank 
+# value in Set A to reflect that it's missing due to server issue
 
-all(flt_dat$demographic$residenceCountry == flt_dat_b$demographic$residenceCountry)
-all(flt_dat$demographic$residenceCountry == sep_dat$demographic$residenceCountry)
+identical(flt_dat$demographic$residenceCountry, flt_dat_b$demographic$residenceCountry)
+identical(flt_dat$demographic$residenceCountry, sep_dat$demographic$demographic_residenceCountry)
 
 flt_dat$demographic$residenceCountry[flt_dat$demographic$residenceCountry     == ""] <- missing_server_issue
-flt_dat_b$demographic$residenceCountry[flt_dat_b$demographic$residenceCountry == ""] <- missing_server_issue
 
 # ---------------------------------------------------------------------------- #
-# Compare clean data and Set A ----
+# Compare clean data and Set A on non-demographic tables ----
 # ---------------------------------------------------------------------------- #
 
 # Define lists with corresponding tables
@@ -2626,7 +2611,7 @@ merge_dass21_ds <- merge(flt_dat_comp_rest$dass21_ds,
 all(merge_dass21_ds$dass21_ds_total_dbl == merge_dass21_ds$dass_ds_score) # TRUE
 
 # ---------------------------------------------------------------------------- #
-# Compare clean data and Set B ----
+# Compare clean data and Set B on non-demographic tables ----
 # ---------------------------------------------------------------------------- #
 
 # Define lists with corresponding tables
@@ -2854,7 +2839,7 @@ all(merge_dass21_ds_b$dass21_ds_total_dbl == merge_dass21_ds_b$dass_ds_score) # 
 # though, by computing the proportion of positive scenarios (see "positive" column)
 
 # ---------------------------------------------------------------------------- #
-# Look for data missing for some participants in Set A ----
+# Look for non-demographic data missing for some participants in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # 36 participants in clean data are missing from "participant_export_dao" table 
@@ -2954,7 +2939,7 @@ identical(flt_dat_b_dass21_as_miss_ids_bl[, c("participant_id", "session_only", 
           sep_dat_bl_dass_as_miss_ids_tmp[, c("participant_id", "session_only", dass21_as_items)])
 
 # ---------------------------------------------------------------------------- #
-# Add data missing for some participants in Set A ----
+# Add non-demographic data missing for some participants in Set A ----
 # ---------------------------------------------------------------------------- #
 
 # Define function for labeling all rows of dataset with name of dataset's source
@@ -3014,7 +2999,7 @@ flt_dat_add$oa <- merge(flt_dat_add$oa,
                         all = TRUE, sort = FALSE)
 
 # ---------------------------------------------------------------------------- #
-# Compare clean data and Set A with added data ----
+# Compare clean data and Set A with added data on non-demographic tables ----
 # ---------------------------------------------------------------------------- #
 
 # Define lists with corresponding tables
@@ -3030,29 +3015,15 @@ sep_dat_comp_add <- sep_dat[c("bbsiq", "dass_as", "dass_ds", "demographic",
 all(mapply(length_diff_participant_ids, flt_dat_comp_add, sep_dat_comp_add) == 0)
 all(mapply(length_diff_participant_ids, sep_dat_comp_add, flt_dat_comp_add) == 0)
 
-# Although this restriction is no longer needed, restrict to shared participant IDs 
-# in each table and confirm that is so
-
-  # Run function defined for Set A
-
-ls_rest_add <- restrict_to_shared_ps(flt_dat_comp_add, sep_dat_comp_add)
-flt_dat_comp_rest_add <- ls_rest_add[[1]]
-sep_dat_comp_rest_add <- ls_rest_add[[2]]
-
-  # Confirm
-
-all(mapply(length_diff_participant_ids, flt_dat_comp_rest_add, sep_dat_comp_rest_add) == 0)
-all(mapply(length_diff_participant_ids, sep_dat_comp_rest_add, flt_dat_comp_rest_add) == 0)
-
 # Sort tables by participant and (if present) then session
 
-flt_dat_comp_rest_add <- sort_by_part_then_session(flt_dat_comp_rest_add, "participant_id", "session_only")
-sep_dat_comp_rest_add <- sort_by_part_then_session(sep_dat_comp_rest_add, "participant_id", "session_only")
+flt_dat_comp_add <- sort_by_part_then_session(flt_dat_comp_add, "participant_id", "session_only")
+sep_dat_comp_add <- sort_by_part_then_session(sep_dat_comp_add, "participant_id", "session_only")
 
 # Compare numbers of observations. They differ between datasets.
 
-set_add_vs_cln_nrow <- data.frame(set_add = sapply(flt_dat_comp_rest_add, nrow),
-                                  clean   = sapply(sep_dat_comp_rest_add, nrow))
+set_add_vs_cln_nrow <- data.frame(set_add = sapply(flt_dat_comp_add, nrow),
+                                  clean   = sapply(sep_dat_comp_add, nrow))
 set_add_vs_cln_nrow$diff <- set_add_vs_cln_nrow$set_add - set_add_vs_cln_nrow$clean
 
 set_add_vs_cln_nrow
@@ -3061,25 +3032,25 @@ set_add_vs_cln_nrow
 
 key_cols <- c("participant_id", "session_only")
 
-# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$bbsiq,     sep_dat_comp_rest_add$bbsiq,   key_cols)) # P 532
-# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$dass21_ds, sep_dat_comp_rest_add$dass_ds, key_cols)) # P 532
-# View(diff_df1_not_in_df2(flt_dat_comp_rest_add$rr,        sep_dat_comp_rest_add$rr,      key_cols)) # P 532
+# View(diff_df1_not_in_df2(flt_dat_comp_add$bbsiq,     sep_dat_comp_add$bbsiq,   key_cols)) # P 532
+# View(diff_df1_not_in_df2(flt_dat_comp_add$dass21_ds, sep_dat_comp_add$dass_ds, key_cols)) # P 532
+# View(diff_df1_not_in_df2(flt_dat_comp_add$rr,        sep_dat_comp_add$rr,      key_cols)) # P 532
 
     # P 532 lacks clean data at "PRE" for BBSIQ, DASS-21-DS, and RR. "notes.csv" says that they were 
     # originally thought not to have RR data at "PRE" but do. Their "PRE" BBSIQ and RR data are the 
     # same as those in clean item-level baseline data. Retain these data.
 
-flt_dat_comp_rest_add_id532_bbsiq_pre <- flt_dat_comp_rest_add$bbsiq[flt_dat_comp_rest_add$bbsiq$participant_id == 532 &
-                                                                       flt_dat_comp_rest_add$bbsiq$session_only == "PRE", ]
-flt_dat_comp_rest_add_id532_rr_pre    <- flt_dat_comp_rest_add$rr[flt_dat_comp_rest_add$rr$participant_id == 532 &
-                                                                    flt_dat_comp_rest_add$rr$session_only == "PRE", ]
+flt_dat_comp_add_id532_bbsiq_pre <- flt_dat_comp_add$bbsiq[flt_dat_comp_add$bbsiq$participant_id == 532 &
+                                                             flt_dat_comp_add$bbsiq$session_only == "PRE", ]
+flt_dat_comp_add_id532_rr_pre    <- flt_dat_comp_add$rr[flt_dat_comp_add$rr$participant_id == 532 &
+                                                          flt_dat_comp_add$rr$session_only == "PRE", ]
 
 sep_dat_bl_id532_bbsiq <- sep_dat_bl$bbsiq[sep_dat_bl$bbsiq$participant_id == 532, ]
 sep_dat_bl_id532_rr    <- sep_dat_bl$rr[sep_dat_bl$rr$participant_id       == 532, ]
 
-all(flt_dat_comp_rest_add_id532_bbsiq_pre[c("participant_id", "session_only", bbsiq_items)] ==
+all(flt_dat_comp_add_id532_bbsiq_pre[c("participant_id", "session_only", bbsiq_items)] ==
       sep_dat_bl_id532_bbsiq[c("participant_id", "session_only", bbsiq_items)])
-all(flt_dat_comp_rest_add_id532_rr_pre[c("participant_id", "session_only", rr_items)] ==
+all(flt_dat_comp_add_id532_rr_pre[c("participant_id", "session_only", rr_items)] ==
       sep_dat_bl_id532_rr[c("participant_id", "session_only", rr_items)])
 
   # Inspect rows in clean data not in Set A with added data. In all cases, the
@@ -3087,15 +3058,15 @@ all(flt_dat_comp_rest_add_id532_rr_pre[c("participant_id", "session_only", rr_it
   # or B. Most likely, the clean data was derived from raw data dumped from the
   # server after Sets A and B were dumped from the server.
 
-# View(diff_df1_not_in_df2(sep_dat_comp_rest_add$dass_as, flt_dat_comp_rest_add$dass21_as, key_cols)) # Ps       1687, 1806,       1883,       1910
-# View(diff_df1_not_in_df2(sep_dat_comp_rest_add$oa,      flt_dat_comp_rest_add$oa,        key_cols)) # Ps 1273, 1687, 1806, 1866, 1883, 1889, 1910
+# View(diff_df1_not_in_df2(sep_dat_comp_add$dass_as, flt_dat_comp_add$dass21_as, key_cols)) # Ps       1687, 1806,       1883,       1910
+# View(diff_df1_not_in_df2(sep_dat_comp_add$oa,      flt_dat_comp_add$oa,        key_cols)) # Ps 1273, 1687, 1806, 1866, 1883, 1889, 1910
 
 # Use natural join to restrict to shared time points for "oa" table. All scores 
 # are the same, but recode session in section below for participants who skipped 
 # one session (see above for Sets A and B).
 
-merge_oa_add <- merge(flt_dat_comp_rest_add$oa, 
-                      sep_dat_comp_rest_add$oa,
+merge_oa_add <- merge(flt_dat_comp_add$oa, 
+                      sep_dat_comp_add$oa,
                       by = c("participant_id", "session_only"),
                       all = FALSE)
 
@@ -3104,8 +3075,8 @@ all(merge_oa_add$oa_total == merge_oa_add$oasis_score)
 # Use natural join to restrict to shared time points for "rr" table. All scores
 # are the same when rounded to 9 decimal places.
 
-merge_rr_add <- merge(flt_dat_comp_rest_add$rr, 
-                      sep_dat_comp_rest_add$rr,
+merge_rr_add <- merge(flt_dat_comp_add$rr, 
+                      sep_dat_comp_add$rr,
                       by = c("participant_id", "session_only"),
                       all = FALSE)
 
@@ -3114,8 +3085,8 @@ confirm_all_rr_scores_same(merge_rr_add, 9) # TRUE
 # Use natural join to restrict to shared time points for "bbsiq" table. All scores
 # are the same when rounded to 7 decimal places.
 
-merge_bbsiq_add <- merge(flt_dat_comp_rest_add$bbsiq, 
-                         sep_dat_comp_rest_add$bbsiq,
+merge_bbsiq_add <- merge(flt_dat_comp_add$bbsiq, 
+                         sep_dat_comp_add$bbsiq,
                          by = c("participant_id", "session_only"),
                          all = FALSE)
 
@@ -3124,8 +3095,8 @@ confirm_all_bbsiq_scores_same(merge_bbsiq_add, 7) # TRUE
 # Use natural join to restrict to shared time points for "dass21_as" table. All scores
 # are the same.
 
-merge_dass21_as_add <- merge(flt_dat_comp_rest_add$dass21_as, 
-                             sep_dat_comp_rest_add$dass_as,
+merge_dass21_as_add <- merge(flt_dat_comp_add$dass21_as, 
+                             sep_dat_comp_add$dass_as,
                              by = c("participant_id", "session_only"),
                              all = FALSE)
 
@@ -3134,8 +3105,8 @@ all(merge_dass21_as_add$dass21_as_total_dbl == merge_dass21_as_add$dass_as_score
 # Use natural join to restrict to shared time points for "dass21_ds" table. All scores
 # are the same.
 
-merge_dass21_ds_add <- merge(flt_dat_comp_rest_add$dass21_ds, 
-                             sep_dat_comp_rest_add$dass_ds,
+merge_dass21_ds_add <- merge(flt_dat_comp_add$dass21_ds, 
+                             sep_dat_comp_add$dass_ds,
                              by = c("participant_id", "session_only"),
                              all = FALSE)
 
@@ -3143,20 +3114,30 @@ all(merge_dass21_ds_add$dass21_ds_total_dbl == merge_dass21_ds_add$dass_ds_score
 
 # Compare CBM condition and anxiety imagery prime condition
 
-all(flt_dat_comp_rest_add$participant$cbmCondition == sep_dat_comp_rest_add$participant$cbmCondition)
-all(flt_dat_comp_rest_add$participant$prime        == sep_dat_comp_rest_add$participant$prime)
+all(flt_dat_comp_add$participant$cbmCondition == sep_dat_comp_add$participant$cbmCondition)
+all(flt_dat_comp_add$participant$prime        == sep_dat_comp_add$participant$prime)
+
+# ---------------------------------------------------------------------------- #
+# Compare Set A and B credibility data ----
+# ---------------------------------------------------------------------------- #
+
+# TODO
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Finalize item-level data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (compare demographics tables): Given that so far the OA, RR, BBSIQ, DASS-21-AS,
+# TODO (update comment): Given that so far the OA, RR, BBSIQ, DASS-21-AS,
 # and DASS-21-DS scores in the clean data used in the main outcomes paper have been 
 # reproduced, restrict to those tables and to the participant and demographics tables. 
 # All these tables have the same participants as the clean data, but some have different 
 # numbers of rows (see section above comparing clean data and Set A with added data).
 
-flt_dat_final <- flt_dat_comp_rest_add
+flt_dat_final <- flt_dat_comp_add
 
 
 
@@ -3180,27 +3161,27 @@ flt_dat_final$oa <- recode_oa_session_to_expected_order(flt_dat_final$oa, skippe
 # Extract relevant tables named to reflect their source ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Update this section to use final data
+# TODO: Update this section to use final data and name more clearly
 
 
 
 
 
-merge_oa_rest_add    <- merge_oa_add
-merge_rr_rest_add    <- merge_rr_add
-merge_bbsiq_rest_add <- merge_bbsiq_add
+# merge_oa_add
+# merge_rr_add
+# merge_bbsiq_add
 
-participant_raw_rest_add <- flt_dat_comp_rest_add$participant
-participant_cln_rest_add <- sep_dat_comp_rest_add$participant
+participant_raw_add <- flt_dat_comp_add$participant
+participant_cln_add <- sep_dat_comp_add$participant
 
-demographics_raw_rest_add <- flt_dat_comp_rest_add$demographic
-demographics_cln_rest_add <- sep_dat_comp_rest_add$demographic
+demographics_raw_add <- flt_dat_comp_add$demographic
+demographics_cln_add <- sep_dat_comp_add$demographic
 
 # TODO (compare credibility between Sets A and B): Credibility table is not in 
 # clean data, so obtain it from Set A above
 
-credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
-                                               sep_dat$participant$participant_id, ]
+credibility_raw  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
+                                          sep_dat$participant$participant_id, ]
 
 
 
@@ -3209,6 +3190,12 @@ credibility_raw_rest  <- flt_dat$credibility[flt_dat$credibility$participant_id 
 # ---------------------------------------------------------------------------- #
 # Export data ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Update below
+
+
+
+
 
 dir.create("./data/intermediate/")
 
