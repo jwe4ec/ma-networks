@@ -2072,6 +2072,242 @@ flt_dat$dass21_ds$dass21_ds_total_dbl   <- rowSums(flt_dat$dass21_ds[, dass21_ds
 flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[, dass21_ds_items]) * 2
 
 # ---------------------------------------------------------------------------- #
+# Clean demographics in Sets A and B and compare with clean data ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Condense this code, document decisions further, and likely move it
+
+
+
+
+
+# Convert Set A participant ID to integer
+
+flt_dat$demographic$participant_id <- as.integer(flt_dat$demographic$participant_id)
+
+# Sort by participant in Sets A and B and in clean data
+
+flt_dat$demographic   <- flt_dat$demographic[order(flt_dat$demographic$participant_id), ]
+flt_dat_b$demographic <- flt_dat_b$demographic[order(flt_dat_b$demographic$participant_id), ]
+sep_dat$demographic   <- sep_dat$demographic[order(sep_dat$demographic$participant_id), ]
+
+row.names(flt_dat$demographic)   <- 1:nrow(flt_dat$demographic)
+row.names(flt_dat_b$demographic) <- 1:nrow(flt_dat_b$demographic)
+row.names(sep_dat$demographic)   <- 1:nrow(sep_dat$demographic)
+
+# Recode birth years of 0 or 2222 to NA in Sets A and B (which was done in both
+# "R34_cleaning_script.R" and "R34.ipynb" cleaning scripts)
+
+sum(flt_dat$demographic$birthYear   %in% c(0, 2222)) == 2
+sum(flt_dat_b$demographic$birthYear %in% c(0, 2222)) == 1
+
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear     %in% c(0, 2222)] <- NA
+flt_dat_b$demographic$birthYear[flt_dat_b$demographic$birthYear %in% c(0, 2222)] <- NA
+
+# Some birth years in Set A are only 2 digits or longer than 4 digits. These seem
+# to have been corrected in Set B, whose birth years are all 4 digits. However, the
+# clean data doesn't include all of the corrected birth years (treats some as NA).
+
+odd_birth_year_pids <- flt_dat$demographic$participant_id[!is.na(flt_dat$demographic$birthYear) &
+                                                            nchar(flt_dat$demographic$birthYear) != 4]
+
+# View(flt_dat$demographic[flt_dat$demographic$participant_id %in% odd_birth_year_pids, ])
+# View(flt_dat_b$demographic[flt_dat_b$demographic$participant_id %in% odd_birth_year_pids, ])
+# View(sep_dat$demographic[sep_dat$demographic$participant_id %in% odd_birth_year_pids, ])
+
+# Clean the birth years in Set A in accordance with those from Set B, after which
+# Sets A and B contain the same non-NA values and same number of NAs but the clean
+# data contains more NAs (but the same values that are non-NA across datasets)
+
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001959] <- 1959
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001989] <- 1989
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 64]       <- 1964
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 61]       <- 1961
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 80]       <- 1980
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001975] <- 1975
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 195100]   <- 1951
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001976] <- 1976
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 81]       <- 1981
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19019590] <- 1959
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1972900]  <- 1972
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 87]       <- 1987
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 82]       <- 1982
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001997] <- 1997
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 77]       <- 1977
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 92]       <- 1992
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 89]       <- 1989
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001987] <- 1987
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001977] <- 1977
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001981] <- 1981
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1900955]  <- 1955
+
+flt_dat$demographic$birthYear <- as.integer(flt_dat$demographic$birthYear)
+
+identical(flt_dat$demographic$birthYear, flt_dat_b$demographic$birthYear)
+
+all(flt_dat$demographic$birthYear == sep_dat$demographic$demographic_birthYear, na.rm = TRUE)
+sum(is.na(flt_dat$demographic$birthYear))             == 2
+sum(is.na(sep_dat$demographic$demographic_birthYear)) == 14
+
+# Compute age
+
+  # Define function to compute age from year of demographics data
+
+compute_age <- function(df) {
+  date_year <- as.integer(format(df$date_as_POSIXct, "%Y"))
+  
+  df$age <- date_year - df$birthYear
+  
+  return(df)
+}
+
+  # Run function for Sets A and B
+
+flt_dat$demographic   <- compute_age(flt_dat$demographic)
+flt_dat_b$demographic <- compute_age(flt_dat_b$demographic)
+
+  # non-NA values match those in clean data
+
+all(flt_dat$demographic$age   == sep_dat$demographic$demographic_age, na.rm = TRUE)
+all(flt_dat_b$demographic$age == sep_dat$demographic$demographic_age, na.rm = TRUE)
+
+# Recode odd gender values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$gender[flt_dat$demographic$gender == "?"]       <- ""
+flt_dat$demographic$gender[flt_dat$demographic$gender == "Femmina"] <- "Female"
+flt_dat$demographic$gender[flt_dat$demographic$gender == "Mâle"]    <- "Male"
+
+flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "?"]       <- ""
+flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "Femmina"] <- "Female"
+flt_dat_b$demographic$gender[flt_dat_b$demographic$gender == "Mâle"]    <- "Male"
+
+all(flt_dat$demographic$gender == flt_dat_b$demographic$gender)
+all(flt_dat$demographic$gender == sep_dat$demographic$demographic_gender)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+missing_server_issue <- "Missing (server issue)"
+
+flt_dat$demographic$gender[flt_dat$demographic$gender == ""] <- missing_server_issue
+
+# Although education values are already nearly the same (except for one odd level) 
+# across Sets A and B and clean data, recode odd values in Sets A and B
+
+all(flt_dat$demographic$education[flt_dat$demographic$education != "Un lycée"] ==
+      flt_dat_b$demographic$education[flt_dat_b$demographic$education != "Un lycée"])
+all(flt_dat$demographic$education[flt_dat$demographic$education != "Un lycée"] ==
+      sep_dat$demographic$demographic_education[sep_dat$demographic$demographic_education != "Un lyc̩e"])
+
+flt_dat$demographic$education[flt_dat$demographic$education %in% c("", "????")] <- missing_server_issue
+flt_dat$demographic$education[flt_dat$demographic$education %in% 
+                                c("Diploma di scuola superiore", "Un lycée")]   <- "High School Graduate"
+
+flt_dat_b$demographic$education[flt_dat_b$demographic$education %in% c("", "????")] <- missing_server_issue
+flt_dat_b$demographic$education[flt_dat_b$demographic$education %in% 
+                                  c("Diploma di scuola superiore", "Un lycée")]     <- "High School Graduate"
+
+# Recode odd ethnicity values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity == "??????????"]                  <- ""
+flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity %in% c("Inconnu", "Sconosciuto")] <- "Unknown"
+
+flt_dat_b$demographic$ethnicity[flt_dat_b$demographic$ethnicity == "??????????"]                  <- ""
+flt_dat_b$demographic$ethnicity[flt_dat_b$demographic$ethnicity %in% c("Inconnu", "Sconosciuto")] <- "Unknown"
+
+all(flt_dat$demographic$ethnicity == flt_dat_b$demographic$demographic_ethnicity)
+all(flt_dat$demographic$ethnicity == sep_dat$demographic$demographic_ethnicity)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity == ""] <- missing_server_issue
+
+# Recode odd employment status values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "????"]             <- ""
+flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "Étudiant"]         <- "Student"
+flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == "Lavoro part-time"] <- "Working part-time"
+
+flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "????"]             <- ""
+flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "Étudiant"]         <- "Student"
+flt_dat_b$demographic$employmentStatus[flt_dat_b$demographic$employmentStatus == "Lavoro part-time"] <- "Working part-time"
+
+all(flt_dat$demographic$employmentStatus == flt_dat_b$demographic$employmentStatus)
+all(flt_dat$demographic$employmentStatus == sep_dat$demographic$demographic_employmentStatus)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == ""] <- missing_server_issue
+
+# Recode odd income values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$income[flt_dat$demographic$income == "Moins de 5 000 $"]   <- "Less than $5,000"
+flt_dat$demographic$income[flt_dat$demographic$income == "$ 5,000 a $ 11999"]  <- "$5,000 through $11,999"
+flt_dat$demographic$income[flt_dat$demographic$income == "$ 50,000??$ 74,999"] <- "$50,000 through $74,999"
+
+flt_dat_b$demographic$income[flt_dat_b$demographic$income == "Moins de 5 000 $"]   <- "Less than $5,000"
+flt_dat_b$demographic$income[flt_dat_b$demographic$income == "$ 5,000 a $ 11999"]  <- "$5,000 through $11,999"
+flt_dat_b$demographic$income[flt_dat_b$demographic$income == "$ 50,000??$ 74,999"] <- "$50,000 through $74,999"
+
+all(flt_dat$demographic$income == flt_dat_b$demographic$income)
+all(flt_dat$demographic$income == sep_dat$demographic$demographic_income)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+flt_dat$demographic$income[flt_dat$demographic$income == ""] <- missing_server_issue
+
+# Recode odd marital status values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "??"]     <- ""
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == 
+                                    "Single, ma attualmente fidanzato"]          <- "Single, but currently engaged to be married"
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "Unique"] <- "Single"
+
+flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == "??"]     <- ""
+flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == 
+                                    "Single, ma attualmente fidanzato"]              <- "Single, but currently engaged to be married"
+flt_dat_b$demographic$maritalStatus[flt_dat_b$demographic$maritalStatus == "Unique"] <- "Single"
+
+all(flt_dat$demographic$maritalStatus == flt_dat_b$demographic$maritalStatus)
+all(flt_dat$demographic$maritalStatus == sep_dat$demographic$demographic_maritalStatus)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == ""] <- missing_server_issue
+
+# Recode odd race values in Sets A and B in ways that match those in clean data
+
+flt_dat$demographic$race[flt_dat$demographic$race == "?/????"]                          <- ""
+flt_dat$demographic$race[flt_dat$demographic$race %in% 
+                           c("Bianco / origine europea", "Blanc / origine européenne")] <- "White/European origin"
+
+flt_dat_b$demographic$race[flt_dat_b$demographic$race == "?/????"]                        <- ""
+flt_dat_b$demographic$race[flt_dat_b$demographic$race %in% 
+                             c("Bianco / origine europea", "Blanc / origine européenne")] <- "White/European origin"
+
+all(flt_dat$demographic$race == flt_dat_b$demographic$race)
+all(flt_dat$demographic$race == sep_dat$demographic$race)
+
+  # But rather than retaining a blank value, recode it in Set A to reflect that 
+  # it is missing due to an apparent server issue
+
+flt_dat$demographic$race[flt_dat$demographic$race == ""] <- missing_server_issue
+
+# Although country values are already the same across Sets A and B and clean data, 
+# rather than retaining a blank value, recode it in Set A to reflect that it is
+# missing due to an apparent server issue
+
+all(flt_dat$demographic$residenceCountry == flt_dat_b$demographic$residenceCountry)
+all(flt_dat$demographic$residenceCountry == sep_dat$demographic$residenceCountry)
+
+flt_dat$demographic$residenceCountry[flt_dat$demographic$residenceCountry     == ""] <- missing_server_issue
+flt_dat_b$demographic$residenceCountry[flt_dat_b$demographic$residenceCountry == ""] <- missing_server_issue
+
+# ---------------------------------------------------------------------------- #
 # Compare clean data and Set A ----
 # ---------------------------------------------------------------------------- #
 
