@@ -2075,17 +2075,28 @@ flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[, dass21_
 # Clean demographic table (with focus on Set A) and compare with clean data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Document decisions further
+# Given that the sections below ultimately base the item-level data on Set A and 
+# that Set A is not missing any demographics data, the present section focuses on
+# cleaning Set A. For a given item, if Sets A and B are identical, only Set A is
+# cleaned and compared with clean data. If Sets A and B are not identical, then
+# Sets A and B are cleaned until they are identical, and then Set A is compared
+# with clean data. Once it is shown that Set A reproduces the clean data, is some
+# cases additional cleaning is done that deviates from clean data (i.e., cleaning
+# additional odd birth year values vs. recoding them as NA; cleaning additional
+# odd education values; recoding blank values as missing due to a server issue).
 
+# Other demographics cleaning and analysis scripts for reference:
+# - On GitHub (https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/tree/master/Data%20Cleaning)
+#   - "R34_cleaning_script.R"
+#   - "R34.ipynb"
+# - On MA main outcomes paper OSF project
+#   - "Script0_Demographics.R" (https://osf.io/uv5jm)
 
-
-
-
-# Convert Set A participant ID to integer
+# Order Sets A and B and clean data by participant and compare participant IDs
 
 flt_dat$demographic$participant_id <- as.integer(flt_dat$demographic$participant_id)
 
-# Sort by participant in Sets A and B and in clean data
+  # Sort by participant in Sets A and B and in clean data
 
 flt_dat$demographic   <- flt_dat$demographic[order(flt_dat$demographic$participant_id), ]
 flt_dat_b$demographic <- flt_dat_b$demographic[order(flt_dat_b$demographic$participant_id), ]
@@ -2095,7 +2106,7 @@ row.names(flt_dat$demographic)   <- 1:nrow(flt_dat$demographic)
 row.names(flt_dat_b$demographic) <- 1:nrow(flt_dat_b$demographic)
 row.names(sep_dat$demographic)   <- 1:nrow(sep_dat$demographic)
 
-# Sets A and B and clean data all contain the same participants
+  # Sets A and B and clean data all contain the same participants
 
 identical(flt_dat$demographic$participant_id, flt_dat_b$demographic$participant_id,
           sep_dat$demographic$participant_id)
@@ -2103,7 +2114,7 @@ identical(flt_dat$demographic$participant_id, flt_dat_b$demographic$participant_
 # For birth year:
 
   # Recode values of 0 or 2222 to NA in Sets A and B (which was done in both
-  # "R34_cleaning_script.R" and "R34.ipynb" cleaning scripts)
+  # "R34_cleaning_script.R" and "R34.ipynb")
 
 sum(flt_dat$demographic$birthYear   %in% c(0, 2222)) == 2
 sum(flt_dat_b$demographic$birthYear %in% c(0, 2222)) == 1
@@ -2118,35 +2129,30 @@ flt_dat_b$demographic$birthYear[flt_dat_b$demographic$birthYear %in% c(0, 2222)]
 odd_birth_year_pids <- flt_dat$demographic$participant_id[!is.na(flt_dat$demographic$birthYear) &
                                                             nchar(flt_dat$demographic$birthYear) != 4]
 
-# View(flt_dat$demographic[flt_dat$demographic$participant_id %in% odd_birth_year_pids, ])
-# View(flt_dat_b$demographic[flt_dat_b$demographic$participant_id %in% odd_birth_year_pids, ])
-# View(sep_dat$demographic[sep_dat$demographic$participant_id %in% odd_birth_year_pids, ])
-
   # Clean the values in Set A in accordance with those from Set B, after which
   # Sets A and B contain the same non-NA values and same number of NAs but the clean
-  # data contains more NAs (but the same values that are non-NA across datasets)
+  # data contains more NAs (but the same values that are non-NA across datasets).
+  # The clean data has NAs specifically for values > 2222, even though it seems
+  # that "R34.ipynb" intended to make the same corrections below (see this issue:
+  # https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/9#issue-3457953028).
+  # "R34_cleaning_script.R" also made these corrections.
 
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001959] <- 1959
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001989] <- 1989
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 64]       <- 1964
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 61]       <- 1961
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 80]       <- 1980
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001975] <- 1975
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 195100]   <- 1951
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001976] <- 1976
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 81]       <- 1981
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19019590] <- 1959
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1972900]  <- 1972
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 87]       <- 1987
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 82]       <- 1982
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001997] <- 1997
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 77]       <- 1977
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 92]       <- 1992
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 89]       <- 1989
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001987] <- 1987
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001977] <- 1977
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001981] <- 1981
-flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1900955]  <- 1955
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 195100]                  <- 1951
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1900955]                 <- 1955
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear %in% c(19001959, 19019590)] <- 1959
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 61]                      <- 1961
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 64]                      <- 1964
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 1972900]                 <- 1972
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001975]                <- 1975
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001976]                <- 1976
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear %in% c(77, 19001977)]       <- 1977
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 80]                      <- 1980
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear %in% c(81, 19001981)]       <- 1981
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 82]                      <- 1982
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear %in% c(87, 19001987)]       <- 1987
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear %in% c(89, 19001989)]       <- 1989
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 92]                      <- 1992
+flt_dat$demographic$birthYear[flt_dat$demographic$birthYear == 19001997]                <- 1997
 
 flt_dat$demographic$birthYear <- as.integer(flt_dat$demographic$birthYear)
 
@@ -2158,7 +2164,7 @@ sum(is.na(sep_dat$demographic$demographic_birthYear)) == 14
 
 # Compute age in Set A
 
-  # Define function to compute age from year of demographics data
+  # Define function to compute age from year of demographics data (per "R34.ipynb")
 
 compute_age <- function(df) {
   date_year <- as.integer(format(df$date_as_POSIXct, "%Y"))
@@ -2180,7 +2186,7 @@ identical(flt_dat$demographic$age, flt_dat_b$demographic$age)
 all(flt_dat$demographic$age == sep_dat$demographic$demographic_age, na.rm = TRUE)
 
 # For gender, given that Sets A and B are identical, recode odd values in Set A 
-# in ways that match those in clean data
+# in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$gender, flt_dat_b$demographic$gender)
 
@@ -2198,7 +2204,9 @@ missing_server_issue <- "Missing (server issue)"
 flt_dat$demographic$gender[flt_dat$demographic$gender == ""] <- missing_server_issue
 
 # For education, given that Sets A and B are identical, and nearly the same (except 
-# for one odd level) as clean data, recode odd values in Set A
+# for one odd level) as clean data, recode odd values in Set A (per "R34_cleaning_script.R";
+# "R34.ipynb" did not clean education; see issue
+# https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/10#issue-3458115537)
 
 identical(flt_dat$demographic$education, flt_dat_b$demographic$education)
 
@@ -2210,7 +2218,7 @@ flt_dat$demographic$education[flt_dat$demographic$education %in%
                                 c("Diploma di scuola superiore", "Un lycée")]   <- "High School Graduate"
 
 # For ethnicity, given that Sets A and B are identical, recode odd values in Set A
-# in ways that match those in clean data
+# in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$ethnicity, flt_dat_b$demographic$ethnicity)
 
@@ -2224,7 +2232,7 @@ identical(flt_dat$demographic$ethnicity, sep_dat$demographic$demographic_ethnici
 flt_dat$demographic$ethnicity[flt_dat$demographic$ethnicity == ""] <- missing_server_issue
 
 # For employment status, given that Sets A and B are identical, recode odd values
-# in Set A in ways that match those in clean data
+# in Set A in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$employmentStatus, flt_dat_b$demographic$employmentStatus)
 
@@ -2239,7 +2247,7 @@ identical(flt_dat$demographic$employmentStatus, sep_dat$demographic$demographic_
 flt_dat$demographic$employmentStatus[flt_dat$demographic$employmentStatus == ""] <- missing_server_issue
 
 # For income, given that Sets A and B are identical, recode odd values in Set A 
-# in ways that match those in clean data
+# in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$income, flt_dat_b$demographic$income)
 
@@ -2254,7 +2262,7 @@ identical(flt_dat$demographic$income, sep_dat$demographic$demographic_income)
 flt_dat$demographic$income[flt_dat$demographic$income == ""] <- missing_server_issue
 
 # For marital status, given that Sets A and B are identical, recode odd values in Set A 
-# in ways that match those in clean data
+# in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$maritalStatus, flt_dat_b$demographic$maritalStatus)
 
@@ -2270,7 +2278,7 @@ identical(flt_dat$demographic$maritalStatus, sep_dat$demographic$demographic_mar
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == ""] <- missing_server_issue
 
 # For race, given that Sets A and B are identical, recode odd values in Set A 
-# in ways that match those in clean data
+# in ways (per "R34.ipynb" and "R34_cleaning_script.R") that match clean data
 
 identical(flt_dat$demographic$race, flt_dat_b$demographic$race)
 
@@ -3118,7 +3126,7 @@ all(flt_dat_comp_add$participant$cbmCondition == sep_dat_comp_add$participant$cb
 all(flt_dat_comp_add$participant$prime        == sep_dat_comp_add$participant$prime)
 
 # ---------------------------------------------------------------------------- #
-# Compare Set A and B credibility data ----
+# Compare Sets A and B on credibility table ----
 # ---------------------------------------------------------------------------- #
 
 # Credibility table is not in clean data, but at least compare Sets A and B
