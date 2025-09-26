@@ -3121,11 +3121,26 @@ all(flt_dat_comp_add$participant$prime        == sep_dat_comp_add$participant$pr
 # Compare Set A and B credibility data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+# Credibility table is not in clean data, but at least compare Sets A and B
 
+# After sorting by participant ID, Sets A and B have the same participants
 
+flt_dat$credibility   <- flt_dat$credibility[order(flt_dat$credibility$participant_id), ]
+flt_dat_b$credibility <- flt_dat_b$credibility[order(flt_dat_b$credibility$participant_id), ]
 
+row.names(flt_dat$credibility)   <- 1:nrow(flt_dat$credibility)
+row.names(flt_dat_b$credibility) <- 1:nrow(flt_dat_b$credibility)
 
+flt_dat$credibility$participant_id   <- as.integer(flt_dat$credibility$participant_id)
+flt_dat_b$credibility$participant_id <- as.integer(flt_dat_b$credibility$participant_id)
+
+# Sets A and B are identical on comparable columns
+
+flt_dat$credibility <- flt_dat$credibility[c(names(flt_dat_b$credibility), "id")]
+
+comparable_cols <- names(flt_dat$credibility)[!(names(flt_dat$credibility) %in% c("dataset", "id"))]
+
+identical(flt_dat$credibility[comparable_cols], flt_dat_b$credibility[comparable_cols])
 
 # ---------------------------------------------------------------------------- #
 # Finalize item-level data ----
@@ -3177,11 +3192,7 @@ participant_cln_add <- sep_dat_comp_add$participant
 demographics_raw_add <- flt_dat_comp_add$demographic
 demographics_cln_add <- sep_dat_comp_add$demographic
 
-# TODO (compare credibility between Sets A and B): Credibility table is not in 
-# clean data, so obtain it from Set A above
-
-credibility_raw  <- flt_dat$credibility[flt_dat$credibility$participant_id %in%
-                                          sep_dat$participant$participant_id, ]
+# TODO: Add credibility data here from above
 
 
 
