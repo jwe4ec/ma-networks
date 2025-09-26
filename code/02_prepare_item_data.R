@@ -159,7 +159,7 @@ dummy_cols <- c("ANXIETY", "POSITIVE", "FIFTY_FIFTY", "POSITIVEANXIETY",
                 "POSITIVENEUTRAL", "FIFTY_FIFTYANXIETY", "FIFTY_FIFTYNEUTRAL",
                 "NONEANXIETY")
 
-cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols, computed_cols, dummy_cols))]]
+cln_dat <- cln_dat[setdiff(names(cln_dat), c(renamed_cols, computed_cols, dummy_cols))]
 
 # Remove dropout-related columns, which seem to have been created in some version
 # of "R34.ipynb", which, albeit outdated, is in the Data Cleaning folder on GitHub
@@ -167,7 +167,7 @@ cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% c(renamed_cols, comput
 
 dropout_cols <- names(cln_dat)[grep("_dropout", names(cln_dat))]
 
-cln_dat <- cln_dat[, names(cln_dat)[!(names(cln_dat) %in% dropout_cols)]]
+cln_dat <- cln_dat[setdiff(names(cln_dat), dropout_cols)]
 
 # Rename "participantID" as "participant_id"
 
@@ -188,33 +188,35 @@ setdiff(names(cln_dat), c(bbsiq_cols, dass_as_cols, dass_ds_cols, demographic_co
 
 # Define function to extract data into separate tables
 
-create_sep_dat <- function(dat, table_cols) {
-  sep_dat <- vector("list", length = length(table_cols))
+create_sep_dat <- function(dat, table_col_sets) {
+  sep_dat <- vector("list", length = length(table_col_sets))
   
-  for (i in 1:length(table_cols)) {
-    if ("participant_id" %in% table_cols[[i]]) {
-      sep_dat[[i]] <- dat[, table_cols[[i]]]
+  for (i in 1:length(table_col_sets)) {
+    table_col_set <- table_col_sets[[i]]
+    
+    if ("participant_id" %in% table_col_set) {
+      sep_dat[[i]] <- dat[table_col_set]
     } else {
-      sep_dat[[i]] <- dat[, c("participant_id", table_cols[[i]])]
+      sep_dat[[i]] <- dat[c("participant_id", table_col_set)]
     }
   }
   
-  names(sep_dat) <- names(table_cols)
+  names(sep_dat) <- names(table_col_sets)
   
   return(sep_dat)
 }
 
 # Run function
 
-table_cols <- list(bbsiq       = bbsiq_cols,
-                   dass_as     = dass_as_cols,
-                   dass_ds     = dass_ds_cols,
-                   demographic = demographic_cols,
-                   oa          = oa_cols,
-                   participant = participant_cols,
-                   rr          = rr_cols)
+table_col_sets <- list(bbsiq       = bbsiq_cols,
+                       dass_as     = dass_as_cols,
+                       dass_ds     = dass_ds_cols,
+                       demographic = demographic_cols,
+                       oa          = oa_cols,
+                       participant = participant_cols,
+                       rr          = rr_cols)
 
-sep_dat_wide <- create_sep_dat(cln_dat, table_cols)
+sep_dat_wide <- create_sep_dat(cln_dat, table_col_sets)
 
 # ---------------------------------------------------------------------------- #
 # Convert clean longitudinal scales data tables into long format ----
@@ -224,25 +226,27 @@ sep_dat_wide <- create_sep_dat(cln_dat, table_cols)
 # "participant_id" as the first column
 
 for (i in 1:length(sep_dat_wide)) {
-  sep_dat_wide[[i]] <- sep_dat_wide[[i]][, sort(names(sep_dat_wide[[i]]))]
+  df_name <- names(sep_dat_wide)[i]
+  df <- sep_dat_wide[[i]]
   
-  if (names(sep_dat_wide[i]) %in% c("demographic", "participant")) {
-    sep_dat_wide[[i]] <- sep_dat_wide[[i]]
-  } else {
-    sep_dat_wide[[i]] <- 
-      sep_dat_wide[[i]][, c("participant_id",
-                            names(sep_dat_wide[[i]])[grep("ELIGIBLE", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("PRE",      names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION1", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION2", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION3", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION4", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION5", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION6", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION7", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("SESSION8", names(sep_dat_wide[[i]]))],
-                            names(sep_dat_wide[[i]])[grep("POST",     names(sep_dat_wide[[i]]))])]
+  df <- df[sort(names(df))]
+  
+  if (!(df_name %in% c("demographic", "participant"))) {
+    df <- df[c("participant_id",
+               names(df)[grep("ELIGIBLE", names(df))],
+               names(df)[grep("PRE",      names(df))],
+               names(df)[grep("SESSION1", names(df))],
+               names(df)[grep("SESSION2", names(df))],
+               names(df)[grep("SESSION3", names(df))],
+               names(df)[grep("SESSION4", names(df))],
+               names(df)[grep("SESSION5", names(df))],
+               names(df)[grep("SESSION6", names(df))],
+               names(df)[grep("SESSION7", names(df))],
+               names(df)[grep("SESSION8", names(df))],
+               names(df)[grep("POST",     names(df))])]
   }
+  
+  sep_dat_wide[[i]] <- df
 }
 
 # Identify repeated-measures columns for each score
@@ -321,7 +325,7 @@ sep_dat$rr <- reshape(sep_dat_wide$rr,
 # known exceptions in which participants' responses would yield NA for all scores.
 
 for (i in 1:length(sep_dat)) {
-  df_name <- names(sep_dat[i])
+  df_name <- names(sep_dat)[i]
   df <- sep_dat[[i]]
   
   if (!(df_name %in% c("demographic", "participant"))) {
@@ -339,12 +343,12 @@ for (i in 1:length(sep_dat)) {
       # - P 481's items were all 0 at "PRE"
       # - P 1385's items were all "prefer not to answer" at Sessions 6 and 8
       
-      exceptions <- c(which(df[["participant_id"]] == 481  & df[["session"]] == "PRE"),
-                      which(df[["participant_id"]] == 1385 & df[["session"]] %in% paste0("SESSION", c(6, 8))))
+      exceptions <- c(which(df$participant_id == 481  & df$session == "PRE"),
+                      which(df$participant_id == 1385 & df$session %in% paste0("SESSION", c(6, 8))))
     } else if (df_name == "rr") {
       # - P 1385's items were all "prefer not to answer" at Sessions 6 and 8
       
-      exceptions <- which(df[["participant_id"]] == 1385 & df[["session"]] %in% paste0("SESSION", c(6, 8)))
+      exceptions <- which(df$participant_id == 1385 & df$session %in% paste0("SESSION", c(6, 8)))
     }
     
     # Remove rows
@@ -371,12 +375,15 @@ names(sep_dat$participant)[names(sep_dat$participant) == "participant_prime"]   
 # recoded as "Eligibility" (to reflect that these were collected at eligibility screener).
 
 for (i in 1:length(sep_dat)) {
-  if (!(names(sep_dat[i]) %in% c("demographic", "participant"))) {
-    if (names(sep_dat[i]) == "dass_as") {
-      sep_dat[[i]][, "session_only"] <- sep_dat[[i]][, "session"]
-      sep_dat[[i]][sep_dat[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
+  df_name <- names(sep_dat)[i]
+  df <- sep_dat[[i]]
+  
+  if (!(df_name %in% c("demographic", "participant"))) {
+    if (df_name == "dass_as") {
+      df$session_only <- df$session
+      df$session_only[df$session_only == "ELIGIBLE"] <- "Eligibility"
     } else {
-      names(sep_dat[[i]])[names(sep_dat[[i]]) == "session"] <- "session_only"
+      names(df)[names(df) == "session"] <- "session_only"
     }
   }
 }
@@ -435,7 +442,7 @@ shared_dd_cols <- intersect(names(raw_dat$DD_recovered_Feb_02_2019),
                             names(raw_dat$DD_FU_recovered_Feb_02_2019))
 
 all(raw_dat$DD_recovered_Feb_02_2019[raw_dat$DD_recovered_Feb_02_2019$session != "PRE", shared_dd_cols] == 
-      raw_dat$DD_FU_recovered_Feb_02_2019[, shared_dd_cols])
+      raw_dat$DD_FU_recovered_Feb_02_2019[shared_dd_cols])
 
 added_dd_cols <- setdiff(names(raw_dat$DD_recovered_Feb_02_2019), 
                          names(raw_dat$DD_FU_recovered_Feb_02_2019))
@@ -461,7 +468,7 @@ shared_dd_cols_b <- intersect(names(raw_dat_b$DD_02_02_2019),
                               names(raw_dat_b$DD_FU_02_02_2019))
 
 all(raw_dat_b$DD_02_02_2019[raw_dat_b$DD_02_02_2019$session != "PRE", shared_dd_cols_b] == 
-      raw_dat_b$DD_FU_02_02_2019[, shared_dd_cols_b])
+      raw_dat_b$DD_FU_02_02_2019[shared_dd_cols_b])
 
 added_dd_cols_b <- setdiff(names(raw_dat_b$DD_02_02_2019), 
                            names(raw_dat_b$DD_FU_02_02_2019))
@@ -527,15 +534,15 @@ names(raw_dat_b)[names(raw_dat_b) == "TrialDAO_02_02_2019"]              <- "tri
 
 # For Set A
 
-sel_tbls <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", "oa",
-              "participant_export_dao", "qol", "rr", "task_log")
-sel_dat <- raw_dat[names(raw_dat) %in% sel_tbls]
+sel_tbls <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", 
+              "oa", "participant_export_dao", "qol", "rr", "task_log")
+sel_dat <- raw_dat[sel_tbls]
 
 # For Set B
 
-sel_tbls_b <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", "oa",
-                "qol", "rr")
-sel_dat_b <- raw_dat_b[names(raw_dat_b) %in% sel_tbls_b]
+sel_tbls_b <- c("bbsiq", "credibility", "dass21_as", "dass21_ds", "dd", "demographic", 
+                "oa", "qol", "rr")
+sel_dat_b <- raw_dat_b[sel_tbls_b]
 
 # ---------------------------------------------------------------------------- #
 # Identify potential columns that index participants in Set A ----
@@ -627,14 +634,14 @@ sum(table(c(oa_participantRSA_chars,
 # corrects "participantRSA" to 534, 535, and 536 for Rows 81, 88, and 99 of "qol"
 # table. Obtain the original "participantRSA" for each of these row numbers.
 
-bbsiq_row68_participantRSA     <- sel_dat$bbsiq[68, ]$participantRSA
-dass21_ds_row68_participantRSA <- sel_dat$dass21_ds[68, ]$participantRSA
-rr_row68_participantRSA        <- sel_dat$rr[68, ]$participantRSA
-dd_row50_participantRSA        <- sel_dat$dd[50, ]$participantRSA
+bbsiq_row68_participantRSA     <- sel_dat$bbsiq[68,     "participantRSA"]
+dass21_ds_row68_participantRSA <- sel_dat$dass21_ds[68, "participantRSA"]
+rr_row68_participantRSA        <- sel_dat$rr[68,        "participantRSA"]
+dd_row50_participantRSA        <- sel_dat$dd[50,        "participantRSA"]
 
-qol_row81_participantRSA       <- sel_dat$qol[81, ]$participantRSA
-qol_row88_participantRSA       <- sel_dat$qol[88, ]$participantRSA
-qol_row89_participantRSA       <- sel_dat$qol[89, ]$participantRSA
+qol_row81_participantRSA       <- sel_dat$qol[81, "participantRSA"]
+qol_row88_participantRSA       <- sel_dat$qol[88, "participantRSA"]
+qol_row89_participantRSA       <- sel_dat$qol[89, "participantRSA"]
 
 # Explicitly name the relevant "participantRSA" values and subsequently refer to
 # these rather than to row numbers
@@ -685,14 +692,14 @@ qol_row89_participantRSA ==
 
 # Correct these "participantRSA" values
 
-sel_dat$bbsiq[sel_dat$bbsiq$participantRSA         == bbsiq_row68_participantRSA, "participantRSA"]     <- 532
-sel_dat$dass21_ds[sel_dat$dass21_ds$participantRSA == dass21_ds_row68_participantRSA, "participantRSA"] <- 532
-sel_dat$rr[sel_dat$rr$participantRSA               == rr_row68_participantRSA, "participantRSA"]        <- 532
-sel_dat$dd[sel_dat$dd$participantRSA               == dd_row50_participantRSA, "participantRSA"]        <- 532
+sel_dat$bbsiq$participantRSA[sel_dat$bbsiq$participantRSA         == bbsiq_row68_participantRSA]     <- 532
+sel_dat$dass21_ds$participantRSA[sel_dat$dass21_ds$participantRSA == dass21_ds_row68_participantRSA] <- 532
+sel_dat$rr$participantRSA[sel_dat$rr$participantRSA               == rr_row68_participantRSA]        <- 532
+sel_dat$dd$participantRSA[sel_dat$dd$participantRSA               == dd_row50_participantRSA]        <- 532
 
-sel_dat$qol[sel_dat$qol$participantRSA             == qol_row81_participantRSA, "participantRSA"]       <- 534
-sel_dat$qol[sel_dat$qol$participantRSA             == qol_row88_participantRSA, "participantRSA"]       <- 535
-sel_dat$qol[sel_dat$qol$participantRSA             == qol_row89_participantRSA, "participantRSA"]       <- 536
+sel_dat$qol$participantRSA[sel_dat$qol$participantRSA             == qol_row81_participantRSA]       <- 534
+sel_dat$qol$participantRSA[sel_dat$qol$participantRSA             == qol_row88_participantRSA]       <- 535
+sel_dat$qol$participantRSA[sel_dat$qol$participantRSA             == qol_row89_participantRSA]       <- 536
 
 # Correct other "participantRSA" values that are explicitly named in Sonia Baee's 
 # code "R34_cleaning_script.R" for "demographic" table
@@ -716,9 +723,9 @@ demographic_participantRSA_VS9LPK <-
          "qeRvXsTHGc4naet1I8PeQEcLtQJN2daxdfgZplToaOzEW7KGhdzgYYRyTwWCvwh8wHUcd",
          "mV4dW7VG3oGLvz35wLYVkOlpZMgZ+5eAr9an4JDaXwR1e3CeHYJHRDxSGibqK3rl/Q==")
 
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_NvorEv, "participantRSA"] <- 534
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_j5J6cs, "participantRSA"] <- 535
-sel_dat$demographic[sel_dat$demographic$participantRSA == demographic_participantRSA_VS9LPK, "participantRSA"] <- 536
+sel_dat$demographic$participantRSA[sel_dat$demographic$participantRSA == demographic_participantRSA_NvorEv] <- 534
+sel_dat$demographic$participantRSA[sel_dat$demographic$participantRSA == demographic_participantRSA_j5J6cs] <- 535
+sel_dat$demographic$participantRSA[sel_dat$demographic$participantRSA == demographic_participantRSA_VS9LPK] <- 536
 
 # Note that even after correcting these "participantRSA" values, some 344-character
 # values remain in all of these tables except "demographic"
@@ -856,8 +863,8 @@ set_b_Ns <- sapply(sel_dat_b, function(x) length(unique(x$participant_id)))
 compare_Ns <- function(Ns1, Ns2) {
   shared_tbls <- intersect(names(Ns1), names(Ns2))
   
-  Ns1_comp <- Ns1[names(Ns1) %in% shared_tbls]
-  Ns2_comp <- Ns2[names(Ns2) %in% shared_tbls]
+  Ns1_comp <- Ns1[shared_tbls]
+  Ns2_comp <- Ns2[shared_tbls]
   
   Ns1_comp_vs_Ns2_comp <- Ns1_comp - Ns2_comp
   
@@ -947,36 +954,38 @@ system_date_time_cols <- c("date", "date_completed", "datetime", "corrected_date
 
 recode_date_time_timezone <- function(dat) {
   for (i in 1:length(dat)) {
-    table_name <- names(dat[i])
-    colnames <- names(dat[[i]])
-    target_colnames <- colnames[colnames %in% system_date_time_cols]
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
+    cols <- names(df)
+    target_cols <- intersect(cols, system_date_time_cols)
     
-    if (length(target_colnames) != 0) {
-      for (j in 1:length(target_colnames)) {
+    if (length(target_cols) != 0) {
+      for (col in target_cols) {
         # Create new variable for POSIXct values. Recode blanks as NA.
         
-        POSIXct_colname <- paste0(target_colnames[j], "_as_POSIXct")
+        POSIXct_col <- paste0(col, "_as_POSIXct")
         
-        dat[[i]][, POSIXct_colname] <- dat[[i]][, target_colnames[j]]
-        dat[[i]][dat[[i]][, POSIXct_colname] == "", POSIXct_colname] <- NA
+        df[[POSIXct_col]] <- df[[col]]
+        
+        df[df[[POSIXct_col]] == "", POSIXct_col] <- NA
         
         # Specify time zone as "EST" for all system-generated time stamps. Specify 
         # nonstandard formats to parse columns, which are not in standard formats.
         
-        if (table_name == "task_log" & target_colnames[j] %in% 
-            c("date_completed", "datetime", "corrected_datetime")) {
-          dat[[i]][, POSIXct_colname] <- 
-            as.POSIXct(dat[[i]][, POSIXct_colname],
-                       tz = "EST", 
-                       format = "%m/%d/%Y %H:%M") # Note: 4-digit year
+        if (df_name == "task_log" & 
+            col %in% c("date_completed", "datetime", "corrected_datetime")) {
+          df[[POSIXct_col]] <- as.POSIXct(df[[POSIXct_col]],
+                                          tz = "EST", 
+                                          format = "%m/%d/%Y %H:%M") # Note: 4-digit year
         } else {
-          dat[[i]][, POSIXct_colname] <-
-            as.POSIXct(dat[[i]][, POSIXct_colname], 
-                       tz = "EST",
-                       format = "%a, %d %b %Y %H:%M:%S %z")
+          df[[POSIXct_col]] <- as.POSIXct(df[[POSIXct_col]], 
+                                          tz = "EST",
+                                          format = "%a, %d %b %Y %H:%M:%S %z")
         }
       }
     }
+    
+    dat[[i]] <- df
   }
   
   return(dat)
@@ -1061,43 +1070,43 @@ system_date_time_cols_b <- "date"
 
 recode_date_time_timezone_b <- function(dat) {
   for (i in 1:length(dat)) {
-    table_name <- names(dat[i])
-    colnames <- names(dat[[i]])
-    target_colnames <- colnames[colnames %in% system_date_time_cols_b]
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
+    cols <- names(df)
+    target_cols <- intersect(cols, system_date_time_cols_b)
     
-    if (length(target_colnames) != 0) {
-      for (target_colname in target_colnames) {
+    if (length(target_cols) != 0) {
+      for (col in target_cols) {
         # Create new variable for POSIXct values
         
-        POSIXct_colname <- paste0(target_colname, "_as_POSIXct")
+        POSIXct_col <- paste0(col, "_as_POSIXct")
         
-        dat[[i]][[POSIXct_colname]] <- as.POSIXct(NA, tz = "EST")
+        df[[POSIXct_col]] <- as.POSIXct(NA, tz = "EST")
 
         # Specify time zone as "EST" for all system-generated time stamps. Specify 
         # nonstandard formats to parse columns, which are not in standard formats.
         
-        if (table_name %in% c("dass21_as", "oa") & target_colname == "date") {
-          short_date_idx <- nchar(dat[[i]][[target_colname]]) %in% 11:14
+        if (df_name %in% c("dass21_as", "oa") & col == "date") {
+          short_date_idx <- nchar(df[[col]]) %in% 11:14
           
-          dat[[i]][[POSIXct_colname]][short_date_idx] <-
-            as.POSIXct(dat[[i]][[target_colname]][short_date_idx],
-                       tz = "EST",
-                       format = "%m/%d/%y %H:%M") # Note: 2-digit year
+          df[[POSIXct_col]][short_date_idx] <- as.POSIXct(df[[col]][short_date_idx],
+                                                          tz = "EST",
+                                                          format = "%m/%d/%y %H:%M") # Note: 2-digit year
           
-          long_date_idx <- nchar(dat[[i]][[target_colname]]) == 31
+          long_date_idx <- nchar(df[[col]]) == 31
           
-          dat[[i]][[POSIXct_colname]][long_date_idx] <- 
-            as.POSIXct(dat[[i]][[target_colname]][long_date_idx], 
-                       tz = "EST",
-                       format = "%a, %d %b %Y %H:%M:%S %z")
+          df[[POSIXct_col]][long_date_idx]  <- as.POSIXct(df[[col]][long_date_idx], 
+                                                          tz = "EST",
+                                                          format = "%a, %d %b %Y %H:%M:%S %z")
         } else {
-          dat[[i]][[POSIXct_colname]] <- 
-            as.POSIXct(dat[[i]][[target_colname]], 
-                       tz = "EST",
-                       format = "%a, %d %b %Y %H:%M:%S %z")
+          df[[POSIXct_col]] <- as.POSIXct(df[[col]], 
+                                          tz = "EST",
+                                          format = "%a, %d %b %Y %H:%M:%S %z")
         } 
       }
     }
+    
+    dat[[i]] <- df
   }
   
   return(dat)
@@ -1119,36 +1128,38 @@ lapply(sel_dat, identify_cols, grep_pattern = "session", exclude_cols = "session
 
 view_session_str <- function(dat, exclude_cols = NULL) {
   for (i in 1:length(dat)) {
-    cat('\nTable: "', names(dat[i]), '"\n\n', sep = "")
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
     
-    colnames <- names(dat[[i]])
-    session_colnames <- colnames[grep("session", colnames, ignore.case = TRUE)]
+    cat('\nTable: "', df_name, '"\n\n', sep = "")
+    
+    cols <- names(df)
+    session_cols <- cols[grep("session", cols, ignore.case = TRUE)]
     
     if (!is.null(exclude_cols)) {
-      session_colnames <- setdiff(session_colnames, exclude_cols)
+      session_cols <- setdiff(session_cols, exclude_cols)
     }
     
-    if (length(session_colnames) != 0) {
-      for (j in 1:length(session_colnames)) {
-        session_colname <- session_colnames[j]
-        session_colname_class <- class(dat[[i]][, session_colname])
+    if (length(session_cols) != 0) {
+      for (col in session_cols) {
+        col_class <- class(df[[col]])
         
-        cat('"', session_colname, '"\n', sep = "")
-        cat("- Class:", session_colname_class, "\n")
+        cat('"', col, '"\n', sep = "")
+        cat("- Class:", col_class, "\n")
 
-        if (length(unique(dat[[i]][, session_colname])) > 20) {
+        if (length(unique(df[[col]])) > 20) {
           cat("- First 20 unique levels:\n")
-          print(unique(dat[[i]][, session_colname])[1:20])
+          print(unique(df[[col]])[1:20])
         } else {
           cat("- All unique levels:\n")
-          print(unique(dat[[i]][, session_colname]))
+          print(unique(df[[col]]))
         }
         
-        cat("- Number NA:", sum(is.na(dat[[i]][, session_colname])), "\n")
+        cat("- Number NA:", sum(is.na(df[[col]])), "\n")
         
-        if (!("POSIXct" %in% session_colname_class)) {
-          cat("- Number blank:", sum(dat[[i]][, session_colname] == ""), "\n")
-          cat("- Number 555:",   sum(dat[[i]][, session_colname] == 555, na.rm = TRUE), "\n")
+        if (!("POSIXct" %in% col_class)) {
+          cat("- Number blank:", sum(df[[col]] == ""), "\n")
+          cat("- Number 555:",   sum(df[[col]] == 555, na.rm = TRUE), "\n")
         }
         
         cat("\n")
@@ -1182,16 +1193,21 @@ table(sel_dat$dass21_as$session)
 # rather, it reflects participants' current sessions.
 
 for (i in 1:length(sel_dat)) {
-  if (names(sel_dat[i]) == "dass21_as") {
-    names(sel_dat[[i]])[names(sel_dat[[i]]) == "session"] <- "session_and_eligibility_status"
+  df_name <- names(sel_dat)[i]
+  df <- sel_dat[[i]]
+  
+  if (df_name == "dass21_as") {
+    names(df)[names(df) == "session"] <- "session_and_eligibility_status"
     
-    sel_dat[[i]][, "session_only"] <- sel_dat[[i]][, "session_and_eligibility_status"]
-    sel_dat[[i]][sel_dat[[i]][, "session_only"] %in% c("ELIGIBLE", ""), "session_only"] <- "Eligibility"
-  } else if (names(sel_dat[i]) == "task_log") {
-    names(sel_dat[[i]])[names(sel_dat[[i]]) == "session_name"] <- "session_only"
-  } else if ("session" %in% names(sel_dat[[i]])) {
-    names(sel_dat[[i]])[names(sel_dat[[i]]) == "session"] <- "session_only"
+    df$session_only <- df$session_and_eligibility_status
+    df$session_only[df$session_only %in% c("ELIGIBLE", "")] <- "Eligibility"
+  } else if (df_name == "task_log") {
+    names(df)[names(df) == "session_name"] <- "session_only"
+  } else if ("session" %in% names(df)) {
+    names(df)[names(df) == "session"] <- "session_only"
   }
+  
+  sel_dat[[i]] <- df
 }
 
 # ---------------------------------------------------------------------------- #
@@ -1218,12 +1234,17 @@ table(sel_dat_b$dass21_as$session)
 # session information
 
 for (i in 1:length(sel_dat_b)) {
-  if (names(sel_dat_b[i]) == "dass21_as") {
-    sel_dat_b[[i]][, "session_only"] <- sel_dat_b[[i]][, "session"]
-    sel_dat_b[[i]][sel_dat_b[[i]][, "session_only"] == "ELIGIBLE", "session_only"] <- "Eligibility"
-  } else if ("session" %in% names(sel_dat_b[[i]])) {
-    names(sel_dat_b[[i]])[names(sel_dat_b[[i]]) == "session"] <- "session_only"
+  df_name <- names(sel_dat_b)[i]
+  df <- sel_dat_b[[i]]
+  
+  if (df_name == "dass21_as") {
+    df$session_only <- df$session
+    df$session_only[df$session_only == "ELIGIBLE"] <- "Eligibility"
+  } else if ("session" %in% names(df)) {
+    names(df)[names(df) == "session"] <- "session_only"
   }
+  
+  sel_dat_b[[i]] <- df
 }
 
 # ---------------------------------------------------------------------------- #
@@ -1245,7 +1266,7 @@ test_manual <- c(1, 2, 4, 5, 441, 450, 538, 540, 578, 610, 624, 718, 767, 753,
                  1407, 1486:1488, 1490, 1499, 1500, 1608, 1631, 1740, 1767, 
                  1817:1819, 1831, 1899, 1900, 1968, 1971)
 
-  # Test accounts per "notes.csv", all of which are already in "test_consort"
+  # Test accounts per "notes.csv", all of which are already in "test_manual"
 
 test_notes <- notes$participant_id[notes$test %in% 1]
 
@@ -1265,11 +1286,16 @@ filter_all_data <- function(dat, participant_ids) {
   output <- vector("list", length(dat))
   
   for (i in 1:length(dat)) {
-    if ("participant_id" %in% names(dat[[i]])) {
-      output[[i]] <- dat[[i]][dat[[i]][, "participant_id"] %in% participant_ids, ]
+    df <- dat[[i]]
+    out <- output[[i]]
+    
+    if ("participant_id" %in% names(df)) {
+      out <- df[df$participant_id %in% participant_ids, ]
     } else {
-      output[[i]] <- dat[[i]]
+      out <- df
     }
+    
+    output[[i]] <- out
   }
   
   names(output) <- names(dat)
@@ -1278,8 +1304,8 @@ filter_all_data <- function(dat, participant_ids) {
 
 # Run function for Sets A and B
 
-flt_dat     <- filter_all_data(sel_dat,     cln_participant_ids)
-flt_dat_b   <- filter_all_data(sel_dat_b,   cln_participant_ids)
+flt_dat   <- filter_all_data(sel_dat,   cln_participant_ids)
+flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 
 # ---------------------------------------------------------------------------- #
 # Check session and date values in Sets A and B ----
@@ -1315,19 +1341,21 @@ flt_dat_b   <- filter_all_data(sel_dat_b,   cln_participant_ids)
 flt_dat_nrow_before <- sapply(flt_dat, nrow)
 
 for (i in 1:length(flt_dat)) {
-  meaningful_cols <- names(flt_dat[[i]])[!(names(flt_dat[[i]]) %in% c("X", "id"))]
+  df_name <- names(flt_dat)[i]
+  df <- flt_dat[[i]]
   
-  if (names(flt_dat[i]) == "participant_export_dao") {
-    if (nrow(flt_dat[[i]]) != length(unique(flt_dat[[i]][, "participant_id"]))) {
-      error(paste0("Unexpectedly, table ", names(flt_dat[i]), 
-                   "contains multiple rows for at least one participant_id"))
+  meaningful_cols <- setdiff(names(df), c("X", "id"))
+  
+  if (df_name == "participant_export_dao") {
+    if (nrow(df) != length(unique(df$participant_id))) {
+      error(paste0("Unexpectedly, table ", df_name, "contains multiple rows for >= 1 participant_id"))
     }
-  } else if ("id" %in% names(flt_dat[[i]])) {
-    flt_dat[[i]] <- flt_dat[[i]][order(flt_dat[[i]][, "id"]), ]
+  } else if ("id" %in% names(df)) {
+    df <- df[order(df$id), ]
     
-    flt_dat[[i]] <- flt_dat[[i]][!duplicated(flt_dat[[i]][, meaningful_cols], fromLast = TRUE), ]
+    flt_dat[[i]] <- df[!duplicated(df[meaningful_cols], fromLast = TRUE), ]
   } else {
-    stop(paste0("Table ", names(flt_dat[i]), "needs to be checked for duplicates"))
+    stop(paste0("Table ", df_name, "needs to be checked for duplicates"))
   }
 }
 
@@ -1335,17 +1363,17 @@ flt_dat_nrow_after <- sapply(flt_dat, nrow)
 
 flt_dat_nrow_rm <- flt_dat_nrow_before - flt_dat_nrow_after
 all(flt_dat_nrow_rm[names(flt_dat_nrow_rm) != "task_log"] == 0)  # No exact dups except
-flt_dat_nrow_rm[names(flt_dat_nrow_rm)     == "task_log"] == 570 #   570 in "task_log"
+flt_dat_nrow_rm[["task_log"]]                             == 570 #   570 in "task_log"
 
 # Define functions to report duplicated rows on target columns. "report_dups_df"
 # is used within "report_dups_list".
 
 report_dups_df <- function(df, df_name, target_cols, index_col) {
-  duplicated_rows <- df[duplicated(df[, target_cols]), ]
-  if (nrow(duplicated_rows) > 0) {
-    cat(nrow(duplicated_rows), "duplicated rows for table:", df_name)
-    cat("\n")
-    cat("With these '", index_col, "': ", duplicated_rows[, index_col])
+  dup_rows <- df[duplicated(df[target_cols]), ]
+  
+  if (nrow(dup_rows) > 0) {
+    cat(nrow(dup_rows), "duplicated rows for table:", df_name, "\n")
+    cat("- With these '", index_col, "': ", dup_rows[[index_col]])
     cat("\n-------------------------\n")
   } else {
     cat("No duplicated rows for table:", df_name)
@@ -1355,100 +1383,61 @@ report_dups_df <- function(df, df_name, target_cols, index_col) {
 
 report_dups_list <- function(dat) {
   for (i in 1:length(dat)) {
-    if (names(dat[i]) %in% "participant_export_dao") {
-      report_dups_df(dat[[i]], 
-                     names(dat[i]), 
-                     "participant_id", 
-                     "participant_id")
-    } else if (names(dat[i]) == "dass21_as") {
-      duplicated_rows_eligibility <- 
-        dat[[i]][dat[[i]][, "session_only"] == "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id",
-                                            "session_only",
-                                            "sessionId")])), ]
-      duplicated_rows_other <-
-        dat[[i]][dat[[i]][, "session_only"] != "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id",
-                                            "session_only")])), ]
-      duplicated_rows <- rbind(duplicated_rows_eligibility, duplicated_rows_other)
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
+    
+    w_pids_txt <- "- With these 'participant_id': "
+    
+    if (df_name == "participant_export_dao") {
+      report_dups_df(df, df_name, "participant_id", "participant_id")
+    } else if (df_name == "dass21_as") {
+      is_elig <- df$session_only == "Eligibility"
       
-      if (nrow(duplicated_rows) > 0) {
-        p_ids <- duplicated_rows_eligibility[!is.na(duplicated_rows_eligibility$participant_id),
-                                             "participant_id"]
-        s_ids <- duplicated_rows_eligibility[is.na(duplicated_rows_eligibility$participant_id),
-                                             "sessionId"]
+      dup_rows_elig  <- df[is_elig & duplicated(df[c("participant_id", "session_only", "sessionId")]), ]
+      dup_rows_other <- df[!is_elig & duplicated(df[c("participant_id", "session_only")]), ]
+
+      if (nrow(dup_rows_elig) > 0 | nrow(dup_rows_other) > 0) {
+        p_ids <- dup_rows_elig[!is.na(dup_rows_elig$participant_id), "participant_id"]
+        s_ids <- dup_rows_elig[is.na(dup_rows_elig$participant_id), "sessionId"]
         
-        cat(nrow(duplicated_rows_eligibility), 
-            "duplicated rows at Eligibility for table:", names(dat[i]))
-        cat("\n")
-        cat("With these ", length(p_ids), "'participant_id' (where available): ", p_ids)
-        cat("\n")
-        cat("And with ", length(s_ids), "'sessionId' (where 'participant_id' unavailable)")
-        cat("\n")
-        cat(nrow(duplicated_rows_other), 
-            "duplicated rows at other time points for table:", names(dat[i]))
-        if (nrow(duplicated_rows_other) > 0) {
-          cat("\n")
-          cat("With these 'participant_id': ", duplicated_rows_other$participant_id)
+        cat(nrow(dup_rows_elig), "duplicated rows at Eligibility for table:", df_name, "\n")
+        if (nrow(dup_rows_elig) > 0) {
+          cat("- With these", length(p_ids), "'participant_id' (where available): ", p_ids, "\n")
+          cat("- And with", length(s_ids), "'sessionId' (where 'participant_id' unavailable)\n")
         }
+        cat("\n")
+        cat(nrow(dup_rows_other), "duplicated rows at other time points for table:", df_name)
+        if (nrow(dup_rows_other) > 0) cat("\n", w_pids_txt, dup_rows_other$participant_id)
+        
         cat("\n-------------------------\n")
       } else {
-        cat("No duplicated rows for table:", names(dat[i]))
+        cat("No duplicated rows for table:", df_name)
         cat("\n-------------------------\n")
       }
-    } else if (names(dat[i]) == "task_log") {
-      report_dups_df(dat[[i]], 
-                     names(dat[i]), 
-                     c("participant_id", 
-                       "session_only", 
-                       "task_name"), 
-                     "participant_id")
+    } else if (df_name == "task_log") {
+      report_dups_df(df, df_name, c("participant_id", "session_only", "task_name"), "participant_id")
       
-      duplicated_rows_dass21_as_eligibility <- 
-        dat[[i]][duplicated(dat[[i]][, c("participant_id", 
-                                         "session_only", 
-                                         "task_name")]) &
-                   dat[[i]][, "session_only"] == "Eligibility" &
-                   dat[[i]][, "task_name"] == "DASS21_AS", ]
-      duplicated_rows_other_suds <- 
-        dat[[i]][duplicated(dat[[i]][, c("participant_id", 
-                                         "session_only", 
-                                         "task_name")]) &
-                   !(dat[[i]][, "session_only"] == "Eligibility" &
-                       dat[[i]][, "task_name"] == "DASS21_AS") &
-                   (dat[[i]][, "task_name"] == "SUDS"), ]
-      duplicated_rows_other_nonsuds <- 
-        dat[[i]][duplicated(dat[[i]][, c("participant_id", 
-                                         "session_only", 
-                                         "task_name")]) &
-                   !(dat[[i]][, "session_only"] == "Eligibility" &
-                       dat[[i]][, "task_name"] == "DASS21_AS") &
-                   !(dat[[i]][, "task_name"] == "SUDS"), ]
-      if (nrow(duplicated_rows_dass21_as_eligibility) > 0 |
-          nrow(duplicated_rows_other_suds) > 0 |
-          nrow(duplicated_rows_other_nonsuds) > 0) {
-        cat(nrow(duplicated_rows_dass21_as_eligibility),
-            "duplicated rows for DASS21_AS at Eligibility in table:", names(dat[i]))
+      is_dup            <- duplicated(df[c("participant_id", "session_only", "task_name")])
+      is_dass21_as_elig <- df$session_only == "Eligibility" & df$task_name == "DASS21_AS"
+      is_suds           <- df$task_name == "SUDS"
+      
+      dup_rows_dass21_as_elig <- df[is_dup & is_dass21_as_elig, ]
+      dup_rows_other_suds     <- df[is_dup & !is_dass21_as_elig & is_suds, ]
+      dup_rows_other_nonsuds  <- df[is_dup & !is_dass21_as_elig & !is_suds, ]
+      
+      if (nrow(dup_rows_dass21_as_elig) > 0 | nrow(dup_rows_other_suds) > 0 | nrow(dup_rows_other_nonsuds) > 0) {
+        cat(nrow(dup_rows_dass21_as_elig),      "duplicated rows for DASS21_AS at Eligibility in table:", df_name, "\n")
+        if (nrow(dup_rows_dass21_as_elig) > 0) cat(w_pids_txt, dup_rows_dass21_as_elig$participant_id, "\n")
         cat("\n")
-        cat("With these 'participant_id': ", duplicated_rows_dass21_as_eligibility$participant_id)
-        cat("\n", "\n")
-        cat(nrow(duplicated_rows_other_suds),
-            "duplicated rows for other, SUDS tasks in table:", names(dat[i]))
+        cat(nrow(dup_rows_other_suds),    "duplicated rows for other, SUDS tasks in table:",        df_name, "\n")
+        if (nrow(dup_rows_other_suds) > 0)     cat(w_pids_txt, dup_rows_other_suds$participant_id, "\n")
         cat("\n")
-        cat("With these 'participant_id': ", duplicated_rows_other_suds$participant_id)
-        cat("\n", "\n")
-        cat(nrow(duplicated_rows_other_nonsuds),
-            "duplicated rows for other, non-SUDS tasks in table:", names(dat[i]))
-        cat("\n")
-        cat("With these 'participant_id': ", duplicated_rows_other_nonsuds$participant_id)
+        cat(nrow(dup_rows_other_nonsuds), "duplicated rows for other, non-SUDS tasks in table:",    df_name, "\n")
+        if (nrow(dup_rows_other_nonsuds) > 0)  cat(w_pids_txt, dup_rows_other_nonsuds$participant_id)
         cat("\n-------------------------\n")
       }
     } else {
-      report_dups_df(dat[[i]],
-                     names(dat[i]), 
-                     c("participant_id", 
-                       "session_only"), 
-                     "participant_id")
+      report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
     }
   }
 }
@@ -1473,6 +1462,12 @@ multiple_oa_entry_participant_ids <-
   c(8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 532, 539, 541, 552, 582, 590, 
     597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
     687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
+
+
+
+
+
+# TODO: Continue condensing code below
 
 
 
