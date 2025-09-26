@@ -141,12 +141,6 @@ server_error_pids <- notes$participant_id[is.na(notes$SB) &
                                             (!is.na(notes$notes) & notes$notes == note_server_error)]
 length(server_error_pids) == 36
 
-# TODO: Continue reviewing "R34.ipynb"
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
 # Extract clean longitudinal scale data into separate tables ----
 # ---------------------------------------------------------------------------- #
@@ -3133,14 +3127,14 @@ all(flt_dat_comp_add$participant$prime        == sep_dat_comp_add$participant$pr
 
 # After sorting by participant ID, Sets A and B have the same participants
 
+flt_dat$credibility$participant_id   <- as.integer(flt_dat$credibility$participant_id)
+flt_dat_b$credibility$participant_id <- as.integer(flt_dat_b$credibility$participant_id)
+
 flt_dat$credibility   <- flt_dat$credibility[order(flt_dat$credibility$participant_id), ]
 flt_dat_b$credibility <- flt_dat_b$credibility[order(flt_dat_b$credibility$participant_id), ]
 
 row.names(flt_dat$credibility)   <- 1:nrow(flt_dat$credibility)
 row.names(flt_dat_b$credibility) <- 1:nrow(flt_dat_b$credibility)
-
-flt_dat$credibility$participant_id   <- as.integer(flt_dat$credibility$participant_id)
-flt_dat_b$credibility$participant_id <- as.integer(flt_dat_b$credibility$participant_id)
 
 # Sets A and B are identical on comparable columns
 
