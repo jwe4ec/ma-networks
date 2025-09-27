@@ -1393,12 +1393,14 @@ report_dups_list <- function(dat) {
     } else if (df_name == "dass21_as") {
       is_elig <- df$session_only == "Eligibility"
       
-      dup_rows_elig  <- df[is_elig & duplicated(df[c("participant_id", "session_only", "sessionId")]), ]
+      dup_rows_elig  <- df[is_elig  & duplicated(df[c("participant_id", "session_only", "sessionId")]), ]
       dup_rows_other <- df[!is_elig & duplicated(df[c("participant_id", "session_only")]), ]
 
       if (nrow(dup_rows_elig) > 0 | nrow(dup_rows_other) > 0) {
-        p_ids <- dup_rows_elig[!is.na(dup_rows_elig$participant_id), "participant_id"]
-        s_ids <- dup_rows_elig[is.na(dup_rows_elig$participant_id), "sessionId"]
+        is_na_p_id <- is.na(dup_rows_elig$participant_id)
+        
+        p_ids <- dup_rows_elig$participant_id[!is_na_p_id]
+        s_ids <- dup_rows_elig$sessionId[is_na_p_id]
         
         cat(nrow(dup_rows_elig), "duplicated rows at Eligibility for table:", df_name, "\n")
         if (nrow(dup_rows_elig) > 0) {
@@ -1462,12 +1464,6 @@ multiple_oa_entry_participant_ids <-
   c(8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 532, 539, 541, 552, 582, 590, 
     597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
     687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
-
-
-
-
-
-# TODO: Continue condensing code below
 
 
 
@@ -1558,13 +1554,17 @@ report_dups_list(flt_dat) # None
 # table lacks date-related columns, sort it by "participant_id".
 
 for (i in 1:length(flt_dat)) {
-  if (names(flt_dat[i]) == "participant_export_dao") {
-    flt_dat[[i]] <- flt_dat[[i]][order(flt_dat[[i]][, "participant_id"]), ]
-  } else if (names(flt_dat[i]) == "task_log") {
-    flt_dat[[i]] <- flt_dat[[i]][order(flt_dat[[i]][, "corrected_datetime_as_POSIXct"]), ]
-  } else {
-    flt_dat[[i]] <- flt_dat[[i]][order(flt_dat[[i]][, "date_as_POSIXct"]), ]
-  }
+  df_name <- names(flt_dat)[i]
+  df <- flt_dat[[i]]
+  
+  sort_col <- switch(df_name,
+                     "participant_export_dao" = "participant_id",
+                     "task_log"               = "corrected_datetime_as_POSIXct",
+                     "date_as_POSIXct")
+  
+  df <- df[order(df[[sort_col]]), ]
+  
+  flt_dat[[i]] <- df
 }
 
 # Define functions to keep the most recent entry where duplicated rows exist on 
@@ -1580,30 +1580,29 @@ keep_recent_entry_list <- function(dat) {
   output <- vector("list", length(dat))
   
   for (i in 1:length(dat)) {
-    if (names(dat[i]) %in% "participant_export_dao") {
-      output[[i]] <- keep_recent_entry_df(dat[[i]],
-                                          "participant_id")
-    } else if (names(dat[i]) == "dass21_as") {
-      recent_entry_eligibility <- 
-        keep_recent_entry_df(dat[[i]][dat[[i]][, "session_only"] == "Eligibility", ],
-                             c("participant_id",
-                               "session_only",
-                               "sessionId"))
-      recent_entry_other <-
-        keep_recent_entry_df(dat[[i]][dat[[i]][, "session_only"] != "Eligibility", ],
-                             c("participant_id",
-                               "session_only"))
-      output[[i]] <- rbind(recent_entry_eligibility, recent_entry_other)
-    } else if (names(dat[i]) == "task_log") {
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
+    out <- output[[i]]
+    
+    if (df_name == "participant_export_dao") {
+      out <- keep_recent_entry_df(df, "participant_id")
+    } else if (df_name == "dass21_as") {
+      is_elig <- df$session_only == "Eligibility"
+      
+      recent_entry_elig  <- keep_recent_entry_df(df[is_elig, ],  c("participant_id", "session_only", "sessionId"))
+      recent_entry_other <- keep_recent_entry_df(df[!is_elig, ], c("participant_id", "session_only"))
+      
+      out <- rbind(recent_entry_elig, recent_entry_other)
+    } else if (df_name == "task_log") {
       # Do not remove multiple entries from "task_log" table
       
-      output[[i]] <- dat[[i]]
+      out <- df
     } else {
-      output[[i]] <- keep_recent_entry_df(dat[[i]],
-                                          c("participant_id", 
-                                            "session_only"))
+      out <- keep_recent_entry_df(df, c("participant_id", "session_only"))
     }
-    rownames(output[[i]]) <- 1:nrow(output[[i]])
+    rownames(out) <- 1:nrow(out)
+    
+    output[[i]] <- out
   }
   names(output) <- names(dat)
   
@@ -1625,15 +1624,20 @@ flt_dat <- keep_recent_entry_list(flt_dat)
 flt_dat_b_nrow_before <- sapply(flt_dat_b, nrow)
 
 for (i in 1:length(flt_dat_b)) {
-  meaningful_cols <- names(flt_dat_b[[i]])[names(flt_dat_b[[i]]) != "X"]
+  df_name <- names(flt_dat_b)[i]
+  df <- flt_dat_b[[i]]
   
-  if ("date_as_POSIXct" %in% names(flt_dat_b[[i]])) {
-    flt_dat_b[[i]] <- flt_dat_b[[i]][order(flt_dat_b[[i]][, "date_as_POSIXct"]), ]
+  meaningful_cols <- setdiff(names(df), "X")
+  
+  if ("date_as_POSIXct" %in% names(df)) {
+    df <- df[order(df$date_as_POSIXct), ]
     
-    flt_dat_b[[i]] <- flt_dat_b[[i]][!duplicated(flt_dat_b[[i]][, meaningful_cols], fromLast = TRUE), ]
+    df <- df[!duplicated(df[meaningful_cols], fromLast = TRUE), ]
   } else {
-    stop(paste0("Table ", names(flt_dat_b[i]), "needs to be checked for duplicates"))
+    stop(paste0("Table ", df_name, "needs to be checked for duplicates"))
   }
+  
+  flt_dat_b[[i]] <- df
 }
 
 flt_dat_b_nrow_after <- sapply(flt_dat_b, nrow)
@@ -1646,37 +1650,32 @@ all(flt_dat_b_nrow_rm == 0) # No exact duplicates
 
 report_dups_list_b <- function(dat) {
   for (i in 1:length(dat)) {
-    if (names(dat[i]) == "dass21_as") {
-      duplicated_rows_eligibility <- 
-        dat[[i]][dat[[i]][, "session_only"] == "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
-      duplicated_rows_other <-
-        dat[[i]][dat[[i]][, "session_only"] != "Eligibility" &
-                   (duplicated(dat[[i]][, c("participant_id", "session_only")])), ]
-      duplicated_rows <- rbind(duplicated_rows_eligibility, duplicated_rows_other)
+    df_name <- names(dat)[i]
+    df <- dat[[i]]
+    
+    if (df_name == "dass21_as") {
+      is_elig <- df$session_only == "Eligibility"
+      is_dup  <- duplicated(df[c("participant_id", "session_only")])
       
-      if (nrow(duplicated_rows) > 0) {
-        p_ids <- duplicated_rows_eligibility[!is.na(duplicated_rows_eligibility$participant_id),
-                                             "participant_id"]
+      dup_rows_elig  <- df[is_elig  & is_dup, ]
+      dup_rows_other <- df[!is_elig & is_dup, ]
+      
+      if (nrow(dup_rows_elig) > 0 | nrow(dup_rows_other) > 0) {
+        p_ids <- dup_rows_elig$participant_id[!is.na(dup_rows_elig$participant_id)]
         
-        cat(nrow(duplicated_rows_eligibility), 
-            "duplicated rows at Eligibility for table:", names(dat[i]), "\n")
-        cat("With these ", length(p_ids), "'participant_id': ", p_ids, "\n")
-        cat(nrow(duplicated_rows_other), 
-            "duplicated rows at other time points for table:", names(dat[i]))
-        if (nrow(duplicated_rows_other) > 0) {
-          cat("\nWith these 'participant_id': ", duplicated_rows_other$participant_id)
-        }
+        cat(nrow(dup_rows_elig),  "duplicated rows at Eligibility for table:", df_name, "\n")
+        if (nrow(dup_rows_elig) > 0) cat("- With these", length(p_ids), "'participant_id': ", p_ids, "\n")
+        cat("\n")
+        cat(nrow(dup_rows_other), "duplicated rows at other time points for table:", df_name)
+        if (nrow(dup_rows_other) > 0) cat("\n- With these 'participant_id': ", dup_rows_other$participant_id)
+        
         cat("\n-------------------------\n")
       } else {
-        cat("No duplicated rows for table:", names(dat[i]))
+        cat("No duplicated rows for table:", df_name)
         cat("\n-------------------------\n")
       }
     } else {
-      report_dups_df(dat[[i]],
-                     names(dat[i]), 
-                     c("participant_id", "session_only"), 
-                     "participant_id")
+      report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
     }
   }
 }
@@ -1797,47 +1796,52 @@ setdiff(names(cln_dat_bl), c(bbsiq_items, dass21_as_items, oa_items, rr_items))
 # Extract data into separate tables using function created for clean longitudinal
 # scales data above
 
-table_cols_bl <- list(bbsiq       = bbsiq_items,
-                      dass_as     = dass21_as_items,
-                      oa          = oa_items,
-                      participant = "participant_id",
-                      rr          = rr_items)
+table_col_sets_bl <- list(bbsiq       = bbsiq_items,
+                          dass_as     = dass21_as_items,
+                          oa          = oa_items,
+                          participant = "participant_id",
+                          rr          = rr_items)
 
-sep_dat_bl <- create_sep_dat(cln_dat_bl, table_cols_bl)
-sep_dat_bl$participant <- as.data.frame(sep_dat_bl$participant)
+sep_dat_bl <- create_sep_dat(cln_dat_bl, table_col_sets_bl)
 
 # Alphabetize columns of each table, retaining "participant_id" as first column
 
 for (i in 1:length(sep_dat_bl)) {
-  if (names(sep_dat_bl[i]) == "participant") {
-    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
-  } else {
-    sep_dat_bl[[i]] <- sep_dat_bl[[i]][, c("participant_id", 
-                                           setdiff(sort(names(sep_dat_bl[[i]])), "participant_id"))]
+  df_name <- names(sep_dat_bl)[i]
+  df <- sep_dat_bl[[i]]
+  
+  if (df_name != "participant") {
+    sep_dat_bl[[i]] <- df[, c("participant_id", setdiff(sort(names(df)), "participant_id"))]
   }
 }
 
 # Add "session_only" reflecting baseline value for each table
 
 for (i in 1:length(sep_dat_bl)) {
-  if (names(sep_dat_bl[i]) == "participant") {
-    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
-  } else if (names(sep_dat_bl[i]) == "dass_as") {
-    sep_dat_bl[[i]][, "session_only"] <- "Eligibility"
-  } else {
-    sep_dat_bl[[i]][, "session_only"] <- "PRE"
-  }
+  df_name <- names(sep_dat_bl)[i]
+  df <- sep_dat_bl[[i]]
+  
+  if (df_name != "participant") {
+    if (df_name == "dass_as") {
+      df$session_only <- "Eligibility"
+    } else {
+      df$session_only <- "PRE"
+    }
+  } 
+  
+  sep_dat_bl[[i]] <- df
 }
 
 # Remove rows that contain only NAs for all items
 
 for (i in 1:length(sep_dat_bl)) {
-  if (names(sep_dat_bl[i]) == "participant") {
-    sep_dat_bl[[i]] <- sep_dat_bl[[i]]
-  } else {
-    item_cols <- setdiff(names(sep_dat_bl[[i]]), c("participant_id", "session_only"))
+  df_name <- names(sep_dat_bl)[i]
+  df <- sep_dat_bl[[i]]
+  
+  if (df_name != "participant") {
+    item_cols <- setdiff(names(df), c("participant_id", "session_only"))
     
-    sep_dat_bl[[i]] <- sep_dat_bl[[i]][rowSums(is.na(sep_dat_bl[[i]][item_cols])) != length(item_cols), ]
+    sep_dat_bl[[i]] <- df[rowSums(is.na(df[item_cols])) != length(item_cols), ]
   }
 }
 
@@ -1848,36 +1852,36 @@ for (i in 1:length(sep_dat_bl)) {
 # "R34.ipynb" says that it recodes one user's DASS-21-AS values of -2 to -1. This
 # only occurs in Set A (for two items for participant 1644).
 
-sum(flt_dat$dass21_as[, dass21_as_items] == -2)
+sum(flt_dat$dass21_as[dass21_as_items] == -2)
 
-flt_dat$dass21_as[, dass21_as_items][flt_dat$dass21_as[, dass21_as_items] == -2]  <- -1
+flt_dat$dass21_as[dass21_as_items][flt_dat$dass21_as[dass21_as_items] == -2]  <- -1
 
 # In Set A, recode 555 and -1 ("prefer not to answer") as NA
 
-sum(flt_dat$oa[, oa_items]               == 555)
-sum(flt_dat$rr[, rr_items]               == -1)
-sum(flt_dat$bbsiq[, bbsiq_items]         == 555)
-sum(flt_dat$dass21_as[, dass21_as_items] == -1)
-sum(flt_dat$dass21_ds[, dass21_ds_items] == -1)
+sum(flt_dat$oa[oa_items]               == 555)
+sum(flt_dat$rr[rr_items]               == -1)
+sum(flt_dat$bbsiq[bbsiq_items]         == 555)
+sum(flt_dat$dass21_as[dass21_as_items] == -1)
+sum(flt_dat$dass21_ds[dass21_ds_items] == -1)
 
-flt_dat$oa[, oa_items][flt_dat$oa[, oa_items]                             == 555] <- NA
-flt_dat$rr[, rr_items][flt_dat$rr[, rr_items]                             == -1]  <- NA
-flt_dat$bbsiq[, bbsiq_items][flt_dat$bbsiq[, bbsiq_items]                 == 555] <- NA
-flt_dat$dass21_as[, dass21_as_items][flt_dat$dass21_as[, dass21_as_items] == -1]  <- NA
-flt_dat$dass21_ds[, dass21_ds_items][flt_dat$dass21_ds[, dass21_ds_items] == -1]  <- NA
+flt_dat$oa[oa_items][flt_dat$oa[oa_items]                             == 555] <- NA
+flt_dat$rr[rr_items][flt_dat$rr[rr_items]                             == -1]  <- NA
+flt_dat$bbsiq[bbsiq_items][flt_dat$bbsiq[bbsiq_items]                 == 555] <- NA
+flt_dat$dass21_as[dass21_as_items][flt_dat$dass21_as[dass21_as_items] == -1]  <- NA
+flt_dat$dass21_ds[dass21_ds_items][flt_dat$dass21_ds[dass21_ds_items] == -1]  <- NA
 
 # In Set B, no values in "oa", "rr", "bbsiq", "dass21_as", or "dass21_ds" tables 
 # are 555 or -1 (already recoded as NA)
 
 # In clean item-level baseline data, recode 555 and -1 as NA
 
-sum(sep_dat_bl$oa[, oa_items]             == 555)
-sum(sep_dat_bl$rr[, rr_items]             %in% c(-1, 555), na.rm = TRUE) == 0 # None
-sum(sep_dat_bl$bbsiq[, bbsiq_items]       == 555)
-sum(sep_dat_bl$dass_as[, dass21_as_items] %in% c(-1, 555), na.rm = TRUE) == 0 # None
+sum(sep_dat_bl$oa[oa_items]             == 555)
+sum(sep_dat_bl$rr[rr_items]             %in% c(-1, 555), na.rm = TRUE) == 0 # None
+sum(sep_dat_bl$bbsiq[bbsiq_items]       == 555)
+sum(sep_dat_bl$dass_as[dass21_as_items] %in% c(-1, 555), na.rm = TRUE) == 0 # None
 
-sep_dat_bl$oa[, oa_items][sep_dat_bl$oa[, oa_items]             == 555] <- NA
-sep_dat_bl$bbsiq[, bbsiq_items][sep_dat_bl$bbsiq[, bbsiq_items] == 555] <- NA
+sep_dat_bl$oa[oa_items][sep_dat_bl$oa[oa_items]             == 555] <- NA
+sep_dat_bl$bbsiq[bbsiq_items][sep_dat_bl$bbsiq[bbsiq_items] == 555] <- NA
 
 # ---------------------------------------------------------------------------- #
 # Check response ranges in Sets A and B and clean item-level baseline data ----
@@ -1888,26 +1892,32 @@ sep_dat_bl$bbsiq[, bbsiq_items][sep_dat_bl$bbsiq[, bbsiq_items] == 555] <- NA
 
 # For Set A
 
-all(sort(unique(as.vector(as.matrix(flt_dat$oa[, oa_items]))))               %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat$rr[, rr_items]))))               %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[, bbsiq_items]))))         %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat$dass21_as[, dass21_as_items])))) %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat$dass21_ds[, dass21_ds_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$oa[oa_items]))))               %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat$rr[rr_items]))))               %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[bbsiq_items]))))         %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat$dass21_as[dass21_as_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat$dass21_ds[dass21_ds_items])))) %in% 0:3)
 
 # For Set B
 
-all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[, oa_items]))))               %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[, rr_items]))))               %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[, bbsiq_items]))))         %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_as[, dass21_as_items])))) %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_ds[, dass21_ds_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[oa_items]))))               %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[rr_items]))))               %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[bbsiq_items]))))         %in% 0:4)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_as[dass21_as_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_ds[dass21_ds_items])))) %in% 0:3)
 
 # For clean item-level baseline data
 
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$oa[, oa_items]))))             %in% 0:4)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$rr[, rr_items]))))             %in% 0:3)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$bbsiq[, bbsiq_items]))))       %in% 0:4)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$dass_as[, dass21_as_items])))) %in% 0:3)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$oa[oa_items]))))             %in% 0:4)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$rr[rr_items]))))             %in% 0:3)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$bbsiq[bbsiq_items]))))       %in% 0:4)
+all(sort(unique(as.vector(as.matrix(sep_dat_bl$dass_as[dass21_as_items])))) %in% 0:3)
+
+# TODO: Continue condensing below
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Compute selected scores in Sets A and B and clean item-level baseline data ----
