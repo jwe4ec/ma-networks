@@ -79,9 +79,9 @@ identify_cols <- function(df, grep_pattern, exclude_cols = NULL) {
 sort_by_part_then_session <- function(dat, part_col, session_col) {
   sort_df <- function(df) {
     if (session_col %in% names(df)) {
-      df <- df[order(df[, part_col], df[, session_col]), ]
+      df <- df[order(df[[part_col]], df[[session_col]]), ]
     } else {
-      df <- df[order(df[, part_col]), ]
+      df <- df[order(df[[part_col]]), ]
     }
     return(df)
   }

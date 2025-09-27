@@ -386,6 +386,8 @@ for (i in 1:length(sep_dat)) {
       names(df)[names(df) == "session"] <- "session_only"
     }
   }
+  
+  sep_dat[[i]] <- df
 }
 
 # ---------------------------------------------------------------------------- #
@@ -603,16 +605,16 @@ sel_dat$dass21_as$date[sel_dat$dass21_as$id == 834] == "Wed, 08 Jun 2016 16:15:3
 # values too. However, none of these 344-character values appears more than once 
 # within or across these tables. It's unclear what the 344-character value means.
 
-oa_participantRSA_chars          <- sel_dat$oa[nchar(sel_dat$oa$participantRSA)                   == 344, "participantRSA"]
-dass21_as_participantRSA_chars   <- sel_dat$dass21_as[nchar(sel_dat$dass21_as$participantRSA)     == 344, "participantRSA"]
+oa_participantRSA_chars          <- sel_dat$oa$participantRSA[nchar(sel_dat$oa$participantRSA)                   == 344]
+dass21_as_participantRSA_chars   <- sel_dat$dass21_as$participantRSA[nchar(sel_dat$dass21_as$participantRSA)     == 344]
 
-bbsiq_participantRSA_chars       <- sel_dat$bbsiq[nchar(sel_dat$bbsiq$participantRSA)             == 344, "participantRSA"]
-credibility_participantRSA_chars <- sel_dat$credibility[nchar(sel_dat$credibility$participantRSA) == 344, "participantRSA"]
-dass21_ds_participantRSA_chars   <- sel_dat$dass21_ds[nchar(sel_dat$dass21_ds$participantRSA)     == 344, "participantRSA"]
-dd_participantRSA_chars          <- sel_dat$dd[nchar(sel_dat$dd$participantRSA)                   == 344, "participantRSA"]
-demographic_participantRSA_chars <- sel_dat$demographic[nchar(sel_dat$demographic$participantRSA) == 344, "participantRSA"]
-qol_participantRSA_chars         <- sel_dat$qol[nchar(sel_dat$qol$participantRSA)                 == 344, "participantRSA"]
-rr_participantRSA_chars          <- sel_dat$rr[nchar(sel_dat$rr$participantRSA)                   == 344, "participantRSA"]
+bbsiq_participantRSA_chars       <- sel_dat$bbsiq$participantRSA[nchar(sel_dat$bbsiq$participantRSA)             == 344]
+credibility_participantRSA_chars <- sel_dat$credibility$participantRSA[nchar(sel_dat$credibility$participantRSA) == 344]
+dass21_ds_participantRSA_chars   <- sel_dat$dass21_ds$participantRSA[nchar(sel_dat$dass21_ds$participantRSA)     == 344]
+dd_participantRSA_chars          <- sel_dat$dd$participantRSA[nchar(sel_dat$dd$participantRSA)                   == 344]
+demographic_participantRSA_chars <- sel_dat$demographic$participantRSA[nchar(sel_dat$demographic$participantRSA) == 344]
+qol_participantRSA_chars         <- sel_dat$qol$participantRSA[nchar(sel_dat$qol$participantRSA)                 == 344]
+rr_participantRSA_chars          <- sel_dat$rr$participantRSA[nchar(sel_dat$rr$participantRSA)                   == 344]
 
 sum(table(c(oa_participantRSA_chars,
             credibility_participantRSA_chars,
@@ -634,14 +636,14 @@ sum(table(c(oa_participantRSA_chars,
 # corrects "participantRSA" to 534, 535, and 536 for Rows 81, 88, and 99 of "qol"
 # table. Obtain the original "participantRSA" for each of these row numbers.
 
-bbsiq_row68_participantRSA     <- sel_dat$bbsiq[68,     "participantRSA"]
-dass21_ds_row68_participantRSA <- sel_dat$dass21_ds[68, "participantRSA"]
-rr_row68_participantRSA        <- sel_dat$rr[68,        "participantRSA"]
-dd_row50_participantRSA        <- sel_dat$dd[50,        "participantRSA"]
+bbsiq_row68_participantRSA     <- sel_dat$bbsiq$participantRSA[68]
+dass21_ds_row68_participantRSA <- sel_dat$dass21_ds$participantRSA[68]
+rr_row68_participantRSA        <- sel_dat$rr$participantRSA[68]
+dd_row50_participantRSA        <- sel_dat$dd$participantRSA[50]
 
-qol_row81_participantRSA       <- sel_dat$qol[81, "participantRSA"]
-qol_row88_participantRSA       <- sel_dat$qol[88, "participantRSA"]
-qol_row89_participantRSA       <- sel_dat$qol[89, "participantRSA"]
+qol_row81_participantRSA       <- sel_dat$qol$participantRSA[81]
+qol_row88_participantRSA       <- sel_dat$qol$participantRSA[88]
+qol_row89_participantRSA       <- sel_dat$qol$participantRSA[89]
 
 # Explicitly name the relevant "participantRSA" values and subsequently refer to
 # these rather than to row numbers
@@ -762,9 +764,14 @@ participantRSA_index_tbls <- c("bbsiq", "credibility", "dass21_ds", "dd", "demog
                                "qol", "rr")
 
 for (i in 1:length(sel_dat)) {
-  if (names(sel_dat)[i] %in% participantRSA_index_tbls) {
-    names(sel_dat[[i]])[names(sel_dat[[i]]) == "participantRSA"] <- "participant_id" 
+  df_name <- names(sel_dat)[i]
+  df <- sel_dat[[i]]
+  
+  if (df_name %in% participantRSA_index_tbls) {
+    names(df)[names(df) == "participantRSA"] <- "participant_id" 
   }
+  
+  sel_dat[[i]] <- df
 }
 
 # ---------------------------------------------------------------------------- #
@@ -1887,37 +1894,37 @@ sep_dat_bl$bbsiq[bbsiq_items][sep_dat_bl$bbsiq[bbsiq_items] == 555] <- NA
 # Check response ranges in Sets A and B and clean item-level baseline data ----
 # ---------------------------------------------------------------------------- #
 
+# Define function to get sorted unique values across items
+
+get_values_across_items <- function(df, items) {
+  sort(unique(as.vector(as.matrix(df[items]))))
+}
+
 # Note: In present Managing Anxiety study, RR response options were 0:3, whereas 
 # in Calm Thinking study, they were 1:4
 
 # For Set A
 
-all(sort(unique(as.vector(as.matrix(flt_dat$oa[oa_items]))))               %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat$rr[rr_items]))))               %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat$bbsiq[bbsiq_items]))))         %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat$dass21_as[dass21_as_items])))) %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat$dass21_ds[dass21_ds_items])))) %in% 0:3)
+all(get_values_across_items(flt_dat$oa,        oa_items)        %in% 0:4)
+all(get_values_across_items(flt_dat$rr,        rr_items)        %in% 0:3)
+all(get_values_across_items(flt_dat$bbsiq,     bbsiq_items)     %in% 0:4)
+all(get_values_across_items(flt_dat$dass21_as, dass21_as_items) %in% 0:3)
+all(get_values_across_items(flt_dat$dass21_ds, dass21_ds_items) %in% 0:3)
 
 # For Set B
 
-all(sort(unique(as.vector(as.matrix(flt_dat_b$oa[oa_items]))))               %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$rr[rr_items]))))               %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$bbsiq[bbsiq_items]))))         %in% 0:4)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_as[dass21_as_items])))) %in% 0:3)
-all(sort(unique(as.vector(as.matrix(flt_dat_b$dass21_ds[dass21_ds_items])))) %in% 0:3)
+all(get_values_across_items(flt_dat_b$oa,        oa_items)        %in% 0:4)
+all(get_values_across_items(flt_dat_b$rr,        rr_items)        %in% 0:3)
+all(get_values_across_items(flt_dat_b$bbsiq,     bbsiq_items)     %in% 0:4)
+all(get_values_across_items(flt_dat_b$dass21_as, dass21_as_items) %in% 0:3)
+all(get_values_across_items(flt_dat_b$dass21_ds, dass21_ds_items) %in% 0:3)
 
 # For clean item-level baseline data
 
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$oa[oa_items]))))             %in% 0:4)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$rr[rr_items]))))             %in% 0:3)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$bbsiq[bbsiq_items]))))       %in% 0:4)
-all(sort(unique(as.vector(as.matrix(sep_dat_bl$dass_as[dass21_as_items])))) %in% 0:3)
-
-# TODO: Continue condensing below
-
-
-
-
+all(get_values_across_items(sep_dat_bl$oa,      oa_items)        %in% 0:4)
+all(get_values_across_items(sep_dat_bl$rr,      rr_items)        %in% 0:3)
+all(get_values_across_items(sep_dat_bl$bbsiq,   bbsiq_items)     %in% 0:4)
+all(get_values_across_items(sep_dat_bl$dass_as, dass21_as_items) %in% 0:3)
 
 # ---------------------------------------------------------------------------- #
 # Compute selected scores in Sets A and B and clean item-level baseline data ----
@@ -1931,34 +1938,34 @@ all(sort(unique(as.vector(as.matrix(sep_dat_bl$dass_as[dass21_as_items])))) %in%
 
   # For Set A
 
-# View(flt_dat$oa[rowSums(is.na(flt_dat$oa[, oa_items])) > 0, ])
-sum(rowSums(is.na(flt_dat$oa[, oa_items])) == ncol(flt_dat$oa[, oa_items]))
+# View(flt_dat$oa[rowSums(is.na(flt_dat$oa[oa_items])) > 0, ])
+sum(rowSums(is.na(flt_dat$oa[oa_items])) == ncol(flt_dat$oa[oa_items]))
 
-flt_dat$oa$oa_total <- rowSums(flt_dat$oa[, oa_items], na.rm = TRUE)
+flt_dat$oa$oa_total <- rowSums(flt_dat$oa[oa_items], na.rm = TRUE)
 
   # For Set B
 
-# View(flt_dat_b$oa[rowSums(is.na(flt_dat_b$oa[, oa_items])) > 0, ])
-sum(rowSums(is.na(flt_dat_b$oa[, oa_items])) == ncol(flt_dat_b$oa[, oa_items]))
+# View(flt_dat_b$oa[rowSums(is.na(flt_dat_b$oa[oa_items])) > 0, ])
+sum(rowSums(is.na(flt_dat_b$oa[oa_items])) == ncol(flt_dat_b$oa[oa_items]))
 
-flt_dat_b$oa$oa_total <- rowSums(flt_dat_b$oa[, oa_items], na.rm = TRUE)
+flt_dat_b$oa$oa_total <- rowSums(flt_dat_b$oa[oa_items], na.rm = TRUE)
 
   # For clean item-level baseline data
 
-# View(sep_dat_bl$oa[rowSums(is.na(sep_dat_bl$oa[, oa_items])) > 0, ])
-sum(rowSums(is.na(sep_dat_bl$oa[, oa_items])) == ncol(sep_dat_bl$oa[, oa_items]))
+# View(sep_dat_bl$oa[rowSums(is.na(sep_dat_bl$oa[oa_items])) > 0, ])
+sum(rowSums(is.na(sep_dat_bl$oa[oa_items])) == ncol(sep_dat_bl$oa[oa_items]))
 
-sep_dat_bl$oa$oa_total <- rowSums(sep_dat_bl$oa[, oa_items], na.rm = TRUE)
+sep_dat_bl$oa$oa_total <- rowSums(sep_dat_bl$oa[oa_items], na.rm = TRUE)
 
 # RR
 
   # Define function to compute RR scores
 
 compute_rr_scores <- function(dat) {
-  dat$rr$rr_nf_mean <- rowMeans(dat$rr[, rr_nf_items], na.rm = TRUE)
-  dat$rr$rr_ns_mean <- rowMeans(dat$rr[, rr_ns_items], na.rm = TRUE)
-  dat$rr$rr_pf_mean <- rowMeans(dat$rr[, rr_pf_items], na.rm = TRUE)
-  dat$rr$rr_ps_mean <- rowMeans(dat$rr[, rr_ps_items], na.rm = TRUE)
+  dat$rr$rr_nf_mean <- rowMeans(dat$rr[rr_nf_items], na.rm = TRUE)
+  dat$rr$rr_ns_mean <- rowMeans(dat$rr[rr_ns_items], na.rm = TRUE)
+  dat$rr$rr_pf_mean <- rowMeans(dat$rr[rr_pf_items], na.rm = TRUE)
+  dat$rr$rr_ps_mean <- rowMeans(dat$rr[rr_ps_items], na.rm = TRUE)
   
   return(dat)
 }
@@ -1983,15 +1990,15 @@ sep_dat_bl <- compute_rr_scores(sep_dat_bl)
   # Define function to compute BBSIQ scores
 
 compute_bbsiq_scores <- function(dat) {
-  dat$bbsiq$bbsiq_neg_int_mean <- rowMeans(dat$bbsiq[, bbsiq_neg_int_items], na.rm = TRUE)
-  dat$bbsiq$bbsiq_ben_int_mean <- rowMeans(dat$bbsiq[, bbsiq_ben_int_items], na.rm = TRUE)
-  dat$bbsiq$bbsiq_neg_ext_mean <- rowMeans(dat$bbsiq[, bbsiq_neg_ext_items], na.rm = TRUE)
-  dat$bbsiq$bbsiq_ben_ext_mean <- rowMeans(dat$bbsiq[, bbsiq_ben_ext_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_neg_int_mean <- rowMeans(dat$bbsiq[bbsiq_neg_int_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_ben_int_mean <- rowMeans(dat$bbsiq[bbsiq_ben_int_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_neg_ext_mean <- rowMeans(dat$bbsiq[bbsiq_neg_ext_items], na.rm = TRUE)
+  dat$bbsiq$bbsiq_ben_ext_mean <- rowMeans(dat$bbsiq[bbsiq_ben_ext_items], na.rm = TRUE)
   
   dat$bbsiq$bbsiq_int_ratio <- dat$bbsiq$bbsiq_neg_int_mean / dat$bbsiq$bbsiq_ben_int_mean
   dat$bbsiq$bbsiq_ext_ratio <- dat$bbsiq$bbsiq_neg_ext_mean / dat$bbsiq$bbsiq_ben_ext_mean
   
-  dat$bbsiq$bbsiq_ratio_mean <- rowMeans(dat$bbsiq[, c("bbsiq_int_ratio", "bbsiq_ext_ratio")], na.rm = TRUE)
+  dat$bbsiq$bbsiq_ratio_mean <- rowMeans(dat$bbsiq[c("bbsiq_int_ratio", "bbsiq_ext_ratio")], na.rm = TRUE)
   
   return(dat)
 }
@@ -2014,8 +2021,8 @@ sep_dat_bl <- compute_bbsiq_scores(sep_dat_bl)
 
       # Compute item medians in Set A
 
-flt_dat_dass21_as_item_medians <- sapply(dass21_as_items, function(x) {
-  median(flt_dat$dass21_as[[x]], na.rm = TRUE)
+flt_dat_dass21_as_item_medians <- sapply(dass21_as_items, function(item) {
+  median(flt_dat$dass21_as[[item]], na.rm = TRUE)
 })
 names(flt_dat_dass21_as_item_medians) <- dass21_as_items
 
@@ -2046,16 +2053,16 @@ sep_dat_bl$dass_as  <- impute_given_item_medians(sep_dat_bl$dass_as,  dass21_as_
 
     # Compute doubled total score for Sets A and B and clean item-level baseline data
 
-flt_dat$dass21_as$dass21_as_total_dbl   <- rowSums(flt_dat$dass21_as[, dass21_as_items]) * 2
-flt_dat_b$dass21_as$dass21_as_total_dbl <- rowSums(flt_dat_b$dass21_as[, dass21_as_items]) * 2
-sep_dat_bl$dass_as$dass21_as_total_dbl  <- rowSums(sep_dat_bl$dass_as[, dass21_as_items]) * 2
+flt_dat$dass21_as$dass21_as_total_dbl   <- rowSums(flt_dat$dass21_as[dass21_as_items]) * 2
+flt_dat_b$dass21_as$dass21_as_total_dbl <- rowSums(flt_dat_b$dass21_as[dass21_as_items]) * 2
+sep_dat_bl$dass_as$dass21_as_total_dbl  <- rowSums(sep_dat_bl$dass_as[dass21_as_items]) * 2
 
   # DASS-21-DS
 
     # Impute item-level NAs in Sets A and B with median of the item's column in Set A
 
-flt_dat_dass21_ds_item_medians <- sapply(dass21_ds_items, function(x) {
-  median(flt_dat$dass21_ds[[x]], na.rm = TRUE)
+flt_dat_dass21_ds_item_medians <- sapply(dass21_ds_items, function(item) {
+  median(flt_dat$dass21_ds[[item]], na.rm = TRUE)
 })
 names(flt_dat_dass21_ds_item_medians) <- dass21_ds_items
 
@@ -2067,8 +2074,8 @@ flt_dat_b$dass21_ds <- impute_given_item_medians(flt_dat_b$dass21_ds, dass21_ds_
 
     # Compute doubled total score for Sets A and B
 
-flt_dat$dass21_ds$dass21_ds_total_dbl   <- rowSums(flt_dat$dass21_ds[, dass21_ds_items]) * 2
-flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[, dass21_ds_items]) * 2
+flt_dat$dass21_ds$dass21_ds_total_dbl   <- rowSums(flt_dat$dass21_ds[dass21_ds_items]) * 2
+flt_dat_b$dass21_ds$dass21_ds_total_dbl <- rowSums(flt_dat_b$dass21_ds[dass21_ds_items]) * 2
 
 # ---------------------------------------------------------------------------- #
 # Clean demographic table (with focus on Set A) and compare with clean data ----
@@ -2265,9 +2272,9 @@ flt_dat$demographic$income[flt_dat$demographic$income == ""] <- missing_server_i
 
 identical(flt_dat$demographic$maritalStatus, flt_dat_b$demographic$maritalStatus)
 
-flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "??"]     <- ""
-flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == 
-                                    "Single, ma attualmente fidanzato"]          <- "Single, but currently engaged to be married"
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "??"] <- ""
+flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "Single, ma attualmente fidanzato"] <- 
+  "Single, but currently engaged to be married"
 flt_dat$demographic$maritalStatus[flt_dat$demographic$maritalStatus == "Unique"] <- "Single"
 
 identical(flt_dat$demographic$maritalStatus, sep_dat$demographic$demographic_maritalStatus)
@@ -2338,10 +2345,12 @@ restrict_to_shared_ps <- function(dat1, dat2) {
   names(dat2_rest) <- names(dat2)
   
   for (i in 1:length(dat1)) {
-    shared_participant_ids <- intersect(dat1[[i]][, "participant_id"], 
-                                        dat2[[i]][, "participant_id"])
-    dat1_rest[[i]] <- dat1[[i]][dat1[[i]][, "participant_id"] %in% shared_participant_ids, ]
-    dat2_rest[[i]] <- dat2[[i]][dat2[[i]][, "participant_id"] %in% shared_participant_ids, ]
+    df1 <- dat1[[i]]
+    df2 <- dat2[[i]]
+
+    shared_participant_ids <- intersect(df1$participant_id, df2$participant_id)
+    dat1_rest[[i]] <- df1[df1$participant_id %in% shared_participant_ids, ]
+    dat2_rest[[i]] <- df2[df2$participant_id %in% shared_participant_ids, ]
   }
   
   ls_rest <- list(dat1_rest, dat2_rest)
@@ -2676,7 +2685,7 @@ merge_oa_b <- merge(flt_dat_comp_rest_b$oa,
 sum(merge_oa_b$oa_total == merge_oa_b$oasis_score) == 2512
 sum(merge_oa_b$oa_total != merge_oa_b$oasis_score) == 38
 
-discrep_ids_b <- unique(merge_oa_b[merge_oa_b$oa_total != merge_oa_b$oasis_score, ]$participant_id)
+discrep_ids_b <- unique(merge_oa_b$participant_id[merge_oa_b$oa_total != merge_oa_b$oasis_score])
 length(discrep_ids_b) == 24
 
   # All 24 participants are in Set A and lack discrepancies with clean data
@@ -3145,7 +3154,7 @@ row.names(flt_dat_b$credibility) <- 1:nrow(flt_dat_b$credibility)
 
 flt_dat$credibility <- flt_dat$credibility[c(names(flt_dat_b$credibility), "id")]
 
-comparable_cols <- names(flt_dat$credibility)[!(names(flt_dat$credibility) %in% c("dataset", "id"))]
+comparable_cols <- setdiff(names(flt_dat$credibility), c("dataset", "id"))
 
 identical(flt_dat$credibility[comparable_cols], flt_dat_b$credibility[comparable_cols])
 
