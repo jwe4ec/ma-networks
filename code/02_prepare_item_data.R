@@ -1386,22 +1386,35 @@ report_dups_df <- function(df, df_name, target_cols, index_col) {
     cat("No duplicated rows for table:", df_name)
     cat("\n-------------------------\n")
   }
+  
+  out <- list(target_cols  = target_cols,
+              dups_nrow    = nrow(dup_rows))
+  
+  out[[paste0("dups_", index_col)]] <- dup_rows[[index_col]]
+  
+  return(out)
 }
 
 report_dups_list <- function(dat) {
+  out_ls <- vector("list", length(dat))
+  
   for (i in 1:length(dat)) {
     df_name <- names(dat)[i]
     df <- dat[[i]]
+    out <- out_ls[[i]]
     
     w_pids_txt <- "- With these 'participant_id': "
     
     if (df_name == "participant_export_dao") {
-      report_dups_df(df, df_name, "participant_id", "participant_id")
+      out <- report_dups_df(df, df_name, "participant_id", "participant_id")
     } else if (df_name == "dass21_as") {
+      target_cols_elig  <- c("participant_id", "session_only", "sessionId")
+      target_cols_other <- c("participant_id", "session_only")
+      
       is_elig <- df$session_only == "Eligibility"
       
-      dup_rows_elig  <- df[is_elig  & duplicated(df[c("participant_id", "session_only", "sessionId")]), ]
-      dup_rows_other <- df[!is_elig & duplicated(df[c("participant_id", "session_only")]), ]
+      dup_rows_elig  <- df[is_elig  & duplicated(df[target_cols_elig]), ]
+      dup_rows_other <- df[!is_elig & duplicated(df[target_cols_other]), ]
 
       if (nrow(dup_rows_elig) > 0 | nrow(dup_rows_other) > 0) {
         is_na_p_id <- is.na(dup_rows_elig$participant_id)
@@ -1422,11 +1435,23 @@ report_dups_list <- function(dat) {
       } else {
         cat("No duplicated rows for table:", df_name)
         cat("\n-------------------------\n")
+        
+        p_ids <- s_ids <- NULL
       }
-    } else if (df_name == "task_log") {
-      report_dups_df(df, df_name, c("participant_id", "session_only", "task_name"), "participant_id")
       
-      is_dup            <- duplicated(df[c("participant_id", "session_only", "task_name")])
+      out <- list(target_cols_elig          = target_cols_elig,
+                  dups_elig_nrow            = nrow(dup_rows_elig),
+                  dups_elig_participant_id  = p_ids,
+                  dups_elig_session_id      = s_ids,
+                  target_cols_other         = target_cols_other,
+                  dups_other_nrow           = nrow(dup_rows_other),
+                  dups_other_participant_id = dup_rows_other$participant_id)
+    } else if (df_name == "task_log") {
+      target_cols <- c("participant_id", "session_only", "task_name")
+      
+      out <- report_dups_df(df, df_name, target_cols, "participant_id")
+      
+      is_dup            <- duplicated(df[target_cols])
       is_dass21_as_elig <- df$session_only == "Eligibility" & df$task_name == "DASS21_AS"
       is_suds           <- df$task_name == "SUDS"
       
@@ -1446,14 +1471,19 @@ report_dups_list <- function(dat) {
         cat("\n-------------------------\n")
       }
     } else {
-      report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
+      out <- report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
     }
+    
+    out_ls[[i]] <- out
   }
+  
+  names(out_ls) <- names(dat)
+  return(out_ls)
 }
 
 # Run function
 
-report_dups_list(flt_dat)
+flt_dat_dups_before <- report_dups_list(flt_dat)
 
 # ---------------------------------------------------------------------------- #
 # Resolve multiple entries for "oa" table in Set A ----
@@ -1464,17 +1494,14 @@ report_dups_list(flt_dat)
 # entries chronologically and then recoding the session column so that it reflects 
 # the expected session order for the number of entries present for that participant
 
-  # TODO (use more robust approach to get these): Collect participants with multiple 
-  # "oa" entries from "report_dups_list()" above
+  # Collect participants with multiple "oa" entries from "report_dups_list()" above
 
-multiple_oa_entry_participant_ids <- 
+multiple_oa_entry_participant_ids <- sort(unique(flt_dat_dups_before$oa$dups_participant_id))
+
+all(multiple_oa_entry_participant_ids == 
   c(8, 14, 16, 17, 421, 425, 432, 435, 445, 485, 532, 539, 541, 552, 582, 590, 
     597, 598, 600, 620, 623, 625, 627, 640, 644, 659, 662, 669, 674, 683, 684, 
-    687, 701, 708, 710, 712, 719, 723, 727, 731, 745)
-
-
-
-
+    687, 701, 708, 710, 712, 719, 723, 727, 731, 745))
 
 # Define function to recode session in "oa" table for certain participants so that it 
 # reflects the expected session order for number of entries present for each participant
@@ -1516,7 +1543,9 @@ flt_dat$oa <- recode_oa_session_to_expected_order(flt_dat$oa, multiple_oa_entry_
 
 # Recheck for multiple unexpected entries in "oa" table
 
-report_dups_list(flt_dat) # None
+flt_dat_dups_after_resolving_oa <- report_dups_list(flt_dat)
+
+flt_dat_dups_after_resolving_oa$oa$dups_nrow == 0 # None
 
 # ---------------------------------------------------------------------------- #
 # Resolve multiple entries for other tables in Set A ----
@@ -1656,13 +1685,18 @@ all(flt_dat_b_nrow_rm == 0) # No exact duplicates
 # defined for Set A above is used within "report_dups_list_b" for Set B.
 
 report_dups_list_b <- function(dat) {
+  out_ls <- vector("list", length(dat))
+  
   for (i in 1:length(dat)) {
     df_name <- names(dat)[i]
     df <- dat[[i]]
+    out <- out_ls[[i]]
     
     if (df_name == "dass21_as") {
+      target_cols <- c("participant_id", "session_only")
+      
       is_elig <- df$session_only == "Eligibility"
-      is_dup  <- duplicated(df[c("participant_id", "session_only")])
+      is_dup  <- duplicated(df[target_cols])
       
       dup_rows_elig  <- df[is_elig  & is_dup, ]
       dup_rows_other <- df[!is_elig & is_dup, ]
@@ -1681,15 +1715,35 @@ report_dups_list_b <- function(dat) {
         cat("No duplicated rows for table:", df_name)
         cat("\n-------------------------\n")
       }
+      
+      out <- list(target_cols_elig          = target_cols,
+                  dups_elig_nrow            = nrow(dup_rows_elig),
+                  dups_elig_participant_id  = dup_rows_elig$participant_id,
+                  target_cols_other         = target_cols,
+                  dups_other_nrow           = nrow(dup_rows_other),
+                  dups_other_participant_id = dup_rows_other$participant_id)
     } else {
-      report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
+      out <- report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
     }
+    
+    out_ls[[i]] <- out
   }
+  
+  names(out_ls) <- names(dat)
+  return(out_ls)
 }
 
 # Run function
 
-report_dups_list_b(flt_dat_b) # No duplicates
+flt_dat_b_dups <- report_dups_list_b(flt_dat_b)
+
+  # Confirm no duplicates
+
+out_vec <- c(setNames(unlist(flt_dat_b_dups$dass21_as[c("dups_elig_nrow", "dups_other_nrow")]),
+                      paste0("dass21_as_", c("dups_elig_nrow", "dups_other_nrow"))),
+             sapply(flt_dat_b_dups[names(flt_dat_b_dups) != "dass21_as"], function(x) x$dups_nrow))
+
+all(out_vec) == 0
 
 # ---------------------------------------------------------------------------- #
 # Rename and recode columns in clean item-level baseline data ----
