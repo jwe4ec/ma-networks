@@ -68,8 +68,8 @@ groundhog_day <- version_control()
 # Import baseline items and longitudinal scales from OSF project for Managing Anxiety 
 # main outcomes paper (see Source 1 above for more info)
 
-dat_main_bl_items  <- read.csv("./data/source/clean_from_main_paper/R34_Cronbach.csv")
-dat_main_lg_scales <- read.csv("./data/source/clean_from_main_paper/R34_FinalData_New_v02.csv")
+cln_dat_bl  <- read.csv("./data/source/clean_from_main_paper/R34_Cronbach.csv")
+cln_dat     <- read.csv("./data/source/clean_from_main_paper/R34_FinalData_New_v02.csv")
 
 # ---------------------------------------------------------------------------- #
 # Import raw data files from Sonia ----
@@ -78,43 +78,27 @@ dat_main_lg_scales <- read.csv("./data/source/clean_from_main_paper/R34_FinalDat
 # Obtain file names of Sets A and B of raw CSV data files from Sonia (see Sources
 # 2 and 3 above for more info)
 
-raw_data_dir_son_a <- paste0(wd_dir, "/data/source/raw_from_sonia_a/")
-raw_data_dir_son_b <- paste0(wd_dir, "/data/source/raw_from_sonia_b/")
+raw_data_dir   <- paste0(wd_dir, "/data/source/raw_from_sonia_a/")
+raw_data_dir_b <- paste0(wd_dir, "/data/source/raw_from_sonia_b/")
 
-raw_filenames_son_a <- list.files(raw_data_dir_son_a, pattern = "\\.csv$")
-raw_filenames_son_b <- list.files(raw_data_dir_son_b, pattern = "\\.csv$")
+raw_filenames   <- list.files(raw_data_dir,   pattern = "\\.csv$")
+raw_filenames_b <- list.files(raw_data_dir_b, pattern = "\\.csv$")
 
 # Import raw data files and store them in list
 
-raw_dat_son_a <- lapply(paste0(raw_data_dir_son_a, raw_filenames_son_a), read.csv)
-raw_dat_son_b <- lapply(paste0(raw_data_dir_son_b, raw_filenames_son_b), read.csv)
+raw_dat   <- lapply(paste0(raw_data_dir,   raw_filenames),   read.csv)
+raw_dat_b <- lapply(paste0(raw_data_dir_b, raw_filenames_b), read.csv)
 
 # Name each raw data file in list
 
-names(raw_dat_son_a) <- tools::file_path_sans_ext(raw_filenames_son_a)
-names(raw_dat_son_b) <- tools::file_path_sans_ext(raw_filenames_son_b)
+names(raw_dat)   <- tools::file_path_sans_ext(raw_filenames)
+names(raw_dat_b) <- tools::file_path_sans_ext(raw_filenames_b)
 
 # ---------------------------------------------------------------------------- #
 # Import "notes.csv" from Sonia ----
 # ---------------------------------------------------------------------------- #
 
 notes <- read.csv("./data/source/notes_from_sonia/notes.csv")
-
-# ---------------------------------------------------------------------------- #
-# Decide which data to use for network analyses ----
-# ---------------------------------------------------------------------------- #
-
-# TODO: Document decisions
-
-
-
-
-
-cln_dat_bl <- dat_main_bl_items
-cln_dat    <- dat_main_lg_scales
-
-raw_dat   <- raw_dat_son_a
-raw_dat_b <- raw_dat_son_b
 
 # ---------------------------------------------------------------------------- #
 # Clean "notes.csv" ----
@@ -3016,10 +3000,10 @@ label_dataset <- function(dat, dataset_name) {
 
 # Run function for Sets A and B and clean datasets
 
-flt_dat    <- label_dataset(flt_dat,    "raw_dat_son_a")
-flt_dat_b  <- label_dataset(flt_dat_b,  "raw_dat_son_b")
-sep_dat    <- label_dataset(sep_dat,    "dat_main_lg_scales")
-sep_dat_bl <- label_dataset(sep_dat_bl, "dat_main_bl_items")
+flt_dat    <- label_dataset(flt_dat,    "raw_dat")
+flt_dat_b  <- label_dataset(flt_dat_b,  "raw_dat_b")
+sep_dat    <- label_dataset(sep_dat,    "cln_dat")
+sep_dat_bl <- label_dataset(sep_dat_bl, "cln_dat_bl")
 
 # Add data for participants missing data in Set A due to server error
 
