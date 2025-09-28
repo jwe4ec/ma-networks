@@ -994,7 +994,6 @@ lapply(sel_dat_b, identify_cols, grep_pattern = "date")
 
 invisible(mapply(view_date_str, sel_dat_b, names(sel_dat_b)))
 
-# TODO (dates are now handled but think of what this means for the two datasets)
 # Note: 58 and 42 participants in "dass21_as" and "oa" tables, respectively, have 
 # dates that are 11:14 characters (and no dates with more characters), whereas all 
 # other participants (and all other tables) have dates that are 31 characters. These 
@@ -1002,10 +1001,6 @@ invisible(mapply(view_date_str, sel_dat_b, names(sel_dat_b)))
 # "dass21_as", "oa", or "participant" tables but include all 36 of the participants
 # listed as "not included in original dataset due to server error" in "notes.csv"
 # (who are also included in the clean data).
-
-
-
-
 
 sel_dat_b$dass21_as$date[nchar(sel_dat_b$dass21_as$date) %in% 11:14]
 sel_dat_b$oa$date[nchar(sel_dat_b$oa$date)               %in% 11:14]
