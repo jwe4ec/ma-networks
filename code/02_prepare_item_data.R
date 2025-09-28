@@ -3185,17 +3185,16 @@ identical(flt_dat$credibility[comparable_cols], flt_dat_b$credibility[comparable
 # Finalize item-level data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (update comment): Given that so far the OA, RR, BBSIQ, DASS-21-AS,
-# and DASS-21-DS scores in the clean data used in the main outcomes paper have been 
-# reproduced, restrict to those tables and to the participant and demographics tables. 
-# All these tables have the same participants as the clean data, but some have different 
-# numbers of rows (see section above comparing clean data and Set A with added data).
+# The OA, RR, BBSIQ, DASS-21-AS, and DASS-21-DS scores; the demographics data; and
+# the CBM and imagery prime conditions in the participant table in the clean data 
+# for the 807 participants used in the main outcomes paper have now been reproduced 
+# by Set A with added data. All these tables have the same participants as the clean 
+# data, but some have different numbers of rows (see section above comparing clean data 
+# and Set A with added data). The demographics data are also now cleaner than those in 
+# the clean data (see section above comparing clean data and Set A). Add these tables 
+# to a final list of tables that remain filtered to these 807 participants.
 
 flt_dat_final <- flt_dat_comp_add
-
-
-
-
 
 # Recode OASIS sessions to be consecutive for participants whose values skip one
 # session (i.e., Session 1 or 3) because this is more plausible than the original 
@@ -3211,58 +3210,16 @@ flt_dat_final$oa <- recode_oa_session_to_expected_order(flt_dat_final$oa, skippe
 
 
 
-# ---------------------------------------------------------------------------- #
-# Extract relevant tables named to reflect their source ----
-# ---------------------------------------------------------------------------- #
+# Add credibility data from Set A, which is not in clean data used in the main outcomes 
+# paper but which was shown above to be identical between Sets A and B
 
-# TODO: Update this section to use final data and name more clearly
-
-
-
-
-
-# merge_oa_add
-# merge_rr_add
-# merge_bbsiq_add
-
-participant_raw_add <- flt_dat_comp_add$participant
-participant_cln_add <- sep_dat_comp_add$participant
-
-demographics_raw_add <- flt_dat_comp_add$demographic
-demographics_cln_add <- sep_dat_comp_add$demographic
-
-# TODO: Add credibility data here from above
-
-
-
-
+flt_dat_final$credibility <- flt_dat$credibility
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Update below
+intermediate_path <- "./data/intermediate/"
+dir.create(intermediate_path)
 
-
-
-
-
-dir.create("./data/intermediate/")
-
-# Export merged, restricted item-level OA, RR, and BBSIQ data
-
-write.csv(merge_oa_rest_add,    file = "./data/intermediate/merge_oa_rest_add.csv",    row.names = FALSE)
-write.csv(merge_rr_rest_add,    file = "./data/intermediate/merge_rr_rest_add.csv",    row.names = FALSE)
-write.csv(merge_bbsiq_rest_add, file = "./data/intermediate/merge_bbsiq_rest_add.csv", row.names = FALSE)
-
-# Export raw restricted participant data (contains more columns than clean data)
-
-write.csv(participant_raw_rest_add, file = "./data/intermediate/participant_raw_rest_add.csv", row.names = FALSE)
-
-# Export clean restricted demographics data (cleaner than raw data)
-
-write.csv(demographics_cln_rest_add, file = "./data/intermediate/demographics_cln_rest_add.csv", row.names = FALSE)
-
-# Export raw restricted credibility data (not available in clean data)
-
-write.csv(credibility_raw_rest, file = "./data/intermediate/credibility_raw_rest.csv", row.names = FALSE)
+saveRDS(flt_dat_final, paste0(intermediate_path, "flt_dat_final.rds"))
