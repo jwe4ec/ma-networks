@@ -2499,12 +2499,10 @@ flt_dat_comp_rest_rr_sessions <-
 # View(flt_dat_comp_rest_rr_sessions[flt_dat_comp_rest_rr_sessions$participant_id %in%
 #                                      set_a_unequal_oa_rr_session_dates_pids, ])
 
-  # TODO (check this): Compare session dates between "oa" and "task_log" tables in Set A
+  # Compare session dates between "oa" and "task_log" tables in Set A
 
 flt_dat_task_log_oa_sessions <- flt_dat$task_log[flt_dat$task_log$task_name == "OA",
-                                                 c("participant_id",
-                                                   "corrected_datetime_as_POSIXct", 
-                                                   "session_only")]
+                                                 c("participant_id", "corrected_datetime_as_POSIXct", "session_only")]
 flt_dat_task_log_oa_sessions <- 
   flt_dat_task_log_oa_sessions[order(flt_dat_task_log_oa_sessions$participant_id,
                                      flt_dat_task_log_oa_sessions$corrected_datetime_as_POSIXct), ]
@@ -2520,10 +2518,6 @@ length(set_a_unequal_oa_tl_session_dates_pids) == 60
 #                                      set_a_unequal_oa_tl_session_dates_pids, ])
 # View(flt_dat_task_log_oa_sessions[flt_dat_task_log_oa_sessions$participant_id %in%
 #                                     set_a_unequal_oa_tl_session_dates_pids, ])
-
-
-
-
 
   # Identify participants with sessions skipped in OASIS table in Set A
 
