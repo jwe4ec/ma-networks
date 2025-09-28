@@ -1823,6 +1823,24 @@ length(dass21_ds_items) == 7
 all(dass21_ds_items %in% names(flt_dat$dass21_ds))
 all(dass21_ds_items %in% names(flt_dat_b$dass21_ds))
 
+# Collect items in list
+
+items <- list(oa            = oa_items, 
+              rr            = rr_items, 
+              rr_nf         = rr_nf_items, 
+              rr_ns         = rr_ns_items, 
+              rr_pf         = rr_pf_items, 
+              rr_ps         = rr_ps_items, 
+              bbsiq         = bbsiq_items, 
+              bbsiq_neg     = bbsiq_neg_items, 
+              bbsiq_neg_int = bbsiq_neg_int_items, 
+              bbsiq_neg_ext = bbsiq_neg_ext_items, 
+              bbsiq_ben     = bbsiq_ben_items, 
+              bbsiq_ben_int = bbsiq_ben_int_items, 
+              bbsiq_ben_ext = bbsiq_ben_ext_items, 
+              dass21_as     = dass21_as_items, 
+              dass21_ds     = dass21_ds_items)
+
 # ---------------------------------------------------------------------------- #
 # Extract clean item-level baseline data into separate tables ----
 # ---------------------------------------------------------------------------- #
@@ -3216,10 +3234,15 @@ flt_dat_final$oa <- recode_oa_session_to_expected_order(flt_dat_final$oa, skippe
 flt_dat_final$credibility <- flt_dat$credibility
 
 # ---------------------------------------------------------------------------- #
-# Export data ----
+# Export item-level data and helper items list ----
 # ---------------------------------------------------------------------------- #
 
 intermediate_path <- "./data/intermediate/"
 dir.create(intermediate_path)
 
 saveRDS(flt_dat_final, paste0(intermediate_path, "flt_dat_final.rds"))
+
+helper_path <- "./data/helper/"
+dir.create(helper_path)
+
+saveRDS(items, paste0(helper_path, "items.rds"))
