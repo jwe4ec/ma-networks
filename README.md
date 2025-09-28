@@ -128,7 +128,7 @@ This repository contains analysis code for this project on the Open Science Fram
     positive scenarios (see `positive` column)
 - **No participant table**
 - **DASS-21-AS table**
-  - Session column at screening has only `ELIGIBLE` values
+  - Lacks `sessionId`, and session column at screening has only `ELIGIBLE` values
   - 58 participants (not in Set A and including all 36 listed as excluded from original 
   analyses due to server error but now in clean data) have dates that are 11:14 characters
 - **OA table**

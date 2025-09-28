@@ -800,15 +800,11 @@ all(sel_dat_b$demographic$id == sel_dat_b$demographic$participantRSA, na.rm = TR
 all(sel_dat_b$qol$id         == sel_dat_b$qol$participantRSA,         na.rm = TRUE)
 all(sel_dat_b$rr$id          == sel_dat_b$rr$participantRSA,          na.rm = TRUE)
 
-# TODO: Unlike in Set A, Set B table "dass21_as" contains fewer rows, has no
-# blank "session" values, and does not contain "sessionId"
+# Unlike in Set A, Set B table "dass21_as" contains fewer rows, has no blank "session" 
+# values, and does not contain "sessionId"
 
 table(sel_dat_b$dass21_as$session, useNA = "always")
 table(sel_dat$dass21_as$session, useNA = "always")
-
-
-
-
 
 # Unlike in Set A, no Set B tables have 344-character values for "participantRSA"
 # (if present, longest "participantRSA" is 4 characters)
