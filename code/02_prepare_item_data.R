@@ -1424,8 +1424,6 @@ report_dups_list <- function(dat) {
     } else if (df_name == "task_log") {
       target_cols <- c("participant_id", "session_only", "task_name")
       
-      out <- report_dups_df(df, df_name, target_cols, "participant_id")
-      
       is_dup            <- duplicated(df[target_cols])
       is_dass21_as_elig <- df$session_only == "Eligibility" & df$task_name == "DASS21_AS"
       is_suds           <- df$task_name == "SUDS"
@@ -1445,6 +1443,14 @@ report_dups_list <- function(dat) {
         if (nrow(dup_rows_other_nonsuds) > 0)  cat(w_pids_txt, dup_rows_other_nonsuds$participant_id)
         cat("\n-------------------------\n")
       }
+      
+      out <- list(target_cols                        = target_cols,
+                  dups_dass21_as_elig_nrow           = nrow(dup_rows_dass21_as_elig),
+                  dups_dass21_as_elig_participant_id = dup_rows_dass21_as_elig$participant_id,
+                  dups_other_suds_nrow               = nrow(dup_rows_other_suds),
+                  dups_other_suds_participant_id     = dup_rows_other_suds$participant_id,
+                  dups_other_nonsuds_nrow            = nrow(dup_rows_other_nonsuds),
+                  dups_other_nonsuds_participant_id  = dup_rows_other_nonsuds$participant_id)
     } else {
       out <- report_dups_df(df, df_name, c("participant_id", "session_only"), "participant_id")
     }
@@ -1533,16 +1539,24 @@ flt_dat_dups_after_resolving_oa$oa$dups_nrow == 0 # None
 # Resolve multiple entries for other tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
-# Notes:
-# - For "dass21_as", "R34_cleaning_script.R" says all duplicates are multiple screening 
-# attempts, assumes entries are in order by date, and keeps the last row. "R34.ipynb"
-# says "get the latest entry for each participant" (and tries to do so by keeping most 
-# recent date for each session, but seems to inadequately sort by "date"; however, as 
-# noted above [see OASIS section] this does not ultimately seem to be an issue because 
-# sorting chronologically below led to reproduction of the scores in the clean data)
-# - For "task_log", there are multiple SUDS entries at Sessions 1, 3, 6, 8 with no "tag"
-# for before vs. after training. There are also duplicates for other entries (likely due 
-# to repeating training).
+# Notes on multiple entries in "dass21_as" and "task_log" tables:
+# - For "dass21_as", there are multiple entries at screening but not other time points
+#   - "R34_cleaning_script.R" says all duplicates are multiple screening attempts, 
+#     assumes entries are in order by date, and keeps the last row
+#   - "R34.ipynb" says "get the latest entry for each participant" (and tries to do so 
+#     by keeping most recent date for each session, but seems to inadequately sort by 
+#     "date"; however, as noted for OASIS above this does not seem to be an issue because 
+#     sorting chronologically below led to reproduction of scores in clean data)
+# - For "task_log", there are not multiple DASS-21-AS entries at screening, but multiple 
+#   SUDS entries at Sessions 1, 3, 6, 8 (with no "tag" for before vs. after training). 
+#   There are also duplicates for non-SUDS entries.
+
+flt_dat_dups_after_resolving_oa$dass21_as$dups_elig_nrow  == 59
+flt_dat_dups_after_resolving_oa$dass21_as$dups_other_nrow == 0
+
+flt_dat_dups_after_resolving_oa$task_log$dups_dass21_as_elig_nrow == 0
+flt_dat_dups_after_resolving_oa$task_log$dups_other_suds_nrow     == 1233
+flt_dat_dups_after_resolving_oa$task_log$dups_other_nonsuds_nrow  == 1337
 
 # Sort tables chronologically. Given that "dd" table lacks unique "id" for each row, 
 # sort tables on "date_as_POSIXct". Given that "task_log" table lacks "date_as_POSIXct", 
@@ -1609,6 +1623,13 @@ keep_recent_entry_list <- function(dat) {
 # Run function
 
 flt_dat <- keep_recent_entry_list(flt_dat)
+
+# Recheck for multiple unexpected entries in "dass21_as" table
+
+flt_dat_dups_after <- report_dups_list(flt_dat)
+
+flt_dat_dups_after$dass21_as$dups_elig_nrow  == 0
+flt_dat_dups_after$dass21_as$dups_other_nrow == 0
 
 # ---------------------------------------------------------------------------- #
 # Check for multiple entries in Set B ----
@@ -1698,13 +1719,13 @@ report_dups_list_b <- function(dat) {
 
 flt_dat_b_dups <- report_dups_list_b(flt_dat_b)
 
-  # Confirm no duplicates
+# Confirm no unexpected multiple entries
 
-out_vec <- c(setNames(unlist(flt_dat_b_dups$dass21_as[c("dups_elig_nrow", "dups_other_nrow")]),
-                      paste0("dass21_as_", c("dups_elig_nrow", "dups_other_nrow"))),
-             sapply(flt_dat_b_dups[names(flt_dat_b_dups) != "dass21_as"], function(x) x$dups_nrow))
+flt_dat_b_dups_nrow <- c(setNames(unlist(flt_dat_b_dups$dass21_as[c("dups_elig_nrow", "dups_other_nrow")]),
+                                  paste0("dass21_as_", c("dups_elig_nrow", "dups_other_nrow"))),
+                         sapply(flt_dat_b_dups[names(flt_dat_b_dups) != "dass21_as"], function(x) x$dups_nrow))
 
-all(out_vec) == 0
+all(flt_dat_b_dups_nrow) == 0
 
 # ---------------------------------------------------------------------------- #
 # Rename and recode columns in clean item-level baseline data ----
