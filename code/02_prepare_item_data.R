@@ -3208,7 +3208,7 @@ comparable_cols <- setdiff(names(flt_dat$credibility), c("dataset", "id"))
 identical(flt_dat$credibility[comparable_cols], flt_dat_b$credibility[comparable_cols])
 
 # ---------------------------------------------------------------------------- #
-# Finalize item-level data ----
+# Do additional cleaning to finalize item-level data ----
 # ---------------------------------------------------------------------------- #
 
 # The OA, RR, BBSIQ, DASS-21-AS, and DASS-21-DS scores; the demographics data; and
@@ -3229,30 +3229,26 @@ flt_dat_final <- flt_dat_comp_add
 
 flt_dat_final$oa <- recode_oa_session_to_expected_order(flt_dat_final$oa, skipped_only_1_oa_session_set_a_pids)
 
-# TODO: Remove scores computed above via the methods of main outcomes paper
+# Remove scores computed above via the methods of main outcomes paper
 
-# oa$oa_total
-# 
-# rr$rr_nf_mean
-# rr$rr_ns_mean
-# rr$rr_pf_mean
-# rr$rr_ps_mean
-# 
-# bbsiq$bbsiq_neg_int_mean
-# bbsiq$bbsiq_ben_int_mean
-# bbsiq$bbsiq_neg_ext_mean
-# bbsiq$bbsiq_ben_ext_mean
-# bbsiq$bbsiq_int_ratio
-# bbsiq$bbsiq_ext_ratio
-# bbsiq$bbsiq_ratio_mean
-# 
-# dass21_as$dass21_as_total_dbl
-# 
-# dass21_ds$dass21_ds_total_dbl
-
-
-
-
+for (i in 1:length(flt_dat_final)) {
+  df_name <- names(flt_dat_final)[i]
+  df <- flt_dat_final[[i]]
+  
+  rm_cols <- switch(df_name,
+                    "oa"        = "oa_total",
+                    "rr"        = c("rr_nf_mean", "rr_ns_mean", "rr_pf_mean", "rr_ps_mean"),
+                    "bbsiq"     = c("bbsiq_neg_int_mean", "bbsiq_ben_int_mean", 
+                                    "bbsiq_neg_ext_mean", "bbsiq_ben_ext_mean", 
+                                    "bbsiq_int_ratio", "bbsiq_ext_ratio", "bbsiq_ratio_mean"),
+                    "dass21_as" = "dass21_as_total_dbl",
+                    "dass21_ds" = "dass21_ds_total_dbl",
+                    NULL)
+  
+  df[rm_cols] <- NULL
+  
+  flt_dat_final[[i]] <- df
+}
 
 # Add credibility data from Set A, which is not in clean data used in the main outcomes 
 # paper but which was shown above to be identical between Sets A and B
