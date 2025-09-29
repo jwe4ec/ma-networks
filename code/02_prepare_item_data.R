@@ -1464,8 +1464,15 @@ flt_dat_dups_before <- report_dups_list(flt_dat)
 # Resolve multiple entries for "oa" table in Set A ----
 # ---------------------------------------------------------------------------- #
 
-# Investigation of multiple entries revealed that those in "oa" table were not
-# resolved by keeping the most recent entry, but by sorting each participant's 
+# Note: The following OASIS-related notes from other cleaning scripts do not apply
+# - "R34_cleaning_script.R" says all duplicates are for scam/test accounts, but none 
+#   of these are test accounts per Sonia's manually identified list of test accounts
+# - "R34.ipynb" says "get the latest entry for each participant" (and tries to do so 
+#   by most recent date for each session, but does not convert to "datetime" before
+#   sorting so may have sorted lexicographically rather than chronologically)
+
+# Rather, investigation of multiple entries revealed that those in "oa" table were 
+# not resolved by keeping the most recent entry, but by sorting each participant's 
 # entries chronologically and then recoding the session column so that it reflects 
 # the expected session order for the number of entries present for that participant
 
@@ -1526,38 +1533,16 @@ flt_dat_dups_after_resolving_oa$oa$dups_nrow == 0 # None
 # Resolve multiple entries for other tables in Set A ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Describe what was done in R34 main outcomes paper. Script "R34.ipynb"
-# seems to inadequately sort by "date" (does not first convert to "datetime") 
-# when  keeping most recent entry, but see if it's an issue once the scale scores 
-# are regenerated
-
-
-
-
-
-# dass21_as:
-# - "R34_cleaning_script.R" says all duplicates are multiple screening attempts, 
-#   assumes entries are in order by date, and keeps the last row
-# - Other script says "get the latest entry for each participant" (does so by 
-#   most recent date for each session)
-# 
-# oa:
-# - Despite what the following scripts say, the method above was ultimately used
-#   - "R34_cleaning_script.R" says all duplicates are for scam/test accounts, but none 
-#     of these are test accounts based on Sonia's manually identified list of test accounts
-#   - Other script says "get the latest entry for each participant" (does so by most 
-#     recent date for each session) and notes that 1767 has duplicated values at PRE 
-#     (not above) and then takes the sum to generate the score
-#     - ## Get the latest entry for each participant
-#     - oasis_analysis = oasis_analysis.sort_values(by="date").groupby(['participantID','session']).tail(1)
-# 
-# task_log:
-# - Multiple SUDS at Sessions 1, 3, 6, 8 with no "tag"
-# - Other duplicates (likely due to repeating training)
-
-
-
-
+# Notes:
+# - For "dass21_as", "R34_cleaning_script.R" says all duplicates are multiple screening 
+# attempts, assumes entries are in order by date, and keeps the last row. "R34.ipynb"
+# says "get the latest entry for each participant" (and tries to do so by keeping most 
+# recent date for each session, but seems to inadequately sort by "date"; however, as 
+# noted above [see OASIS section] this does not ultimately seem to be an issue because 
+# sorting chronologically below led to reproduction of the scores in the clean data)
+# - For "task_log", there are multiple SUDS entries at Sessions 1, 3, 6, 8 with no "tag"
+# for before vs. after training. There are also duplicates for other entries (likely due 
+# to repeating training).
 
 # Sort tables chronologically. Given that "dd" table lacks unique "id" for each row, 
 # sort tables on "date_as_POSIXct". Given that "task_log" table lacks "date_as_POSIXct", 
@@ -1580,6 +1565,7 @@ for (i in 1:length(flt_dat)) {
 
 # Define functions to keep the most recent entry where duplicated rows exist on 
 # target columns. "keep_recent_entry_df" is used within "keep_recent_entry_list".
+# But ultimately do not remove multiple entries from "task_log".
 
 keep_recent_entry_df <- function(df, target_cols) {
   output <- df[!duplicated(df[, target_cols], fromLast = TRUE), ]
