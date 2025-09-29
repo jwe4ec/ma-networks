@@ -1,9 +1,7 @@
 # ma-networks
 This repository contains analysis code for this project on the Open Science Framework: https://osf.io/w63br.
 
-***TODO: Reconcile differences between clean data and Set A with added data***
-***TODO: Recode session to be consecutive in OASIS table for Set A with added data***
-***TODO: Update README***
+***TODO: Finish updating README***
 
 
 
@@ -15,13 +13,23 @@ This repository contains analysis code for this project on the Open Science Fram
 
 - **General**
   - Has 807 participants (no test accounts)
-  - May be some issues with how `R34.ipynb` handled multiple entries (e.g., may have
-  sorted entries lexicographically vs. chronologically)
+  - **TODO: Comment on number of rows**
 - **OASIS data**
-  - `R34.ipynb` seems to compute total score by treating item-level responses of `NA` as 0
+  - As shown in `R34.ipynb`, computed total score by treating item-level responses of `NA` as 0
+  - 111 participants without multiple entries have one session skipped in OASIS 
+  table (see Set A below)
 - **BBSIQ data**
-  - `R34.ipynb` seems to compute negative bias score as a mean of ratios of means
+  - As shown in `R34.ipynb`, computed negative bias score as a mean of ratios of means
   (as now described in wiki of OSF project for main outcomes paper)
+- **DASS-21-AS and DASS-21-DS data**
+  - As shown in `R34.ipynb`, handled item-level missing values by imputing column median.
+  Then computed total score and multiplied it by 2.
+- **Demographics data**
+  - **TODO**
+    - See [MT-Data-ManagingAnxietyStudy](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy)
+    Issues [9](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/9#issue-3457953028)
+    and [10](https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/issues/10#issue-3458115537)
+- **No credibility data**
 
 ## Set A
 
@@ -45,13 +53,13 @@ This repository contains analysis code for this project on the Open Science Fram
     ```text
     > set_a_vs_cln_nrow
                            set_a clean diff
-    bbsiq                   1233  1229    4
+    bbsiq                   1234  1233    1
     dass21_as                871   875   -4
     dass21_ds               1175  1174    1
     demographic              807   807    0
     oa                      2574  2592  -18
     participant_export_dao   771   771    0
-    rr                      1186  1183    3
+    rr                      1186  1185    1
     ```
 - **Participant table**
   - Missing 36 participants in clean data listed as excluded from original analyses
@@ -68,8 +76,9 @@ This repository contains analysis code for this project on the Open Science Fram
     - For at least one example participant (623), Set B and clean data have same sessions
 - **DASS-21-AS table**
   - Has `sessionId`, and session column at screening has both `ELIGIBLE` and blank values
+  - Matches scores in clean data
 - **OASIS table**
-  - Matches values in clean data after handling multiple entries for 41 participants 
+  - Matches scores in clean data after handling multiple entries for 41 participants 
   (all of which in Set A were missing a session and had two entries for another session)
     - Rather than keeping most recent entry, this was done by sorting each participant's 
     OASIS entries chronologically and then recoding per the expected session order for the 
@@ -91,12 +100,17 @@ This repository contains analysis code for this project on the Open Science Fram
     was completed a few min after pretx OASIS.
       - (Participants could start S1 right after pretx but had to wait 2 days after
       completing S1 to start S2)
-    - ***TODO: Seems we should recode sessions in Set A OASIS table to be consecutive.
-      Asked Julie/Sonia/Laura/Bethany about this on 9/15/2025.***
+    - Recoded sessions in Set A OASIS table to be consecutive before exporting item-level data
 - **RR table**
-  - Matches values in clean data
+  - Matches scores in clean data
 - **BBSIQ table**
-  - Matches values in clean data
+  - Matches scores in clean data
+- **DASS-21-DS table**
+  - Matches scores in clean data
+- **Demographics table**
+  - **TODO**
+- **Credibility table**
+  - **TODO**
 
 ## Set B
 
@@ -116,12 +130,12 @@ This repository contains analysis code for this project on the Open Science Fram
     ```text
     > set_b_vs_cln_nrow
                 set_b clean diff
-    bbsiq        1232  1229    3
+    bbsiq        1233  1233    0
     dass21_as     807   913 -106
     dass21_ds    1174  1174    0
     demographic   807   807    0
     oa           2661  2679  -18
-    rr           1185  1183    2
+    rr           1185  1185    0
     ```
   - Although `imagery_prime` table has `prime` condition, no table has CBM condition
     - Perhaps could be derived from `trial_dao` table by computing proportion of
@@ -131,6 +145,7 @@ This repository contains analysis code for this project on the Open Science Fram
   - Lacks `sessionId`, and session column at screening has only `ELIGIBLE` values
   - 58 participants (not in Set A and including all 36 listed as excluded from original 
   analyses due to server error but now in clean data) have dates that are 11:14 characters
+  - Matches scores in clean data
 - **OA table**
   - 42 participants (not in Set A and including all 36 noted above) have dates that are 
   11:14 characters
@@ -144,11 +159,16 @@ This repository contains analysis code for this project on the Open Science Fram
     - Unlike in Set A, session dates in OASIS table are consistent with those in RR table,
     and sessions in Set B OASIS table are identical to those for OASIS entries in 
     Set A Task Log table
-
 - **RR table**
-  - Matches values in clean data
+  - Matches scores in clean data
 - **BBSIQ table**
-  - Matches values in clean data
+  - Matches scores in clean data
+- **DASS-21-DS table**
+  - Matches scores in clean data
+- **Demographics table**
+  - **TODO**
+- **Credibility table**
+  - **TODO**
 
 # Code
 
