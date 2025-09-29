@@ -929,7 +929,8 @@ invisible(mapply(view_date_str, sel_dat, names(sel_dat)))
 # TODO: The following columns across tables are system-generated date and time 
 # stamps. For now, assume all of these are in EST time zone (note: EST, or UTC - 
 # 5, all year, not "America/New York", which switches between EST and EDT). But
-# check this with Sonia/Dan, especially for "task_log" columns.
+# check this with Sonia/Dan, especially for "task_log" columns (which seem to be
+# an hour different from other tables' timestamps)
 
 system_date_time_cols <- c("date", "date_completed", "datetime", "corrected_datetime")
 
