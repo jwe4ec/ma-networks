@@ -1304,12 +1304,15 @@ flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 # View(flt_dat_b$oa[flt_dat_b$oa$participant_id == 623, ])
 # View(sep_dat$oa[sep_dat$oa$participant_id     == 623, ])
 
-# TODO: Continue documenting other differences in session and date values, including
-# those identified in sections below
+# In Set A, there are also such discrepancies because participants who do not have
+# multiple OASIS entries but whose OASIS session values skip one session have not 
+# yet been handled (and were not handled in the clean data used in the main outcomes 
+# paper). These cases are handled in a section below.
 
-
-
-
+# View(flt_dat$oa[flt_dat$oa$participant_id == 617, ])
+# View(flt_dat$task_log[flt_dat$task_log$participant_id == 617 & flt_dat$task_log$task_name == "OA", ])
+# View(flt_dat_b$oa[flt_dat_b$oa$participant_id == 617, ])
+# View(sep_dat$oa[sep_dat$oa$participant_id     == 617, ])
 
 # ---------------------------------------------------------------------------- #
 # Check for multiple entries in Set A ----
@@ -1319,7 +1322,7 @@ flt_dat_b <- filter_all_data(sel_dat_b, cln_participant_ids)
 # column except "X" and "id"), keep only the last row after sorting by "id" for
 # tables that contain "id" (throw error if "participant_export_dao", which lacks
 # "id", contains multiple rows per "participant_id", in which case it will need 
-# to be sorted and have its rows consolidated).
+# to be sorted and have its rows consolidated)
 
 flt_dat_nrow_before <- sapply(flt_dat, nrow)
 
