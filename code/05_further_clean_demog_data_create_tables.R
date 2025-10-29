@@ -24,12 +24,8 @@
 #   - "Script0_Demographics.R" (https://osf.io/uv5jm)
 
 # ---------------------------------------------------------------------------- #
-# Store working directory, check correct R version, load packages ----
+# Check correct R version and load packages ----
 # ---------------------------------------------------------------------------- #
-
-# Store working directory
-
-wd_dir <- getwd()
 
 # Load custom functions
 
