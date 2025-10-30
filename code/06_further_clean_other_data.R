@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -28,25 +28,21 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-# Import data with final analysis sample
+# Clean data
 
-load("./data/intermediate/net_dat_all_to_s6.RData")
-
-# Import restricted credibility data
-
-  # TODO: Update with new "_rest.csv" file (instead of "_rest2.csv")
-
-
-
-
-
-credibility_raw_rest2 <- read.csv("./data/intermediate/credibility_raw_rest2.csv")
+cln_dat <- readRDS(file.path("data", "processed", "cln_dat.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Further clean credibility data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Restrict to final analysis sample
+# Extract credibility data, which is available for 803 participants
+
+cred_dat <- cln_dat$credibility
+
+stopifnot(nrow(cred_dat) == 803)
+
+# TODO (prepare data to search for auxiliary variables)
 
 
 
