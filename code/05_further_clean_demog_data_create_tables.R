@@ -7,21 +7,8 @@
 # Notes ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Review demographics code from dissertation and revise this script as needed
-
-
-
-
-
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
 # directory to parent folder
-
-# Other demographics cleaning and analysis scripts for reference:
-# - On GitHub (https://github.com/TeachmanLab/MT-Data-ManagingAnxietyStudy/tree/master/Data%20Cleaning)
-#   - "R34_cleaning_script.R"
-#   - "R34.ipynb"
-# - On MA main outcomes paper OSF project
-#   - "Script0_Demographics.R" (https://osf.io/uv5jm)
 
 # ---------------------------------------------------------------------------- #
 # Check correct R version and load packages ----
@@ -29,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -42,150 +29,128 @@ groundhog.library(pkgs, groundhog_day)
 
 # Set "flextable" package defaults
 
-source("./code/01b_set_flextable_defaults.R")
+source(file.path("code", "01b_set_flextable_defaults.R"))
 
 # ---------------------------------------------------------------------------- #
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-# Import data with final analysis sample
+processed_path <- file.path("data", "processed")
 
-net_dat_all_to_s6_wide <- read.csv(file = "./data/intermediate/net_dat_all_to_s6_wide.csv")
+# Clean data
 
-# Import restricted clean demographics data
+cln_dat <- readRDS(file.path(processed_path, "cln_dat.rds"))
 
-  # TODO: Update with new "_rest_add.csv" file (instead of "_rest2.csv")
+# Network data
 
-
-
-
-
-dem_dat <- read.csv("./data/intermediate/demographics_cln_rest2.csv")
+net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
+net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
 
 # ---------------------------------------------------------------------------- #
-# Rename columns ----
+# Extract demographics table ----
 # ---------------------------------------------------------------------------- #
 
-# Remove "demographic_" from column names
+dem_dat <- cln_dat$demographic
 
-names(dem_dat) <- sub("demographic_", "", names(dem_dat))
+# Demographics are available for all 807 ITT participants
+
+stopifnot(nrow(dem_dat) == 807)
 
 # ---------------------------------------------------------------------------- #
 # Clean age ----
 # ---------------------------------------------------------------------------- #
 
-# Range is from 18 to 91, which is reasonable
+stopifnot(
+  # Range is from 18 to 91, which is reasonable
+  
+  range(dem_dat$age, na.rm = TRUE) == c(18, 91),
 
-range(dem_dat$age, na.rm = TRUE) == c(18, 91)
+  # Per "TeachmanLab/MT-Data-ManagingAnxietyStudy-Cleaning" repo, weird "birthYear" 
+  # values (0 or 2222) were recoded to NA
 
-# "R34_cleaning_script.R" and "R34.ipynb" scripts suggest that some "birthYear" 
-# values were 0 or 2222 (and recoded these as NA)
+  sum(is.na(dem_dat$age)) == 2,
 
-sum(is.na(dem_dat$age)) == 12
+  # All NAs in "age" are due to "birthYear" of NA
 
-# All NAs in "age" are due to "birthYear" of NA
-
-all(is.na(dem_dat$birthYear[is.na(dem_dat$age)]))
+  all(is.na(dem_dat$birthYear[is.na(dem_dat$age)]))
+)
 
 # ---------------------------------------------------------------------------- #
 # Clean gender ----
 # ---------------------------------------------------------------------------- #
 
-# 1 participant is missing gender due to an apparent server issue
+dem_dat$gender <- factor(dem_dat$gender,
+  levels = c("Female", "Male", "Transgender", "Other", "Prefer not to answer", 
+             "Missing (server issue)"))
 
-missing_server_issue <- "Missing (server issue)"
+# 1 participant is missing gender due to server issue
 
-dem_dat$gender[dem_dat$gender == ""] <- missing_server_issue
+server_issue <- "Missing (server issue)"
 
-dem_dat$gender <- 
-  factor(dem_dat$gender,
-         levels = c("Female", "Male", "Transgender", "Other", 
-                    "Prefer not to answer", missing_server_issue))
-
-dem_dat$participant_id[dem_dat$gender == missing_server_issue] == 430
+stopifnot(dem_dat$participant_id[dem_dat$gender == server_issue] == 430)
 
 # ---------------------------------------------------------------------------- #
 # Clean education ----
 # ---------------------------------------------------------------------------- #
 
-# 2 participants are missing education due to an apparent server issue
+dem_dat$education <- factor(dem_dat$education,
+  levels = c("Elementary School", "Junior High", "Some High School", "High School Graduate", 
+             "Some College", "Associate's Degree", "Bachelor's Degree", "Some Graduate School", 
+             "Master's Degree", "M.B.A.", "J.D.", "M.D.", "Ph.D.", "Other Advanced Degree", 
+             "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$education[dem_dat$education %in% c("", "????")] <- missing_server_issue
-dem_dat$education[dem_dat$education %in% c("Diploma di scuola superiore", 
-                                           "Un lyc̩e")] <- "High School Graduate"
+# 2 participants are missing education due to a server issue
 
-dem_dat$education <- 
-  factor(dem_dat$education,
-         levels = c("Elementary School", "Junior High", "Some High School", "High School Graduate", 
-                    "Some College", "Associate's Degree", "Bachelor's Degree",
-                    "Some Graduate School", "Master's Degree", "M.B.A.", "J.D.", 
-                    "M.D.", "Ph.D.", "Other Advanced Degree", 
-                    "Prefer not to answer", missing_server_issue))
-
-dem_dat$participant_id[dem_dat$education == missing_server_issue] == c(430, 782)
+stopifnot(dem_dat$participant_id[dem_dat$education == server_issue] == c(430, 782))
 
 # ---------------------------------------------------------------------------- #
 # Clean ethnicity ----
 # ---------------------------------------------------------------------------- #
 
-# 3 participants are missing ethnicity due to an apparent server issue
+dem_dat$ethnicity <- factor(dem_dat$ethnicity,
+  levels = c("Hispanic or Latino", "Not Hispanic or Latino", "Unknown", 
+             "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$ethnicity[dem_dat$ethnicity == ""] <- missing_server_issue
+# 3 participants are missing ethnicity due to a server issue
 
-dem_dat$ethnicity <- 
-  factor(dem_dat$ethnicity,
-         levels = c("Hispanic or Latino", "Not Hispanic or Latino", 
-                    "Unknown", "Prefer not to answer", missing_server_issue))
-
-dem_dat$participant_id[dem_dat$ethnicity == missing_server_issue] == c(430, 782, 792)
+stopifnot(dem_dat$participant_id[dem_dat$ethnicity == server_issue] == c(430, 782, 792))
 
 # ---------------------------------------------------------------------------- #
 # Clean employment status ----
 # ---------------------------------------------------------------------------- #
 
-# 3 participants are missing employment status due to an apparent server issue
-
-dem_dat$employmentStatus[dem_dat$employmentStatus == ""] <- missing_server_issue
-
 homemaker <- "Homemaker/keeping house or raising children full-time"
 dem_dat$employmentStatus[dem_dat$employmentStatus == homemaker] <- "Homemaker"
 
-dem_dat$employmentStatus <- 
-  factor(dem_dat$employmentStatus,
-         levels = c("Student", "Homemaker", "Unemployed or laid off", "Looking for work",
-                    "Working part-time", "Working full-time", "Retired", "Other",
-                    "Prefer not to answer", missing_server_issue))
+dem_dat$employmentStatus <- factor(dem_dat$employmentStatus,
+  levels = c("Student", "Homemaker", "Unemployed or laid off", "Looking for work",
+             "Working part-time", "Working full-time", "Retired", "Other",
+             "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$participant_id[dem_dat$employmentStatus == missing_server_issue] == c(430, 555, 782)
+# 3 participants are missing employment status due to a server issue
+
+stopifnot(dem_dat$participant_id[dem_dat$employmentStatus == server_issue] == c(430, 555, 782))
 
 # ---------------------------------------------------------------------------- #
 # Clean income ----
 # ---------------------------------------------------------------------------- #
 
-# 1 participant is missing income due to an apparent server issue
-
-dem_dat$income[dem_dat$income == ""] <- missing_server_issue
 dem_dat$income[dem_dat$income == "Don't know"] <- "Unknown"
 
-dem_dat$income <-
-  factor(dem_dat$income,
-         levels = c("Less than $5,000", "$5,000 through $11,999", 
-                    "$12,000 through $15,999", "$16,000 through $24,999", 
-                    "$25,000 through $34,999", "$35,000 through $49,999",
-                    "$50,000 through $74,999", "$75,000 through $99,999",
-                    "$100,000 through $149,999", "$150,000 through $199,999",
-                    "$200,000 through $249,999", "$250,000 or greater",
-                    "Unknown", "Prefer not to answer", missing_server_issue))
+dem_dat$income <- factor(dem_dat$income,
+  levels = c("Less than $5,000", "$5,000 through $11,999", "$12,000 through $15,999", 
+             "$16,000 through $24,999", "$25,000 through $34,999", "$35,000 through $49,999",
+             "$50,000 through $74,999", "$75,000 through $99,999", "$100,000 through $149,999", 
+             "$150,000 through $199,999", "$200,000 through $249,999", "$250,000 or greater",
+             "Unknown", "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$participant_id[dem_dat$income == missing_server_issue] == 782
+# 1 participant is missing income due to a server issue
+
+stopifnot(dem_dat$participant_id[dem_dat$income == server_issue] == 782)
 
 # ---------------------------------------------------------------------------- #
 # Clean marital status ----
 # ---------------------------------------------------------------------------- #
-
-# 3 participants are missing marital status due to an apparent server issue
-
-dem_dat$maritalStatus[dem_dat$maritalStatus == ""] <- missing_server_issue
 
 civil_union   <- "In a domestic or civil union"
 dating        <- "Single, but casually dating"
@@ -197,49 +162,45 @@ dem_dat$maritalStatus[dem_dat$maritalStatus == dating]        <- "Dating"
 dem_dat$maritalStatus[dem_dat$maritalStatus == engaged]       <- "Engaged"
 dem_dat$maritalStatus[dem_dat$maritalStatus == marriage_like] <- "In marriage-like relationship"
 
-dem_dat$maritalStatus <-
-  factor(dem_dat$maritalStatus,
-         levels = c("Single", "Dating", "Engaged", "In marriage-like relationship",
-                    "Married", "In domestic or civil union", "Separated", "Divorced", 
-                    "Widow/widower", "Other", "Prefer not to answer", missing_server_issue))
+dem_dat$maritalStatus <- factor(dem_dat$maritalStatus,
+  levels = c("Single", "Dating", "Engaged", "In marriage-like relationship",
+             "Married", "In domestic or civil union", "Separated", "Divorced", 
+             "Widow/widower", "Other", "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$participant_id[dem_dat$maritalStatus == missing_server_issue] == c(430, 782, 900)
+# 3 participants are missing marital status due to a server issue
+
+stopifnot(dem_dat$participant_id[dem_dat$maritalStatus == server_issue] == c(430, 782, 900))
 
 # ---------------------------------------------------------------------------- #
 # Clean race ----
 # ---------------------------------------------------------------------------- #
 
-# 2 participants are missing race due to an apparent server issue
+dem_dat$race <- factor(dem_dat$race,
+  levels = c("American Indian/Alaska Native", "Black/African origin", "East Asian",
+             "Native Hawaiian/Pacific Islander", "South Asian", "White/European origin", 
+             "Other or Unknown", "Prefer not to answer", "Missing (server issue)"))
 
-dem_dat$race[dem_dat$race == ""] <- missing_server_issue
+# 2 participants are missing race due to a server issue
 
-dem_dat$race <-
-  factor(dem_dat$race,
-         levels = c("American Indian/Alaska Native", "Black/African origin", "East Asian",
-                    "Native Hawaiian/Pacific Islander", "South Asian", "White/European origin", 
-                    "Other or Unknown", "Prefer not to answer", missing_server_issue))
-
-dem_dat$participant_id[dem_dat$race == missing_server_issue] == c(430, 782)
+stopifnot(dem_dat$participant_id[dem_dat$race == server_issue] == c(430, 782))
 
 # ---------------------------------------------------------------------------- #
 # Clean country ----
 # ---------------------------------------------------------------------------- #
 
-# 1 participant is missing country due to an apparent server issue
-
-dem_dat$residenceCountry[dem_dat$residenceCountry == ""] <- missing_server_issue
-
 pna <- "Prefer not to answer"
 dem_dat$residenceCountry[dem_dat$residenceCountry == "NoAnswer"] <- pna
 
-dem_dat$participant_id[dem_dat$residenceCountry == missing_server_issue] == 782
+# 1 participant is missing country due to a server issue
+
+stopifnot(dem_dat$participant_id[dem_dat$residenceCountry == server_issue] == 782)
 
 # Define desired levels order (decreasing frequency ending with "Prefer not to answer"
 # and "Missing (server issue)")
 
 country_levels <- names(sort(table(dem_dat$residenceCountry), decreasing = TRUE))
-country_levels <- c(country_levels[!(country_levels %in% c(pna, missing_server_issue))], 
-                    pna, missing_server_issue)
+end_levels     <- c(pna, server_issue)
+country_levels <- c(setdiff(country_levels, end_levels), end_levels)
 
 # Reorder levels
 
@@ -247,11 +208,9 @@ dem_dat$residenceCountry <- factor(dem_dat$residenceCountry, levels = country_le
 
 # Define "country_col", collapsing countries with fewer than 10 participants into "Other"
 
-top_countries <- names(table(dem_dat$residenceCountry)[as.numeric(table(dem_dat$residenceCountry)) > 10])
+top_countries <- names(table(dem_dat$residenceCountry))[table(dem_dat$residenceCountry) > 10]
 
-all(top_countries == c("United States", "Canada", "United Kingdom"))
-
-dem_dat$residenceCountry_col <- NA
+stopifnot(top_countries == c("United States", "Canada", "United Kingdom"))
 
 for (i in 1:nrow(dem_dat)) {
   if (is.na(dem_dat$residenceCountry[i])) {
@@ -260,8 +219,8 @@ for (i in 1:nrow(dem_dat)) {
     dem_dat$residenceCountry_col[i] <- as.character(dem_dat$residenceCountry)[i]
   } else if (as.character(dem_dat$residenceCountry)[i] == pna) {
     dem_dat$residenceCountry_col[i] <- pna
-  } else if (as.character(dem_dat$residenceCountry)[i] == missing_server_issue) {
-    dem_dat$residenceCountry_col[i] <- missing_server_issue
+  } else if (as.character(dem_dat$residenceCountry)[i] == server_issue) {
+    dem_dat$residenceCountry_col[i] <- server_issue
   } else {
     dem_dat$residenceCountry_col[i] <- "Other"
   }
@@ -269,35 +228,48 @@ for (i in 1:nrow(dem_dat)) {
 
 # Reorder levels of "country_col"
 
-dem_dat$residenceCountry_col <-
-  factor(dem_dat$residenceCountry_col,
-         levels = c(top_countries, "Other", pna, missing_server_issue))
+dem_dat$residenceCountry_col <- factor(dem_dat$residenceCountry_col,
+  levels = c(top_countries, "Other", pna, server_issue))
 
 # ---------------------------------------------------------------------------- #
 # Create demographics tables ----
 # ---------------------------------------------------------------------------- #
 
-dem_tbl <- dem_dat
+# Create two demographics tables: (a) one for all ITT participants and (b) one for 
+# participants with complete data across target waves (baseline, Session 3, Session 
+# 6) in the RR or BBSIQ network datasets
 
-# Restrict to analysis sample
+dem_tbl_itt <- dem_dat
 
-dem_tbl <- dem_tbl[dem_tbl$participant_id %in% net_dat_all_to_s6_wide$participant_id, ]
+# Add condition columns
 
-# Add condition and indicator of complete data across baseline, Session 3, and Session 6
+dem_tbl_itt <- merge(dem_tbl_itt,
+                     cln_dat$participant[c("participant_id", "cbmCondition", "prime")], 
+                     "participant_id", all.x = TRUE)
 
-dem_tbl <- merge(dem_tbl,
-                 net_dat_all_to_s6_wide[c("participant_id", "cbmCondition", "prime", "complete_bl_s3_s6")], 
-                 "participant_id", all.x = TRUE)
+# Order CBM-I condition levels
 
-# Order condition levels
+dem_tbl_itt$cbmCondition <- factor(dem_tbl_itt$cbmCondition,
+                                   levels = c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL"))
 
-dem_tbl$cbmCondition <- factor(dem_tbl$cbmCondition,
-                               levels = c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL"))
+# Create table for 112 participants with complete data across target waves in any network dataset
 
-# Restrict to ITT and completer samples
+complete_col_rr_net <- net_dat_rr_all_to_s6_wide[c("participant_id", "complete_bl_s3_s6")]
+complete_col_bb_net <- net_dat_bb_all_to_s6_wide[c("participant_id", "complete_bl_s3_s6")]
 
-dem_tbl_itt <- dem_tbl
-dem_tbl_complete_bl_s3_s6 <- dem_tbl[dem_tbl$complete_bl_s3_s6 == 1, ]
+names(complete_col_rr_net)[names(complete_col_rr_net) == "complete_bl_s3_s6"] <- "complete_bl_s3_s6_rr_net"
+names(complete_col_bb_net)[names(complete_col_bb_net) == "complete_bl_s3_s6"] <- "complete_bl_s3_s6_bb_net"
+
+dem_tbl_itt <- merge(dem_tbl_itt, complete_col_rr_net, "participant_id", all.x = TRUE)
+dem_tbl_itt <- merge(dem_tbl_itt, complete_col_bb_net, "participant_id", all.x = TRUE)
+
+dem_tbl_itt$complete_bl_s3_s6_any_net <- as.integer((!is.na(dem_tbl_itt$complete_bl_s3_s6_rr_net) & 
+                                                       dem_tbl_itt$complete_bl_s3_s6_rr_net == 1) |
+                                                       dem_tbl_itt$complete_bl_s3_s6_bb_net == 1)
+
+dem_tbl_complete_bl_s3_s6_any_net <- dem_tbl_itt[dem_tbl_itt$complete_bl_s3_s6_any_net == 1, ]
+
+stopifnot(nrow(dem_tbl_complete_bl_s3_s6_any_net) == 112)
 
 # Define function to compute descriptives
 
@@ -325,7 +297,7 @@ compute_desc <- function(df) {
                            value = paste0(sum(is.na(df$age)),
                                           " (",
                                           format(round((sum(is.na(df$age)) / length(df$age)) * 100, 1),
-                                                nsmall = 1, trim = TRUE),
+                                                 nsmall = 1, trim = TRUE),
                                           ")"))
   
   # Compute count and percentage for factor variables
@@ -339,15 +311,18 @@ compute_desc <- function(df) {
   fct_res <- data.frame()
   
   for (i in 1:length(vars)) {
-    tbl <- table(df[, vars[i]])
-    prop_tbl <- prop.table(tbl) * 100
+    var       <- vars[i]
+    var_label <- var_labels[i]
     
-    tbl_res <- rbind(data.frame(label = var_labels[i],
+    tbl <- table(df[[var]])
+    perc_tbl <- prop.table(tbl) * 100
+    
+    tbl_res <- rbind(data.frame(label = var_label,
                                 value = NA),
                      data.frame(label = names(tbl),
                                 value = paste0(as.numeric(tbl),
                                                " (", 
-                                               format(round(as.numeric(prop_tbl), 1),
+                                               format(round(as.numeric(perc_tbl), 1),
                                                       nsmall = 1, trim = TRUE),
                                                ")")))
     fct_res <- rbind(fct_res, tbl_res)
@@ -366,10 +341,12 @@ compute_desc_by_cond <- function(df) {
   conditions <- levels(droplevels(df$cbmCondition))
   
   for (i in 1:length(conditions)) {
-    df_cond <- df[df$cbmCondition == conditions[i], ]
+    condition <- conditions[i]
+    
+    df_cond <- df[df$cbmCondition == condition, ]
     
     cond_res <- compute_desc(df_cond)
-    names(cond_res)[names(cond_res) == "value"] <- conditions[i]
+    names(cond_res)[names(cond_res) == "value"] <- condition
     
     if (i == 1) {
       res_by_cond <- cond_res
@@ -390,20 +367,19 @@ res_itt_across_cond <- compute_desc(dem_tbl_itt)
 # Compute descriptives by condition for the ITT and completer samples
 
 res_itt_by_cond <- compute_desc_by_cond(dem_tbl_itt)
-res_complete_bl_s3_s6_by_cond <- compute_desc_by_cond(dem_tbl_complete_bl_s3_s6)
+res_complete_bl_s3_s6_any_net_by_cond <- compute_desc_by_cond(dem_tbl_complete_bl_s3_s6_any_net)
 
 # Save tables to CSV
 
-dem_path <- "./results/demographics/"
-
+dem_path <- file.path("results", "demographics")
 dir.create(dem_path)
 
 write.csv(res_itt_across_cond,
-          paste0(dem_path, "itt_across_cond.csv"), row.names = FALSE)
+          file.path(dem_path, "itt_across_cond.csv"), row.names = FALSE)
 write.csv(res_itt_by_cond,
-          paste0(dem_path, "itt_by_cond.csv"), row.names = FALSE)
-write.csv(res_complete_bl_s3_s6_by_cond, 
-          paste0(dem_path, "complete_bl_s3_s6_by_cond.csv"), row.names = FALSE)
+          file.path(dem_path, "itt_by_cond.csv"), row.names = FALSE)
+write.csv(res_complete_bl_s3_s6_any_net_by_cond, 
+          file.path(dem_path, "complete_bl_s3_s6_any_net_by_cond.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Format demographics tables ----
@@ -413,7 +389,7 @@ write.csv(res_complete_bl_s3_s6_by_cond,
 
 # Define function to format demographics tables
 
-format_dem_tbl <- function(dem_tbl, gen_note, footnotes, title) {
+format_dem_tbl <- function(dem_tbl, gen_note, footnotes, title, sample = NULL) {
   # Format "label" column using Markdown
   
   dem_tbl$label_md <- dem_tbl$label
@@ -449,11 +425,11 @@ format_dem_tbl <- function(dem_tbl, gen_note, footnotes, title) {
   # Define columns
   
   left_align_body_cols <- "label_md"
-  target_cols <- names(dem_tbl)[names(dem_tbl) != "label"]
+  target_cols <- setdiff(names(dem_tbl), "label")
   
   # Create flextable
   
-  dem_tbl_ft <- flextable(dem_tbl[, target_cols]) |>
+  dem_tbl_ft <- flextable(dem_tbl[target_cols]) |>
     set_table_properties(align = "left") |>
     
     set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
@@ -474,17 +450,22 @@ format_dem_tbl <- function(dem_tbl, gen_note, footnotes, title) {
 
     colformat_md(j = "label_md", part = "body") |>
     
-    add_footer_lines(gen_note) |>
-    
-    footnote(i = age_missing_row_idx,
-             j = 1,
-             value = as_paragraph_md(footnotes$age_missing),
-             ref_symbols = " a",
-             part = "body") |>
+    add_footer_lines(gen_note)
+  
+  if (!is.null(sample) && sample == "itt") {
+    dem_tbl_ft <- dem_tbl_ft |>
+      footnote(i = age_missing_row_idx,
+               j = 1,
+               value = as_paragraph_md(footnotes$age_missing),
+               ref_symbols = footnotes$age_missing_ref_symbol,
+               part = "body")
+  }
+  
+  dem_tbl_ft <- dem_tbl_ft |>
     footnote(i = country_other_row_idx,
              j = 1,
              value = as_paragraph_md(footnotes$country_other),
-             ref_symbols = " b",
+             ref_symbols = footnotes$country_other_ref_symbol,
              part = "body") |>
     
     autofit()
@@ -492,25 +473,44 @@ format_dem_tbl <- function(dem_tbl, gen_note, footnotes, title) {
 
 # Define notes
 
-gen_note <- as_paragraph_md("*Note.* CBM-I = cognitive bias modification for interpretation.")
+gen_note_itt <- as_paragraph_md("*Note.* CBM-I = cognitive bias modification for interpretation.")
 
-footnotes <- list(age_missing   = paste0("\\ Per Ji et al. (2021), ages were treated as missing for 
-                                         participants whose birth years were reported as 0 or 2222."),
-                  country_other = "\\ Countries with fewer than 10 participants were collapsed into Other.")
+gen_note_complete_bl_s3_s6_any_net <- as_paragraph_md(
+  "*Note.* Characteristics are shown for participants with complete data at baseline, Session 3, and
+  Session 6 for the Overall Anxiety Severity and Impairment Scale and for Recognition Ratings or the
+  Brief Body Sensations Interpretations Questionnaire. CBM-I = cognitive bias modification for interpretation.")
+
+country_other <- "\\ Countries with fewer than 10 participants were collapsed into Other."
+
+footnotes_itt <- list(age_missing   = paste0("\\ Per Ji et al. (2021), ages were treated as missing for 
+                                             participants whose birth years were reported as 0 or 2222."),
+                      age_missing_ref_symbol = " a",
+                      country_other = country_other,
+                      country_other_ref_symbol = " b")
+
+footnotes_complete_bl_s3_s6_any_net <- list(country_other = country_other,
+                                            country_other_ref_symbol = " a")
 
 # Run function
 
-dem_tbl_itt_by_cond_ft <-
-  format_dem_tbl(res_itt_by_cond, gen_note, footnotes,
-                 "Demographic Characteristics by Treatment Arm for Intent-To-Treat Sample")
+dem_tbl_itt_by_cond_ft <- 
+  format_dem_tbl(res_itt_by_cond, 
+                 gen_note_itt, 
+                 footnotes_itt,
+                 "Demographic Characteristics by Treatment Condition for Intent-To-Treat Sample",
+                 "itt")
 
-dem_tbl_complete_bl_s3_s6_by_cond_ft <-
-  format_dem_tbl(res_complete_bl_s3_s6_by_cond, gen_note, footnotes,
-                 "Demographic Characteristics by Treatment Arm for Completer Sample")
+dem_tbl_complete_bl_s3_s6_any_net_by_cond_ft <-
+  format_dem_tbl(res_complete_bl_s3_s6_any_net_by_cond, 
+                 gen_note_complete_bl_s3_s6_any_net, 
+                 footnotes_complete_bl_s3_s6_any_net,
+                 "Demographic Characteristics by Treatment Condition for Completer Sample")
 
 # ---------------------------------------------------------------------------- #
 # Save flextables ----
 # ---------------------------------------------------------------------------- #
 
-save(dem_tbl_itt_by_cond_ft,               file = paste0(dem_path, "dem_tbl_itt_by_cond_ft.RData"))
-save(dem_tbl_complete_bl_s3_s6_by_cond_ft, file = paste0(dem_path, "dem_tbl_complete_bl_s3_s6_by_cond_ft.RData"))
+saveRDS(dem_tbl_itt_by_cond_ft,
+        file.path(dem_path, "dem_tbl_itt_by_cond_ft.RData"))
+saveRDS(dem_tbl_complete_bl_s3_s6_any_net_by_cond_ft,
+        file.path(dem_path, "dem_tbl_complete_bl_s3_s6_any_net_by_cond_ft.RData"))
