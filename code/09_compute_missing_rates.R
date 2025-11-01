@@ -47,16 +47,12 @@ desc_tbl_by_cond_itt_any_net <- readRDS(file.path(desc_path, "desc_tbl_by_cond_i
 # Compute rates of item-level missingness for ITT participants ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Restrict "dat" in functions below to baseline through Session 6
-
-
-
-
-
 # Define function to compute percentage of scale scores computed with at least 
 # one item missing for given outcome
 
-compute_some_item_missingness <- function(dat, outcome, items) {
+compute_some_item_missingness <- function(dat, outcome, items, time_pts = NULL) {
+  if (!is.null(time_pts)) dat <- dat[dat$session_only %in% time_pts, ]
+
   denom <- sum(!is.na(dat[[outcome]]))
   
   rows_at_least_one_item_na <- rowSums(is.na(dat[items])) > 0
@@ -67,10 +63,13 @@ compute_some_item_missingness <- function(dat, outcome, items) {
   prop <- numer / denom
   perc <- prop * 100
   
-  cat(outcome, ": ", perc, "%", "\n", sep = "")
+  cat(outcome, " at ", paste(time_pts, collapse = ", "), ": ", 
+      perc, "%", "\n", sep = "")
 }
 
 # Run function for ITT participants and write results
+
+time_pts <- c("PRE", paste0("SESSION", c(3, 6)))
 
 missing_rates_path <- file.path("results", "missing_rates")
 dir.create(missing_rates_path)
@@ -79,16 +78,18 @@ sink(file.path(missing_rates_path, "some_item_missingness.txt"))
 
 cat("Percentages of Scale Scores Computed With At Least One Item Missing:", "\n\n")
 
-compute_some_item_missingness(cln_dat$rr,    "rr_neg_thr_mean",     items$rr_neg_thr)
-compute_some_item_missingness(cln_dat$rr,    "rr_pos_thr_mean_rev", items$rr_pos_thr)
-compute_some_item_missingness(cln_dat$bbsiq, "bbsiq_neg_mean",      items$bbsiq_neg)
+compute_some_item_missingness(cln_dat$rr,    "rr_neg_thr_mean",     items$rr_neg_thr, time_pts)
+compute_some_item_missingness(cln_dat$rr,    "rr_pos_thr_mean_rev", items$rr_pos_thr, time_pts)
+compute_some_item_missingness(cln_dat$bbsiq, "bbsiq_neg_mean",      items$bbsiq_neg,  time_pts)
 
 sink()
 
 # Define function to compute number of scale scores missing due to endorsements
 # of "prefer not to answer" for all items
 
-compute_all_item_missingness <- function(dat, outcome, items) {
+compute_all_item_missingness <- function(dat, outcome, items, time_pts = NULL) {
+  if (!is.null(time_pts)) dat <- dat[dat$session_only %in% time_pts, ]
+  
   rows_all_items_na     <- rowSums(!is.na(dat[items])) == 0
   num_rows_all_items_na <- sum(rows_all_items_na)
   
@@ -100,7 +101,8 @@ compute_all_item_missingness <- function(dat, outcome, items) {
                    "number of scale scores with values of NA", "\n"))
   }
   
-  cat(outcome, ": ", num_rows_all_items_na, "\n", sep = "")
+  cat(outcome, " at ", paste(time_pts, collapse = ", "), ": ",
+      num_rows_all_items_na, "\n", sep = "")
   
   print(table(dat[rows_all_items_na, "session_only"]))
   cat("\n", "-----", "\n\n")
@@ -112,9 +114,9 @@ sink(file.path(missing_rates_path, "all_item_missingness.txt"))
 
 cat("Number of Scale Scores Missing Due to 'Prefer Not to Answer' for All Items:", "\n\n")
 
-compute_all_item_missingness(cln_dat$rr,    "rr_neg_thr_mean",     items$rr_neg_thr)
-compute_all_item_missingness(cln_dat$rr,    "rr_pos_thr_mean_rev", items$rr_pos_thr)
-compute_all_item_missingness(cln_dat$bbsiq, "bbsiq_neg_mean",      items$bbsiq_neg)
+compute_all_item_missingness(cln_dat$rr,    "rr_neg_thr_mean",     items$rr_neg_thr, time_pts)
+compute_all_item_missingness(cln_dat$rr,    "rr_pos_thr_mean_rev", items$rr_pos_thr, time_pts)
+compute_all_item_missingness(cln_dat$bbsiq, "bbsiq_neg_mean",      items$bbsiq_neg,  time_pts)
 
 sink()
 
