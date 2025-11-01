@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Compute Scores
+# Further clean data
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -29,6 +29,8 @@ groundhog_day <- version_control()
 # ---------------------------------------------------------------------------- #
 
 processed_path <- file.path("data", "processed")
+
+# Intermediate clean data
 
 int_cln_dat <- readRDS(file.path(processed_path, "int_cln_dat.rds"))
 
@@ -132,6 +134,15 @@ cln_dat$rr$rr_pos_thr_mean_rev <- 3 - cln_dat$rr$rr_pos_thr_mean
 # BBSIQ
 
 cln_dat$bbsiq$bbsiq_neg_mean <- rowMeans(cln_dat$bbsiq[bbsiq_neg_items], na.rm = TRUE)
+
+# ---------------------------------------------------------------------------- #
+# Order CBM-I condition levels ----
+# ---------------------------------------------------------------------------- #
+
+cln_dat$participant$cbmCondition <- factor(cln_dat$participant$cbmCondition,
+  levels = c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL"))
+
+stopifnot(all(!is.na(cln_dat$participant$cbmCondition)))
 
 # ---------------------------------------------------------------------------- #
 # Export data and helper items list ----

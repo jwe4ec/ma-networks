@@ -41,10 +41,9 @@ processed_path <- file.path("data", "processed")
 
 cln_dat <- readRDS(file.path(processed_path, "cln_dat.rds"))
 
-# Network data
+# Overall network dataset
 
-net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
-net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
+net_dat_all_to_s6 <- readRDS(file.path(processed_path, "net_dat_all_to_s6.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Extract demographics table ----
@@ -237,7 +236,7 @@ dem_dat$residenceCountry_col <- factor(dem_dat$residenceCountry_col,
 
 # Create two demographics tables: (a) one for all ITT participants and (b) one for 
 # participants with complete data across target waves (baseline, Session 3, Session 
-# 6) in the RR or BBSIQ network datasets
+# 6) in RR or BBSIQ network datasets
 
 dem_tbl_itt <- dem_dat
 
@@ -247,25 +246,11 @@ dem_tbl_itt <- merge(dem_tbl_itt,
                      cln_dat$participant[c("participant_id", "cbmCondition", "prime")], 
                      "participant_id", all.x = TRUE)
 
-# Order CBM-I condition levels
-
-dem_tbl_itt$cbmCondition <- factor(dem_tbl_itt$cbmCondition,
-                                   levels = c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL"))
-
 # Create table for 112 participants with complete data across target waves in any network dataset
 
-complete_col_rr_net <- net_dat_rr_all_to_s6_wide[c("participant_id", "complete_bl_s3_s6")]
-complete_col_bb_net <- net_dat_bb_all_to_s6_wide[c("participant_id", "complete_bl_s3_s6")]
+indicator_dat <- unique(net_dat_all_to_s6[c("participant_id", "complete_bl_s3_s6_any_net")])
 
-names(complete_col_rr_net)[names(complete_col_rr_net) == "complete_bl_s3_s6"] <- "complete_bl_s3_s6_rr_net"
-names(complete_col_bb_net)[names(complete_col_bb_net) == "complete_bl_s3_s6"] <- "complete_bl_s3_s6_bb_net"
-
-dem_tbl_itt <- merge(dem_tbl_itt, complete_col_rr_net, "participant_id", all.x = TRUE)
-dem_tbl_itt <- merge(dem_tbl_itt, complete_col_bb_net, "participant_id", all.x = TRUE)
-
-dem_tbl_itt$complete_bl_s3_s6_any_net <- as.integer((!is.na(dem_tbl_itt$complete_bl_s3_s6_rr_net) & 
-                                                       dem_tbl_itt$complete_bl_s3_s6_rr_net == 1) |
-                                                       dem_tbl_itt$complete_bl_s3_s6_bb_net == 1)
+dem_tbl_itt <- merge(dem_tbl_itt, indicator_dat, "participant_id", all.x = TRUE)
 
 dem_tbl_complete_bl_s3_s6_any_net <- dem_tbl_itt[dem_tbl_itt$complete_bl_s3_s6_any_net == 1, ]
 
@@ -497,14 +482,14 @@ dem_tbl_itt_by_cond_ft <-
   format_dem_tbl(res_itt_by_cond, 
                  gen_note_itt, 
                  footnotes_itt,
-                 "Demographic Characteristics by Treatment Condition for Intent-To-Treat Sample",
+                 "Demographic Characteristics by Treatment Arm for Intent-To-Treat Sample",
                  "itt")
 
 dem_tbl_complete_bl_s3_s6_any_net_by_cond_ft <-
   format_dem_tbl(res_complete_bl_s3_s6_any_net_by_cond, 
                  gen_note_complete_bl_s3_s6_any_net, 
                  footnotes_complete_bl_s3_s6_any_net,
-                 "Demographic Characteristics by Treatment Condition for Completer Sample")
+                 "Demographic Characteristics by Treatment Arm for Completer Sample")
 
 # ---------------------------------------------------------------------------- #
 # Save flextables ----

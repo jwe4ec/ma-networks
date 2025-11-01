@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -29,81 +29,72 @@ groundhog.library(pkgs, groundhog_day)
 
 # Set "flextable" package defaults
 
-source("./code/01b_set_flextable_defaults.R")
+source(file.path("code", "01b_set_flextable_defaults.R"))
 
 # ---------------------------------------------------------------------------- #
-# Import data ----
+# Import data and helper nodes list ----
 # ---------------------------------------------------------------------------- #
 
-load("./data/intermediate/net_dat_all_to_s6.RData")
-net_dat_all_to_s6_wide <- read.csv(file = "./data/intermediate/net_dat_all_to_s6_wide.csv")
+processed_path <- file.path("data", "processed")
+
+# Specific and overall long-format network datasets
+
+net_dat_rr_all_to_s6 <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6.rds"))
+net_dat_bb_all_to_s6 <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6.rds"))
+
+net_dat_all_to_s6 <- readRDS(file.path(processed_path, "net_dat_all_to_s6.rds"))
+
+# Helper nodes list
+
+nodes <- readRDS(file.path("data", "helper", "nodes.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Prepare data ----
 # ---------------------------------------------------------------------------- #
 
-# Add completer sample indicator from "net_dat_all_to_s6_wide"
-
-net_dat_all_to_s6 <- merge(net_dat_all_to_s6,
-                           net_dat_all_to_s6_wide[, c("participant_id", "complete_bl_s3_s6")],
-                           by = "participant_id", all.x = TRUE)
-
-# Order condition levels
-
-net_dat_all_to_s6$cbmCondition <- factor(net_dat_all_to_s6$cbmCondition,
-                                         levels = c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL"))
-
-# TODO (is this needed?): Check sample sizes (divide by 7 time points to compute number of participants)
-
-# table(anlys_df$condition_sep[anlys_df$itt_anlys == 1])/7
-# table(anlys_df$condition_sep[anlys_df$s5_train_compl_anlys_uncorrected_c1 == 1])/7
-
-
-
-
-
 # Make "session_only" a factor (for correct order when aggregating below)
 
 ordered_levs <- c("PRE", paste0("SESSION", 1:6))
 
-net_dat_all_to_s6$session_only <- factor(net_dat_all_to_s6$session_only, levels = ordered_levs)
+net_dat_rr_all_to_s6$session_only <- factor(net_dat_rr_all_to_s6$session_only, levels = ordered_levs)
+net_dat_bb_all_to_s6$session_only <- factor(net_dat_bb_all_to_s6$session_only, levels = ordered_levs)
+net_dat_all_to_s6$session_only    <- factor(net_dat_all_to_s6$session_only,    levels = ordered_levs)
 
-# Restrict to ITT and completer samples
+# For overall dataset, restrict to ITT participants in RR or BBSIQ datasets
 
-net_dat_all_to_s6_itt   <- net_dat_all_to_s6
-net_dat_all_to_s6_compl <- net_dat_all_to_s6[net_dat_all_to_s6$complete_bl_s3_s6 == 1, ]
+stopifnot(all(net_dat_all_to_s6$itt_any_net == 1))
+net_dat_all_to_s6_itt <- net_dat_all_to_s6
+
+# For specific datasets, restrict to completers
+
+net_dat_rr_all_to_s6_compl <- net_dat_rr_all_to_s6[net_dat_rr_all_to_s6$complete_bl_s3_s6 == 1, ]
+net_dat_bb_all_to_s6_compl <- net_dat_bb_all_to_s6[net_dat_bb_all_to_s6$complete_bl_s3_s6 == 1, ]
 
 # ---------------------------------------------------------------------------- #
 # Compute n, M, and SD for each raw node variable by condition over time ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (add BBSIQ): Define node vars
-
-oa_node_vars <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social")
-rr_node_vars <- c("rr_ns_mean", "rr_ps_mean_rev")
-
-node_vars <- c(oa_node_vars, rr_node_vars)
-
-
-
-
-
 # Define function for computing n, M, and SD for each node variable over time
 
 compute_desc_node_vars <- function(df, node_vars) {
   for (k in 1:length(node_vars)) {
-    fml <- as.formula(paste0(node_vars[k], "~ session_only"))
-    ag <- do.call(data.frame, aggregate(fml, 
-                                        data = df,
-                                        FUN = function(x) {
-                                          c(n    = length(x), 
-                                            m_sd = paste0(format(round(mean(x), 2), nsmall = 2, trim = TRUE), 
-                                                          " (",
-                                                          format(round(sd(x), 2), nsmall = 2, trim = TRUE),
-                                                          ")"))
-                                        }))
+    node_var <- node_vars[k]
     
-    node_var_output <- cbind(node_vars[k], ag)
+    fml <- as.formula(paste0(node_var, "~ session_only"))
+    
+    ag  <- aggregate(fml, data = df, FUN = function(x) {
+      n  <- length(x)
+      m  <- format(round(mean(x), 2), nsmall = 2, trim = TRUE)
+      sd <- format(round(sd(x),   2), nsmall = 2, trim = TRUE)
+                       
+      m_sd <- paste0(m, " (", sd, ")")
+                       
+      c(n = n, m_sd = m_sd)
+    })
+    
+    ag <- do.call(data.frame, ag)
+    
+    node_var_output <- cbind(node_var, ag)
     names(node_var_output) <- c("Measure", "Assessment", "n", "m_sd")
     
     if (k == 1) {
@@ -116,21 +107,27 @@ compute_desc_node_vars <- function(df, node_vars) {
   return(output)
 }
 
-# Create empty data frame with all node variables at all time points to store output 
-# (given that not all conditions will have observations at all time points)
-
-out <- data.frame(Measure    = rep(node_vars, each = length(ordered_levs)),
-                  Assessment = rep(ordered_levs, length(node_vars)))
-
 # Define function for computing n, M, and SD for each score by condition over time
 
-compute_desc_node_vars_by_cond <- function(df, out, node_vars, ordered_levs) {
+compute_desc_node_vars_by_cond <- function(df, node_vars, ordered_levs) {
   conditions <- levels(droplevels(df$cbmCondition))
   
   for (i in 1:length(conditions)) {
-    df_cond <- df[df$cbmCondition == conditions[i], ]
+    condition <- conditions[i]
+    
+    df_cond <- df[df$cbmCondition == condition, ]
+    
+    # Compute descriptives for each node variable over time
     
     cond_res <- compute_desc_node_vars(df_cond, node_vars)
+    
+    # Create empty data frame with all node variables at all time points to store output 
+    # (given that not all conditions will have observations at all time points)
+    
+    out <- data.frame(Measure    = rep(node_vars, each = length(ordered_levs)),
+                      Assessment = rep(ordered_levs, length(node_vars)))
+    
+    # Format condition's output data frame
     
     cond_out <- merge(out, cond_res, by = c("Measure", "Assessment"), all.x = TRUE)
     
@@ -139,42 +136,64 @@ compute_desc_node_vars_by_cond <- function(df, out, node_vars, ordered_levs) {
     
     cond_out <- cond_out[order(cond_out$Measure, cond_out$Assessment), ]
     
-    names(cond_out)[names(cond_out) == "n"]     <- paste0("n_",    conditions[i])
-    names(cond_out)[names(cond_out) == "m_sd"]  <- paste0("m_sd_", conditions[i])
+    names(cond_out)[names(cond_out) == "n"]    <- paste0("n_",    condition)
+    names(cond_out)[names(cond_out) == "m_sd"] <- paste0("m_sd_", condition)
+    
+    # Add condition's output to overall output
     
     if (i == 1) {
       res_by_cond <- cond_out
     } else if (i > 1) {
-      cond_out[, c("Measure", "Assessment")] <- NULL
+      cond_out[c("Measure", "Assessment")] <- NULL
       
       res_by_cond <- cbind(res_by_cond, cond_out)
     }
   }
   
-  res_by_cond <- res_by_cond[res_by_cond$Measure %in% oa_node_vars |
-                               
-                               (res_by_cond$Measure %in% rr_node_vars &
-                                  res_by_cond$Assessment %in% c("PRE", paste0("SESSION", c(3, 6)))), ]
+  # Exclude time points not assessed for certain measures
   
+  nonserial_measures <- c("rr_neg_thr_mean", "rr_pos_thr_mean_rev", "bbsiq_neg_mean")
+  levs_not_assessed <- paste0("SESSION", c(1:2, 4:5))
+  
+  res_by_cond <- res_by_cond[!(res_by_cond$Measure %in% nonserial_measures &
+                                 res_by_cond$Assessment %in% levs_not_assessed), ]
+
   row.names(res_by_cond) <- 1:nrow(res_by_cond)
   
   return(res_by_cond)
 }
 
-# Compute descriptives by condition for the ITT and completer samples
+# Compute descriptives by condition
 
-res_node_vars_itt_by_cond <-
-  compute_desc_node_vars_by_cond(net_dat_all_to_s6_itt,   out, node_vars, ordered_levs)
-res_node_vars_compl_by_cond <- 
-  compute_desc_node_vars_by_cond(net_dat_all_to_s6_compl, out, node_vars, ordered_levs)
+## For ITT participants in RR or BBSIQ datasets
+## - Note: Values for OASIS and RR are for ITT sample in RR network dataset, and 
+##   values for OASIS and BBSIQ are for ITT sample in BBSIQ network dataset; the
+##   datasets differ by 1 person, who lacks OASIS and RR data but not BBSIQ data
 
-# Save main outcomes objects for later use in computing rates of scale-level missingness
+diff_mask <- net_dat_all_to_s6_itt$itt_rr_net != net_dat_all_to_s6_itt$itt_bb_net
+diff_pid  <- unique(net_dat_all_to_s6_itt$participant_id[diff_mask])
+stopifnot(diff_pid == 583)
 
-desc_path <- "./results/descriptives/"
+node_vars_overall <- unique(c(nodes$rr_net, nodes$bb_net))
+
+desc_tbl_by_cond_itt_any_net <- 
+  compute_desc_node_vars_by_cond(net_dat_all_to_s6_itt, node_vars_overall, ordered_levs)
+
+## For completers in each specific dataset
+
+desc_tbl_by_cond_compl_rr_net <- 
+  compute_desc_node_vars_by_cond(net_dat_rr_all_to_s6_compl, nodes$rr_net, ordered_levs)
+desc_tbl_by_cond_compl_bb_net <- 
+  compute_desc_node_vars_by_cond(net_dat_bb_all_to_s6_compl, nodes$bb_net, ordered_levs)
+
+# Save objects for later use in computing rates of scale-level missingness
+
+desc_path <- file.path("results", "descriptives")
 dir.create(desc_path)
 
-save(res_node_vars_itt_by_cond,   file = paste0(desc_path, "res_node_vars_itt_by_cond.RData"))
-save(res_node_vars_compl_by_cond, file = paste0(desc_path, "res_node_vars_compl_by_cond.RData"))
+saveRDS(desc_tbl_by_cond_itt_any_net,  file.path(desc_path, "desc_tbl_by_cond_itt_any_net.rds"))
+saveRDS(desc_tbl_by_cond_compl_rr_net, file.path(desc_path, "desc_tbl_by_cond_compl_rr_net.rds"))
+saveRDS(desc_tbl_by_cond_compl_bb_net, file.path(desc_path, "desc_tbl_by_cond_compl_bb_net.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Format descriptives tables ----
@@ -184,11 +203,7 @@ save(res_node_vars_compl_by_cond, file = paste0(desc_path, "res_node_vars_compl_
 
 # Define function to format descriptives tables
 
-format_desc_tbl <- function(desc_tbl, gen_note, footnotes, title) {
-  # Identify rows for footnotes
-  
-  lack_pos_bias_row_idx <- min(which(desc_tbl$Measure == "rr_ps_mean_rev"))
-  
+format_desc_tbl <- function(desc_tbl, gen_note, footnotes, title, sample = NULL) {
   # Define columns
   
   target_cols <- names(desc_tbl)
@@ -202,7 +217,7 @@ format_desc_tbl <- function(desc_tbl, gen_note, footnotes, title) {
   
   # Create flextable
   
-  desc_tbl_ft <- flextable(desc_tbl[, target_cols]) |>
+  desc_tbl_ft <- flextable(desc_tbl[target_cols]) |>
     set_table_properties(align = "left") |>
     
     set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
@@ -220,13 +235,13 @@ format_desc_tbl <- function(desc_tbl, gen_note, footnotes, title) {
     
     valign(valign = "bottom", part = "header") |>
     
-    compose(j = "n_POSITIVE", part = "header", value = n_format) |>
+    compose(j = "n_POSITIVE",    part = "header", value = n_format) |>
     compose(j = "n_FIFTY_FIFTY", part = "header", value = n_format) |>
-    compose(j = "n_NEUTRAL",    part = "header", value = n_format) |>
+    compose(j = "n_NEUTRAL",     part = "header", value = n_format) |>
 
-    compose(j = "m_sd_POSITIVE", part = "header", value = m_sd_format) |>
+    compose(j = "m_sd_POSITIVE",    part = "header", value = m_sd_format) |>
     compose(j = "m_sd_FIFTY_FIFTY", part = "header", value = m_sd_format) |>
-    compose(j = "m_sd_NEUTRAL",    part = "header", value = m_sd_format) |>
+    compose(j = "m_sd_NEUTRAL",     part = "header", value = m_sd_format) |>
     
     add_header_row(values = as_paragraph_md(c("",
                                               "Positive CBM-I",
@@ -234,56 +249,82 @@ format_desc_tbl <- function(desc_tbl, gen_note, footnotes, title) {
                                               "No-Training")),
                    colwidths = rep(2, 4)) |>
 
-    add_footer_lines(gen_note) |>
+    add_footer_lines(gen_note)
+  
+  if (!is.null(sample) && sample %in% c("itt", "compl_rr_net")) {
+    lack_pos_bias_row_idx <- min(which(desc_tbl$Measure == "rr_pos_thr_mean_rev"))
     
-    footnote(i = lack_pos_bias_row_idx, j = 1,
-             value = as_paragraph_md(footnotes$lack_pos_bias),
-             ref_symbols = " a",
-             part = "body") |>
-    
+    desc_tbl_ft <- desc_tbl_ft |>
+      footnote(i = lack_pos_bias_row_idx, j = 1,
+               value = as_paragraph_md(footnotes$lack_pos_bias),
+               ref_symbols = " a",
+               part = "body")
+  }
+  
+  desc_tbl_ft <- desc_tbl_ft |>
     labelizor(part = "body",
-              labels = c("anxious_freq"     = "Anxiety Frequency (OASIS)",
-                         "anxious_sev"      = "Anxiety Severity (OASIS)",
-                         "avoid"            = "Situational Avoidance (OASIS)",
-                         "interfere"        = "Work Impairment (OASIS)",
-                         "interfere_social" = "Social Impairment (OASIS)",
-                         "rr_ns_mean"       = "Negative Bias (RR)",
-                         "rr_ps_mean_rev"   = "Lack of Positive Bias (RR)",
-                         "PRE"              = "Baseline",
-                         "SESSION1"         = "Session 1",
-                         "SESSION2"         = "Session 2",
-                         "SESSION3"         = "Session 3",
-                         "SESSION4"         = "Session 4",
-                         "SESSION5"         = "Session 5",
-                         "SESSION6"         = "Session 6")) |>
+              labels = c("anxious_freq"        = "Anxiety Frequency (OASIS)",
+                         "anxious_sev"         = "Anxiety Severity (OASIS)",
+                         "avoid"               = "Situational Avoidance (OASIS)",
+                         "interfere"           = "Work Impairment (OASIS)",
+                         "interfere_social"    = "Social Impairment (OASIS)",
+                         "rr_neg_thr_mean"     = "Negative Bias (RR)",
+                         "rr_pos_thr_mean_rev" = "Lack of Positive Bias (RR)",
+                         "bbsiq_neg_mean"      = "Negative Bias (BBSIQ)",
+                         "PRE"                 = "Baseline",
+                         "SESSION1"            = "Session 1",
+                         "SESSION2"            = "Session 2",
+                         "SESSION3"            = "Session 3",
+                         "SESSION4"            = "Session 4",
+                         "SESSION5"            = "Session 5",
+                         "SESSION6"            = "Session 6")) |>
     
     autofit()
 }
 
 # Define notes
 
-gen_note <- as_paragraph_md("*Note.* CBM-I = cognitive bias modification for interpretation; OASIS = item from Overall Anxiety Severity and Impairment Scale; RR = average item score from Recognition Ratings.")
+cbm_abbr   <- "CBM-I = cognitive bias modification for interpretation"
+oasis_abbr <- "OASIS = item from Overall Anxiety Severity and Impairment Scale"
+rr_abbr    <- "RR = average item score from Recognition Ratings"
+bbsiq_abbr <- "BBSIQ = average item score from Brief Body Sensations Interpretations Questionnaire"
+
+gen_note_itt <- as_paragraph_md(paste0(
+  "*Note.* Descriptives shown for OASIS and RR are for ITT sample in RR networks; ",
+  "descriptives shown for OASIS and BBSIQ are for ITT sample in BBSIQ networks. ",
+  paste(c(cbm_abbr, oasis_abbr, rr_abbr, bbsiq_abbr), collapse = "; "), "."))
+
+gen_note_compl_rr_net <- as_paragraph_md(paste0(
+  "*Note.* Descriptives are shown for participants with complete data for OASIS ",
+  "and RR at baseline, Session 3, and Session 6. ",
+  paste(c(cbm_abbr, oasis_abbr, rr_abbr), collapse = "; "), "."))
+
+gen_note_compl_bb_net <- as_paragraph_md(paste0(
+  "*Note.* Descriptives are shown for participants with complete data for OASIS ",
+  "and BBSIQ at baseline, Session 3, and Session 6. ",
+  paste(c(cbm_abbr, oasis_abbr, bbsiq_abbr), collapse = "; "), "."))
 
 footnotes <- list(lack_pos_bias = "\\ Reverse-scored positive bias.")
 
 # Run function
 
-desc_tbl_itt_by_cond_ft <- 
-  format_desc_tbl(res_node_vars_itt_by_cond,   gen_note, footnotes,
-                  "Raw Means and Standard Deviations by Treatment Arm for Intent-To-Treat Sample")
-desc_tbl_compl_by_cond_ft <- 
-  format_desc_tbl(res_node_vars_compl_by_cond, gen_note, footnotes,
-                  "Raw Means and Standard Deviations by Treatment Arm for Completer Sample")
+desc_tbl_by_cond_itt_any_net_ft <- 
+  format_desc_tbl(desc_tbl_by_cond_itt_any_net, gen_note_itt, footnotes,
+                  "Raw Means and Standard Deviations by Treatment Arm for Intent-To-Treat (ITT) Sample",
+                  "itt")
+
+desc_tbl_by_cond_compl_rr_net_ft <- 
+  format_desc_tbl(desc_tbl_by_cond_compl_rr_net, gen_note_compl_rr_net, footnotes,
+                  "Raw Means and Standard Deviations by Treatment Arm for Completer Sample in RR Networks",
+                  "compl_rr_net")
+desc_tbl_by_cond_compl_bb_net_ft <- 
+  format_desc_tbl(desc_tbl_by_cond_compl_bb_net, gen_note_compl_bb_net, footnotes,
+                  "Raw Means and Standard Deviations by Treatment Arm for Completer Sample in BBSIQ Networks")
 
 # ---------------------------------------------------------------------------- #
 # Save flextables ----
 # ---------------------------------------------------------------------------- #
 
-save(desc_tbl_itt_by_cond_ft,   file = paste0(desc_path, "desc_tbl_itt_by_cond_ft.RData"))
-save(desc_tbl_compl_by_cond_ft, file = paste0(desc_path, "desc_tbl_compl_by_cond_ft.RData"))
-
-# TODO: Clarify description of "completer sample"
-
-
-
-
+saveRDS(desc_tbl_by_cond_itt_any_net_ft,  file.path(desc_path, "desc_tbl_by_cond_itt_any_net_ft.rds"))
+saveRDS(desc_tbl_by_cond_compl_rr_net_ft, file.path(desc_path, "desc_tbl_by_cond_compl_rr_net_ft.rds"))
+saveRDS(desc_tbl_by_cond_compl_bb_net_ft, file.path(desc_path, "desc_tbl_by_cond_compl_bb_net_ft.rds"))

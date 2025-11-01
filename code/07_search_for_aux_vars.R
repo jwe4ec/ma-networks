@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -27,10 +27,6 @@ groundhog_day <- version_control()
 # ---------------------------------------------------------------------------- #
 # Import data ----
 # ---------------------------------------------------------------------------- #
-
-# Import data with final analysis sample
-
-load("./data/intermediate/net_dat_all_to_s6.RData")
 
 # TODO: Import further clean demographics and credibility data
 
