@@ -125,7 +125,7 @@ stopifnot(
 net_dat_rr <- net_dat_rr[net_dat_rr$participant_id != 583, ]
 
 # ---------------------------------------------------------------------------- #
-# Restrict to time points through Session 6 ----
+# Restrict to time points through Session 6 and order time points ----
 # ---------------------------------------------------------------------------- #
 
 # Restrict to time points "PRE" through "SESSION6" (excluding "SESSION7", "SESSION8",
@@ -259,6 +259,37 @@ stopifnot(
   length(unique(net_dat_all_to_s6$participant_id[net_dat_all_to_s6$itt_any_net == 1]))               == 807,
   length(unique(net_dat_all_to_s6$participant_id[net_dat_all_to_s6$complete_bl_s3_s6_any_net == 1])) == 112
 )
+
+# ---------------------------------------------------------------------------- #
+# Sort by participant and then session ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to sort by participant and then (if present) by session
+
+sort_by_part_then_session <- function(net_dat, session_levs = NULL) {
+  if ("session_only" %in% names(net_dat)) {
+    net_dat$session_only <- factor(net_dat$session_only, session_levs)
+    
+    net_dat <- net_dat[order(net_dat$participant_id, net_dat$session_only), ]
+  } else {
+    net_dat <- net_dat[order(net_dat$participant_id), ]
+  }
+  
+  row.names(net_dat) <- NULL
+
+  return(net_dat)
+}
+
+# Run function for wide-format datasets
+
+net_dat_rr_all_to_s6_wide <- sort_by_part_then_session(net_dat_rr_all_to_s6_wide)
+net_dat_bb_all_to_s6_wide <- sort_by_part_then_session(net_dat_bb_all_to_s6_wide)
+
+# Run function for long-format datasets
+
+net_dat_rr_all_to_s6 <- sort_by_part_then_session(net_dat_rr_all_to_s6, sessions_to_keep)
+net_dat_bb_all_to_s6 <- sort_by_part_then_session(net_dat_bb_all_to_s6, sessions_to_keep)
+net_dat_all_to_s6    <- sort_by_part_then_session(net_dat_all_to_s6,    sessions_to_keep)
 
 # ---------------------------------------------------------------------------- #
 # Export data and helper nodes list ----
