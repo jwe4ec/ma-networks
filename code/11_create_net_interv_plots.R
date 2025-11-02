@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -32,7 +32,7 @@ groundhog.library("qgraph", groundhog_day)
 
 # Import network results
 
-net_interv_path <- "./results/net_interv/"
+net_interv_path <- file.path("results", "net_interv")
 
 load(paste0(net_interv_path, "res_rev_pos_neu_lw_per_wave.RData"))
 load(paste0(net_interv_path, "res_rev_pos_neu_lw_across_waves.RData"))

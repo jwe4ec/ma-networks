@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -30,7 +30,7 @@ groundhog.library("mgm", groundhog_day)
 # Import results ----
 # ---------------------------------------------------------------------------- #
 
-net_interv_path <- "./results/net_interv/"
+net_interv_path <- file.path("results", "net_interv/")
 
 load(paste0(net_interv_path, "res_rev_pos_neu_lw_per_wave.RData"))
 load(paste0(net_interv_path, "res_rev_pos_neu_lw_across_waves.RData"))
@@ -42,8 +42,7 @@ load(paste0(net_interv_path, "res_rev_pos_fif_lw_across_waves.RData"))
 # Compute and export network stability ----
 # ---------------------------------------------------------------------------- #
 
-net_interv_stab_path <- paste0(net_interv_path, "stab/")
-
+net_interv_stab_path <- file.path(net_interv_path, "stab")
 dir.create(net_interv_stab_path)
 
 # Note: Use only Fit 4 based on saturated networks because this estimation method
