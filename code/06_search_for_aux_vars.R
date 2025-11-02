@@ -28,7 +28,19 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Import further clean demographics and credibility data
+processed_path <- file.path("data", "processed")
+
+# Clean data (for credibility)
+
+cln_dat <- readRDS(file.path(processed_path, "cln_dat.rds"))
+
+# TODO: Further clean demographics data
+
+dem_dat <- readRDS(file.path(processed_path, "dem_dat.rds"))
+
+# Overall network dataset
+
+net_dat_all_to_s6 <- readRDS(file.path(processed_path, "net_dat_all_to_s6.rds"))
 
 
 
