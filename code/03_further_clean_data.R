@@ -92,12 +92,18 @@ stopifnot(
 )
 
 # Credibility
+# - Note: In centralized data cleaning ("TeachmanLab/MT-Data-ManagingAnxietyStudy-Cleaning" 
+#   repo), values were recoded to 1:5 (the displayed options; in contrast to present prereg)
 
-credibility_items <- c("important", "logical", "recommendable")
+cred_items <- c("important", "logical", "recommendable")
+
+cred_conf_items <- c("logical", "recommendable")
 
 stopifnot(
-  length(credibility_items) == 3,
-  all(credibility_items %in% names(int_cln_dat$credibility))
+  length(cred_items)      == 3,
+  length(cred_conf_items) == 2,
+  
+  all(cred_items %in% names(int_cln_dat$credibility))
 )
 
 # Collect items in list
@@ -114,10 +120,12 @@ items <- list(oa            = oa_items,
               bbsiq_neg_ext = bbsiq_neg_ext_items, 
               bbsiq_ben     = bbsiq_ben_items, 
               bbsiq_ben_int = bbsiq_ben_int_items, 
-              bbsiq_ben_ext = bbsiq_ben_ext_items)
+              bbsiq_ben_ext = bbsiq_ben_ext_items,
+              cred          = cred_items,
+              cred_conf     = cred_conf_items)
 
 # ---------------------------------------------------------------------------- #
-# Compute average item scores for RR and BBSIQ ----
+# Compute average item scores for RR, BBSIQ, and training confidence ----
 # ---------------------------------------------------------------------------- #
 
 cln_dat <- int_cln_dat
@@ -133,7 +141,11 @@ cln_dat$rr$rr_pos_thr_mean_rev <- 3 - cln_dat$rr$rr_pos_thr_mean
 
 # BBSIQ
 
-cln_dat$bbsiq$bbsiq_neg_mean <- rowMeans(cln_dat$bbsiq[bbsiq_neg_items], na.rm = TRUE)
+cln_dat$bbsiq$bbsiq_neg_mean <- rowMeans(cln_dat$bbsiq[items$bbsiq_neg], na.rm = TRUE)
+
+# Training confidence
+
+cln_dat$credibility$cred_conf_mean <- rowMeans(cln_dat$credibility[items$cred_conf], na.rm = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Order CBM-I condition levels ----
