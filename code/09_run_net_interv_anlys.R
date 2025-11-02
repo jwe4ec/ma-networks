@@ -16,7 +16,7 @@
 
 # Load custom functions
 
-source("./code/01a_define_functions.R")
+source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -30,70 +30,98 @@ groundhog.library("mgm", groundhog_day)
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-net_dat_all_to_s6_wide <- read.csv(file = "./data/intermediate/net_dat_all_to_s6_wide.csv")
+processed_path <- file.path("data", "processed")
+
+net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
+net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
 
 # ---------------------------------------------------------------------------- #
-# Prepare data ----
+# Create CBM-I condition contrasts ----
 # ---------------------------------------------------------------------------- #
 
-# Remove positive bias columns that are not reverse scored
+# Define function to create dummy-coded CBM-I condition variables for contrasting 
+# positive CBM-I with (a) no-training and (b) 50-50 CBM-I
 
-rm_cols <- paste0("rr_ps_mean.", c("PRE", paste0("SESSION", 1:6)))
+create_contrasts <- function(net_dat) {
+  net_dat$positive_vs_neutral <- ifelse(net_dat$cbmCondition == "POSITIVE", 1, 
+                                        ifelse(net_dat$cbmCondition == "NEUTRAL", 0, NA))
+  
+  net_dat$positive_vs_fifty_fifty <- ifelse(net_dat$cbmCondition == "POSITIVE", 1, 
+                                            ifelse(net_dat$cbmCondition == "FIFTY_FIFTY", 0, NA))
+  
+  return(net_dat)
+}
 
-net_dat_all_to_s6_wide <- net_dat_all_to_s6_wide[!(names(net_dat_all_to_s6_wide) %in% rm_cols)]
+# Run function
 
-# Create dummy-coded condition variables for contrasting positive CBM-I with
-# (a) no-training and (b) 50-50 CBM-I
-
-net_dat_all_to_s6_wide$positive_vs_neutral     <- NA
-net_dat_all_to_s6_wide$positive_vs_fifty_fifty <- NA
-
-net_dat_all_to_s6_wide$positive_vs_neutral[net_dat_all_to_s6_wide$cbmCondition     == "POSITIVE"] <- 1
-net_dat_all_to_s6_wide$positive_vs_fifty_fifty[net_dat_all_to_s6_wide$cbmCondition == "POSITIVE"] <- 1
-
-net_dat_all_to_s6_wide$positive_vs_neutral[net_dat_all_to_s6_wide$cbmCondition     == "NEUTRAL"]     <- 0
-net_dat_all_to_s6_wide$positive_vs_fifty_fifty[net_dat_all_to_s6_wide$cbmCondition == "FIFTY_FIFTY"] <- 0
+net_dat_rr_all_to_s6_wide <- create_contrasts(net_dat_rr_all_to_s6_wide)
+net_dat_bb_all_to_s6_wide <- create_contrasts(net_dat_bb_all_to_s6_wide)
 
 # ---------------------------------------------------------------------------- #
 # Compute zero-order correlations at baseline for ITT participants ----
 # ---------------------------------------------------------------------------- #
 
-bl_vars <- names(net_dat_all_to_s6_wide)[grepl(".PRE", names(net_dat_all_to_s6_wide))]
+# Define function to compute Pearson correlations (given that we are treating nodes 
+# as continuous)
 
-# Compute Pearson correlations given that we are treating nodes as continuous
+compute_cor_at_bl <- function(net_dat) {
+  # Get baseline variables
+  
+  bl_vars <- grep(".PRE", names(net_dat), value = TRUE)
+  
+  # Compute correlations
+  
+  cor_res <- cor(net_dat[bl_vars], use = "pairwise.complete.obs", method = "pearson")
+  
+  # Format results
+  
+  cor_res <- round(cor_res, 2)
+  
+  labels <- bl_vars
+  
+  labels[labels == "anxious_freq.PRE"]        <- "Anx. Freq."
+  labels[labels == "anxious_sev.PRE"]         <- "Anx. Sev."
+  labels[labels == "avoid.PRE"]               <- "Sit. Avoid"
+  labels[labels == "interfere.PRE"]           <- "Work Imp."
+  labels[labels == "interfere_social.PRE"]    <- "Soc. Imp."
+  labels[labels == "rr_neg_thr_mean.PRE"]     <- "Neg. Bias (RR)"
+  labels[labels == "rr_pos_thr_mean_rev.PRE"] <- "Lack of Pos. Bias (RR)"
+  labels[labels == "bbsiq_neg_mean.PRE"]      <- "Neg. Bias (BBSIQ)"
+  
+  rownames(cor_res) <- colnames(cor_res) <- labels
+  
+  cor_res[upper.tri(cor_res, diag = TRUE)] <- NA
 
-cor_res <- cor(net_dat_all_to_s6_wide[, bl_vars], use = "pairwise.complete.obs", method = "pearson")
+  return(cor_res)
+}
 
-cor_res <- round(cor_res, 2)
+# Run function
 
-labels <- bl_vars
+cor_res_rr_net <- compute_cor_at_bl(net_dat_rr_all_to_s6_wide)
+cor_res_bb_net <- compute_cor_at_bl(net_dat_bb_all_to_s6_wide)
 
-labels[labels == "anxious_freq.PRE"]     <- "Anx. Freq."
-labels[labels == "anxious_sev.PRE"]      <- "Anx. Sev."
-labels[labels == "avoid.PRE"]            <- "Sit. Avoid"
-labels[labels == "interfere.PRE"]        <- "Work Imp."
-labels[labels == "interfere_social.PRE"] <- "Soc. Imp."
-labels[labels == "rr_ns_mean.PRE"]       <- "Neg. Bias"
-labels[labels == "rr_ps_mean_rev.PRE"]   <- "Lack of Pos. Bias"
+# Compute ranges
 
-rownames(cor_res) <- colnames(cor_res) <- labels
-
-cor_res[upper.tri(cor_res)] <- NA
-diag(cor_res) <- NA
-
-range(cor_res, na.rm = TRUE) == c(0.10, 0.59)
+stopifnot(range(cor_res_rr_net, na.rm = TRUE) == c(0.09, 0.58),
+          range(cor_res_bb_net, na.rm = TRUE) == c(0.28, 0.58))
 
 # Export results
 
-bl_correlations_path <- "./results/baseline_correlations/"
-
+bl_correlations_path <- file.path("results", "baseline_correlations")
 dir.create(bl_correlations_path)
 
-write.csv(cor_res, file = paste0(bl_correlations_path, "cor_res.csv"))
+write.csv(cor_res_rr_net, file.path(bl_correlations_path, "cor_res_rr_net.csv"))
+write.csv(cor_res_bb_net, file.path(bl_correlations_path, "cor_res_bb_net.csv"))
 
 # ---------------------------------------------------------------------------- #
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Continue revising below for new data
+
+
+
+
 
 # Define function to fit mixed graphical models at baseline, Session 3, and Session 6 
 # for given dummy-coded condition contrast (using name of contrast column) and missing 
