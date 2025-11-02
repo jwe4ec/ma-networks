@@ -132,13 +132,11 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
   
   # Restrict data to conditions defined in contrast
   
-  x <- x[!is.na(x[, contrast]), ]
+  x <- x[!is.na(x[[contrast]]), ]
   
   # If specified, restrict to rows with complete data at baseline, Session 3, and Session 6
   
-  if (missing == "listwise_across_waves") {
-    x <- x[x$complete_bl_s3_s6 == 1, ]
-  }
+  if (missing == "listwise_across_waves") x <- x[x$complete_bl_s3_s6 == 1, ]
   
   # Prepare data and fit model at baseline, Session 3, and Session 6
   
@@ -148,9 +146,11 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
   names(res) <- waves
   
   for (i in 1:length(waves)) {
+    wave <- waves[i]
+    
     # Restrict to contrast column and columns of given wave
     
-    target_wave_cols <- names(x)[grepl(paste0(".", waves[i]), names(x))]
+    target_wave_cols <- grep(paste0(".", wave), names(x), value = TRUE)
     
     target_cols <- c(contrast, target_wave_cols)
     
@@ -159,7 +159,7 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
     if (missing == "listwise_per_wave") {
       # Restrict to rows with complete data for columns of given wave
       
-      dat <- dat[complete.cases(dat[, target_wave_cols]), ]
+      dat <- dat[complete.cases(dat[target_wave_cols]), ]
     }
     
     # Convert data to matrix and define column types and levels (assume that binary
@@ -201,12 +201,12 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
     
     # Collect results for time point in list
     
-    res[[waves[i]]] <- list(vars = target_cols,
-                            wave = waves[i],
-                            fit1 = fit1,
-                            fit2 = fit2,
-                            fit3 = fit3,
-                            fit4 = fit4)
+    res[[wave]] <- list(vars = target_cols,
+                        wave = wave,
+                        fit1 = fit1,
+                        fit2 = fit2,
+                        fit3 = fit3,
+                        fit4 = fit4)
   }
 
   return(res)
