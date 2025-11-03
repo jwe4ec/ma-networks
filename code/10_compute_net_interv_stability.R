@@ -95,7 +95,7 @@ compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "PRE")
 compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION3")
 compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION6")
 
-print("For BB network")
+print("For BBSIQ network")
 
 compute_export_net_stab(res_bb_pos_neu_lw_per_wave,     "PRE")
 compute_export_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION3")

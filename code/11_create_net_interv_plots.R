@@ -30,45 +30,79 @@ groundhog.library("qgraph", groundhog_day)
 # Import results ----
 # ---------------------------------------------------------------------------- #
 
-# Import network results
+# TODO (are these needed?) Network results
+
+
+
+
 
 net_interv_path <- file.path("results", "net_interv")
 
-load(paste0(net_interv_path, "res_rev_pos_neu_lw_per_wave.RData"))
-load(paste0(net_interv_path, "res_rev_pos_neu_lw_across_waves.RData"))
+## For RR network
 
-load(paste0(net_interv_path, "res_rev_pos_fif_lw_per_wave.RData"))
-load(paste0(net_interv_path, "res_rev_pos_fif_lw_across_waves.RData"))
+res_rr_pos_neu_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_rr_pos_neu_lw_per_wave.rds"))
+res_rr_pos_neu_lw_across_waves <- readRDS(file.path(net_interv_path, "res_rr_pos_neu_lw_across_waves.rds"))
 
-# Import network stability results (i.e., nonparametric bootstrap samples)
+res_rr_pos_fif_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_rr_pos_fif_lw_per_wave.rds"))
+res_rr_pos_fif_lw_across_waves <- readRDS(file.path(net_interv_path, "res_rr_pos_fif_lw_across_waves.rds"))
 
-net_interv_stab_path <- paste0(net_interv_path, "stab/")
+## For BBSIQ network
 
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs.RData"))
+res_bb_pos_neu_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_bb_pos_neu_lw_per_wave.rds"))
+res_bb_pos_neu_lw_across_waves <- readRDS(file.path(net_interv_path, "res_bb_pos_neu_lw_across_waves.rds"))
 
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs.RData"))
+res_bb_pos_fif_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_bb_pos_fif_lw_per_wave.rds"))
+res_bb_pos_fif_lw_across_waves <- readRDS(file.path(net_interv_path, "res_bb_pos_fif_lw_across_waves.rds"))
 
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs.RData"))
+# Network stability results (i.e., nonparametric bootstrap samples)
 
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs.RData"))
+net_interv_stab_path <- file.path(net_interv_path, "stab")
+
+## For RR network
+
+res_bs_rr_net_files <- c("res_rr_pos_neu_lw_per_wave_pre_bs.rds", 
+                         "res_rr_pos_neu_lw_per_wave_session3_bs.rds", 
+                         "res_rr_pos_neu_lw_per_wave_session6_bs.rds", 
+                         "res_rr_pos_neu_lw_across_waves_pre_bs.rds", 
+                         "res_rr_pos_neu_lw_across_waves_session3_bs.rds", 
+                         "res_rr_pos_neu_lw_across_waves_session6_bs.rds", 
+                         "res_rr_pos_fif_lw_per_wave_pre_bs.rds", 
+                         "res_rr_pos_fif_lw_per_wave_session3_bs.rds", 
+                         "res_rr_pos_fif_lw_per_wave_session6_bs.rds", 
+                         "res_rr_pos_fif_lw_across_waves_pre_bs.rds", 
+                         "res_rr_pos_fif_lw_across_waves_session3_bs.rds", 
+                         "res_rr_pos_fif_lw_across_waves_session6_bs.rds")
+
+res_bs_rr_net_ls <- lapply(res_bs_rr_net_files, function(f) readRDS(file.path(net_interv_stab_path, f)))
+names(res_bs_rr_net_ls) <- tools::file_path_sans_ext(res_bs_rr_net_files)
+
+## For BBSIQ network
+
+res_bs_bb_net_files <- c("res_bb_pos_neu_lw_per_wave_pre_bs.rds", 
+                         "res_bb_pos_neu_lw_per_wave_session3_bs.rds", 
+                         "res_bb_pos_neu_lw_per_wave_session6_bs.rds", 
+                         "res_bb_pos_neu_lw_across_waves_pre_bs.rds", 
+                         "res_bb_pos_neu_lw_across_waves_session3_bs.rds", 
+                         "res_bb_pos_neu_lw_across_waves_session6_bs.rds", 
+                         "res_bb_pos_fif_lw_per_wave_pre_bs.rds", 
+                         "res_bb_pos_fif_lw_per_wave_session3_bs.rds", 
+                         "res_bb_pos_fif_lw_per_wave_session6_bs.rds", 
+                         "res_bb_pos_fif_lw_across_waves_pre_bs.rds", 
+                         "res_bb_pos_fif_lw_across_waves_session3_bs.rds", 
+                         "res_bb_pos_fif_lw_across_waves_session6_bs.rds")
+
+res_bs_bb_net_ls <- lapply(res_bs_bb_net_files, function(f) readRDS(file.path(net_interv_stab_path, f)))
+names(res_bs_bb_net_ls) <- tools::file_path_sans_ext(res_bs_bb_net_files)
 
 # ---------------------------------------------------------------------------- #
-# Compute quantiles of bootstrap samples for alpha levels of .05 and .01  ----
+# Compute quantiles of bootstrap samples for alpha levels of .05 and .01 ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to compute quantiles for alphas of .05 and .01. given that resample() 
 # in "compute_net_interv_stability.R" computed quantiles for alpha of .10
 
 compute_quantiles <- function(res_bs, alpha) {
-  quantiles <- c(alpha/2, 1 - alpha/2)
+  quantiles <- c(alpha / 2, 1 - alpha / 2)
   
   if (alpha == 0.10) {
     alpha_char <- "a10"
@@ -80,7 +114,9 @@ compute_quantiles <- function(res_bs, alpha) {
   
   quantiles_array_name <- paste0("bootQuantiles_", alpha_char)
   
-  res_bs[[quantiles_array_name]] <- array(NA, dim = c(8, 8, 2))
+  num_nodes <- ncol(res_bs$call$data)
+  
+  res_bs[[quantiles_array_name]] <- array(NA, dim = c(num_nodes, num_nodes, 2))
   
   res_bs[[quantiles_array_name]][,,1] <- apply(res_bs$bootParameters, c(1, 2),
                                                function(ij_element) quantile(ij_element, probs = quantiles[1]))
@@ -92,31 +128,11 @@ compute_quantiles <- function(res_bs, alpha) {
 
 # Run function
 
-res_rev_pos_neu_lw_per_wave_pre_fit4_bs          <- compute_quantiles(res_rev_pos_neu_lw_per_wave_pre_fit4_bs,          0.05)
-res_rev_pos_neu_lw_per_wave_session3_fit4_bs     <- compute_quantiles(res_rev_pos_neu_lw_per_wave_session3_fit4_bs,     0.05)
-res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs     <- compute_quantiles(res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs,     0.05)
-res_rev_pos_neu_lw_across_waves_pre_fit4_bs      <- compute_quantiles(res_rev_pos_neu_lw_across_waves_pre_fit4_bs,      0.05)
-res_rev_pos_neu_lw_across_waves_session3_fit4_bs <- compute_quantiles(res_rev_pos_neu_lw_across_waves_session3_fit4_bs, 0.05)
-res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs <- compute_quantiles(res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs, 0.05)
-res_rev_pos_fif_lw_per_wave_pre_fit4_bs          <- compute_quantiles(res_rev_pos_fif_lw_per_wave_pre_fit4_bs,          0.05)
-res_rev_pos_fif_lw_per_wave_session3_fit4_bs     <- compute_quantiles(res_rev_pos_fif_lw_per_wave_session3_fit4_bs,     0.05)
-res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs     <- compute_quantiles(res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs,     0.05)
-res_rev_pos_fif_lw_across_waves_pre_fit4_bs      <- compute_quantiles(res_rev_pos_fif_lw_across_waves_pre_fit4_bs,      0.05)
-res_rev_pos_fif_lw_across_waves_session3_fit4_bs <- compute_quantiles(res_rev_pos_fif_lw_across_waves_session3_fit4_bs, 0.05)
-res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs <- compute_quantiles(res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs, 0.05)
+res_bs_rr_net_ls <- lapply(res_bs_rr_net_ls, compute_quantiles, 0.05)
+res_bs_rr_net_ls <- lapply(res_bs_rr_net_ls, compute_quantiles, 0.01)
 
-res_rev_pos_neu_lw_per_wave_pre_fit4_bs          <- compute_quantiles(res_rev_pos_neu_lw_per_wave_pre_fit4_bs,          0.01)
-res_rev_pos_neu_lw_per_wave_session3_fit4_bs     <- compute_quantiles(res_rev_pos_neu_lw_per_wave_session3_fit4_bs,     0.01)
-res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs     <- compute_quantiles(res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs,     0.01)
-res_rev_pos_neu_lw_across_waves_pre_fit4_bs      <- compute_quantiles(res_rev_pos_neu_lw_across_waves_pre_fit4_bs,      0.01)
-res_rev_pos_neu_lw_across_waves_session3_fit4_bs <- compute_quantiles(res_rev_pos_neu_lw_across_waves_session3_fit4_bs, 0.01)
-res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs <- compute_quantiles(res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs, 0.01)
-res_rev_pos_fif_lw_per_wave_pre_fit4_bs          <- compute_quantiles(res_rev_pos_fif_lw_per_wave_pre_fit4_bs,          0.01)
-res_rev_pos_fif_lw_per_wave_session3_fit4_bs     <- compute_quantiles(res_rev_pos_fif_lw_per_wave_session3_fit4_bs,     0.01)
-res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs     <- compute_quantiles(res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs,     0.01)
-res_rev_pos_fif_lw_across_waves_pre_fit4_bs      <- compute_quantiles(res_rev_pos_fif_lw_across_waves_pre_fit4_bs,      0.01)
-res_rev_pos_fif_lw_across_waves_session3_fit4_bs <- compute_quantiles(res_rev_pos_fif_lw_across_waves_session3_fit4_bs, 0.01)
-res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs <- compute_quantiles(res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs, 0.01)
+res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, compute_quantiles, 0.05)
+res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, compute_quantiles, 0.01)
 
 # ---------------------------------------------------------------------------- #
 # Create edge inclusion matrices for alpha levels of .05 and .01  ----
@@ -125,26 +141,29 @@ res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs <- compute_quantiles(res_rev_po
 # Define function to create matrix indicating which edges to retain after thresholding
 
 create_edge_include_mat <- function(res_bs) {
-  # Identify manually computed quantiles
+  # Identify manually computed quantiles and number of nodes
   
-  quantiles_array_names <- names(res_bs)[grepl("bootQuantiles_a", names(res_bs))]
+  quantiles_array_names <- grep("bootQuantiles_a", names(res_bs), value = TRUE)
+  
+  num_nodes <- ncol(res_bs$call$data)
   
   for (a in 1:length(quantiles_array_names)) {
-    # Create name for matrix of edges to include at given threshold
-    
     quantiles_array_name <- quantiles_array_names[a]
+    quantiles_array      <- res_bs[[quantiles_array_name]]
+    
+    # Create name for matrix of edges to include at given threshold
     
     edge_include_mat_name <- sub("bootQuantiles", "edge_include_thres", quantiles_array_name)
     
     # Create matrix
     
-    mat <- matrix(NA, 8, 8)
+    mat <- matrix(NA, num_nodes, num_nodes)
     diag(mat) <- 0
     
-    mat[res_bs[[quantiles_array_name]][,,1] < 0 & res_bs[[quantiles_array_name]][,,2] > 0]     <- 0
+    mat[quantiles_array[,,1] < 0 & quantiles_array[,,2] > 0]     <- 0
     
-    mat[(res_bs[[quantiles_array_name]][,,1] > 0 & res_bs[[quantiles_array_name]][,,2] > 0) |
-          (res_bs[[quantiles_array_name]][,,1] < 0 & res_bs[[quantiles_array_name]][,,2] < 0)] <- 1
+    mat[(quantiles_array[,,1] > 0 & quantiles_array[,,2] > 0) |
+          (quantiles_array[,,1] < 0 & quantiles_array[,,2] < 0)] <- 1
     
     res_bs[[edge_include_mat_name]] <- mat
   }
@@ -154,25 +173,22 @@ create_edge_include_mat <- function(res_bs) {
 
 # Run function
 
-res_rev_pos_neu_lw_per_wave_pre_fit4_bs          <- create_edge_include_mat(res_rev_pos_neu_lw_per_wave_pre_fit4_bs)
-res_rev_pos_neu_lw_per_wave_session3_fit4_bs     <- create_edge_include_mat(res_rev_pos_neu_lw_per_wave_session3_fit4_bs)
-res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs     <- create_edge_include_mat(res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs)
-res_rev_pos_neu_lw_across_waves_pre_fit4_bs      <- create_edge_include_mat(res_rev_pos_neu_lw_across_waves_pre_fit4_bs)
-res_rev_pos_neu_lw_across_waves_session3_fit4_bs <- create_edge_include_mat(res_rev_pos_neu_lw_across_waves_session3_fit4_bs)
-res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs <- create_edge_include_mat(res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs)
-res_rev_pos_fif_lw_per_wave_pre_fit4_bs          <- create_edge_include_mat(res_rev_pos_fif_lw_per_wave_pre_fit4_bs)
-res_rev_pos_fif_lw_per_wave_session3_fit4_bs     <- create_edge_include_mat(res_rev_pos_fif_lw_per_wave_session3_fit4_bs)
-res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs     <- create_edge_include_mat(res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs)
-res_rev_pos_fif_lw_across_waves_pre_fit4_bs      <- create_edge_include_mat(res_rev_pos_fif_lw_across_waves_pre_fit4_bs)
-res_rev_pos_fif_lw_across_waves_session3_fit4_bs <- create_edge_include_mat(res_rev_pos_fif_lw_across_waves_session3_fit4_bs)
-res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs <- create_edge_include_mat(res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs)
+res_bs_rr_net_ls <- lapply(res_bs_rr_net_ls, create_edge_include_mat)
+res_bs_rr_net_ls <- lapply(res_bs_rr_net_ls, create_edge_include_mat)
+
+res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, create_edge_include_mat)
+res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, create_edge_include_mat)
 
 # Define function to extract edge include matrices into list for each model type
 
-extract_edge_include_mats <- function(res_pre_bs, res_s3_bs, res_s6_bs) {
-  edge_include_mats_pre <- res_pre_bs[names(res_pre_bs)[grepl("edge_include_thres_", names(res_pre_bs))]]
-  edge_include_mats_s3  <- res_s3_bs[names(res_s3_bs)[grepl("edge_include_thres_",   names(res_s3_bs))]]
-  edge_include_mats_s6  <- res_s6_bs[names(res_s6_bs)[grepl("edge_include_thres_",   names(res_s6_bs))]]
+extract_edge_include_mats <- function(res_bs_ls, model_type) {
+  res_bs_pre <- res_bs_ls[[paste0(model_type, "_pre_bs")]]
+  res_bs_s3  <- res_bs_ls[[paste0(model_type, "_session3_bs")]]
+  res_bs_s6  <- res_bs_ls[[paste0(model_type, "_session6_bs")]]
+  
+  edge_include_mats_pre <- res_bs_pre[grep("edge_include_thres_", names(res_bs_pre), value = TRUE)]
+  edge_include_mats_s3  <- res_bs_s3[grep("edge_include_thres_",  names(res_bs_s3),  value = TRUE)]
+  edge_include_mats_s6  <- res_bs_s6[grep("edge_include_thres_",  names(res_bs_s6),  value = TRUE)]
   
   names(edge_include_mats_pre) <- sub("edge_include_", "", names(edge_include_mats_pre))
   names(edge_include_mats_s3)  <- sub("edge_include_", "", names(edge_include_mats_s3))
@@ -185,20 +201,16 @@ extract_edge_include_mats <- function(res_pre_bs, res_s3_bs, res_s6_bs) {
   return(ls)
 }
 
-# Run function
+# TODO (check below): Run function
 
-rev_pos_neu_lw_per_wave_fit4_edge_include     <- extract_edge_include_mats(res_rev_pos_neu_lw_per_wave_pre_fit4_bs, 
-                                                                           res_rev_pos_neu_lw_per_wave_session3_fit4_bs, 
-                                                                           res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs)
-rev_pos_neu_lw_across_waves_fit4_edge_include <- extract_edge_include_mats(res_rev_pos_neu_lw_across_waves_pre_fit4_bs, 
-                                                                           res_rev_pos_neu_lw_across_waves_session3_fit4_bs, 
-                                                                           res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs)
-rev_pos_fif_lw_per_wave_fit4_edge_include     <- extract_edge_include_mats(res_rev_pos_fif_lw_per_wave_pre_fit4_bs, 
-                                                                           res_rev_pos_fif_lw_per_wave_session3_fit4_bs, 
-                                                                           res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs)
-rev_pos_fif_lw_across_waves_fit4_edge_include <- extract_edge_include_mats(res_rev_pos_fif_lw_across_waves_pre_fit4_bs, 
-                                                                           res_rev_pos_fif_lw_across_waves_session3_fit4_bs, 
-                                                                           res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs)
+rr_pos_neu_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_neu_lw_per_wave")
+rr_pos_neu_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_neu_lw_across_waves")
+rr_pos_fif_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_fif_lw_per_wave")
+rr_pos_fif_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_fif_lw_across_waves")
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Create thresholded weighted adjacency matrices at alpha levels of .05 and .01  ----
