@@ -30,13 +30,23 @@ groundhog.library("mgm", groundhog_day)
 # Import results ----
 # ---------------------------------------------------------------------------- #
 
-net_interv_path <- file.path("results", "net_interv/")
+net_interv_path <- file.path("results", "net_interv")
 
-load(paste0(net_interv_path, "res_rev_pos_neu_lw_per_wave.RData"))
-load(paste0(net_interv_path, "res_rev_pos_neu_lw_across_waves.RData"))
+# For RR network
 
-load(paste0(net_interv_path, "res_rev_pos_fif_lw_per_wave.RData"))
-load(paste0(net_interv_path, "res_rev_pos_fif_lw_across_waves.RData"))
+res_rr_pos_neu_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_rr_pos_neu_lw_per_wave.rds"))
+res_rr_pos_neu_lw_across_waves <- readRDS(file.path(net_interv_path, "res_rr_pos_neu_lw_across_waves.rds"))
+
+res_rr_pos_fif_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_rr_pos_fif_lw_per_wave.rds"))
+res_rr_pos_fif_lw_across_waves <- readRDS(file.path(net_interv_path, "res_rr_pos_fif_lw_across_waves.rds"))
+
+# For BBSIQ network
+
+res_bb_pos_neu_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_bb_pos_neu_lw_per_wave.rds"))
+res_bb_pos_neu_lw_across_waves <- readRDS(file.path(net_interv_path, "res_bb_pos_neu_lw_across_waves.rds"))
+
+res_bb_pos_fif_lw_per_wave     <- readRDS(file.path(net_interv_path, "res_bb_pos_fif_lw_per_wave.rds"))
+res_bb_pos_fif_lw_across_waves <- readRDS(file.path(net_interv_path, "res_bb_pos_fif_lw_across_waves.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Compute and export network stability ----
@@ -45,62 +55,60 @@ load(paste0(net_interv_path, "res_rev_pos_fif_lw_across_waves.RData"))
 net_interv_stab_path <- file.path(net_interv_path, "stab")
 dir.create(net_interv_stab_path)
 
-# Note: Use only Fit 4 based on saturated networks because this estimation method
-# is the only one that yields true confidence intervals
+# Define function to compute network stability at given wave and export
 
-# print("Starting Set 1")
+compute_export_net_stab <- function(res, wave) {
+  # Bootstrap results at wave
+  
+  res_wave <- res[[wave]]
+  
+  set.seed(1234)
+  res_bs <- resample(res_wave$fit, res_wave$fit$call$data, 500)
+  
+  # Create filename for bootstrapped results
+  
+  res_name  <- deparse(substitute(res))
+  wave_name <- tolower(wave)
+  
+  res_bs_filename <- paste(res_name, wave_name, "bs.rds", sep = "_")
+  
+  saveRDS(res_bs, file.path(net_interv_stab_path, res_bs_filename))
+}
 
-set.seed(1234)
-res_rev_pos_neu_lw_per_wave_pre_fit4_bs <- resample(res_rev_pos_neu_lw_per_wave$PRE$fit4, res_rev_pos_neu_lw_per_wave$PRE$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_per_wave_pre_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_pre_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_neu_lw_per_wave_session3_fit4_bs <- resample(res_rev_pos_neu_lw_per_wave$SESSION3$fit4, res_rev_pos_neu_lw_per_wave$SESSION3$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_per_wave_session3_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_session3_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs <- resample(res_rev_pos_neu_lw_per_wave$SESSION6$fit4, res_rev_pos_neu_lw_per_wave$SESSION6$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs.RData"))
+# Run function
 
-# print("Starting Set 2")
+print("For RR network")
 
-set.seed(1234)
-res_rev_pos_neu_lw_across_waves_pre_fit4_bs <- resample(res_rev_pos_neu_lw_across_waves$PRE$fit4, res_rev_pos_neu_lw_across_waves$PRE$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_across_waves_pre_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_pre_fit4_bs.RData"))
+compute_export_net_stab(res_rr_pos_neu_lw_per_wave,     "PRE")
+compute_export_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION3")
+compute_export_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION6")
 
-# Error below for "res_rev_pos_neu_lw_across_waves_session3_fit4_bs" with seed 1234 resolved by changing seed to 1235
+compute_export_net_stab(res_rr_pos_neu_lw_across_waves, "PRE")
+compute_export_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION3")
+compute_export_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION6")
 
-  # Error in matrix(fit$a0[seq(lmu * nc)], nc, lmu, dimnames = list(classnames,  :
-  #   length of 'dimnames' [2] not equal to array extent
-  # In addition: Warning message:
-  #   from glmnet C++ code (error code -1); Convergence for 1th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned
+compute_export_net_stab(res_rr_pos_fif_lw_per_wave,     "PRE")
+compute_export_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION3")
+compute_export_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION6")
 
-set.seed(1235)
-res_rev_pos_neu_lw_across_waves_session3_fit4_bs <- resample(res_rev_pos_neu_lw_across_waves$SESSION3$fit4, res_rev_pos_neu_lw_across_waves$SESSION3$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_across_waves_session3_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_session3_fit4_bs.RData"))
+compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "PRE")
+compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION3")
+compute_export_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION6")
 
-set.seed(1234)
-res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs <- resample(res_rev_pos_neu_lw_across_waves$SESSION6$fit4, res_rev_pos_neu_lw_across_waves$SESSION6$fit4$call$data, 500)
-save(res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs.RData"))
+print("For BB network")
 
-# print("Starting Set 3")
+compute_export_net_stab(res_bb_pos_neu_lw_per_wave,     "PRE")
+compute_export_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION3")
+compute_export_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION6")
 
-set.seed(1234)
-res_rev_pos_fif_lw_per_wave_pre_fit4_bs <- resample(res_rev_pos_fif_lw_per_wave$PRE$fit4, res_rev_pos_fif_lw_per_wave$PRE$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_per_wave_pre_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_pre_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_fif_lw_per_wave_session3_fit4_bs <- resample(res_rev_pos_fif_lw_per_wave$SESSION3$fit4, res_rev_pos_fif_lw_per_wave$SESSION3$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_per_wave_session3_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_session3_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs <- resample(res_rev_pos_fif_lw_per_wave$SESSION6$fit4, res_rev_pos_fif_lw_per_wave$SESSION6$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs.RData"))
+compute_export_net_stab(res_bb_pos_neu_lw_across_waves, "PRE")
+compute_export_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION3")
+compute_export_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION6")
 
-# print("Starting Set 4")
+compute_export_net_stab(res_bb_pos_fif_lw_per_wave,     "PRE")
+compute_export_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION3")
+compute_export_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION6")
 
-set.seed(1234)
-res_rev_pos_fif_lw_across_waves_pre_fit4_bs <- resample(res_rev_pos_fif_lw_across_waves$PRE$fit4, res_rev_pos_fif_lw_across_waves$PRE$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_across_waves_pre_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_pre_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_fif_lw_across_waves_session3_fit4_bs <- resample(res_rev_pos_fif_lw_across_waves$SESSION3$fit4, res_rev_pos_fif_lw_across_waves$SESSION3$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_across_waves_session3_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_session3_fit4_bs.RData"))
-set.seed(1234)
-res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs <- resample(res_rev_pos_fif_lw_across_waves$SESSION6$fit4, res_rev_pos_fif_lw_across_waves$SESSION6$fit4$call$data, 500)
-save(res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs, file = paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs.RData"))
+compute_export_net_stab(res_bb_pos_fif_lw_across_waves, "PRE")
+compute_export_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION3")
+compute_export_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION6")
