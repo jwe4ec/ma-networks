@@ -30,10 +30,16 @@ groundhog.library("mgm", groundhog_day)
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
+# Wide-format network datasets
+
 processed_path <- file.path("data", "processed")
 
 net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
 net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
+
+# Helper nodes list
+
+nodes <- readRDS(file.path("data", "helper", "nodes.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Create CBM-I condition contrasts ----
@@ -117,17 +123,11 @@ write.csv(cor_res_bb_net, file.path(bl_correlations_path, "cor_res_bb_net.csv"))
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Continue revising below for new data
-
-
-
-
-
 # Define function to fit mixed graphical models at baseline, Session 3, and Session 6 
 # for given dummy-coded condition contrast (using name of contrast column) and missing 
 # data handling method (listwise deletion per wave or across waves)
 
-fit_mgm <- function(net_dat_wide, contrast, missing) {
+fit_mgm <- function(net_dat_wide, contrast, missing, nodes) {
   x <- net_dat_wide
   
   # Restrict data to conditions defined in contrast
@@ -136,7 +136,7 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
   
   # If specified, restrict to rows with complete data at baseline, Session 3, and Session 6
   
-  if (missing == "listwise_across_waves") x <- x[x$complete_bl_s3_s6 == 1, ]
+  if (missing == "lw_across_waves") x <- x[x$complete_bl_s3_s6 == 1, ]
   
   # Prepare data and fit model at baseline, Session 3, and Session 6
   
@@ -148,15 +148,15 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
   for (i in 1:length(waves)) {
     wave <- waves[i]
     
-    # Restrict to contrast column and columns of given wave
+    # Restrict to contrast column and node columns of given wave
     
-    target_wave_cols <- grep(paste0(".", wave), names(x), value = TRUE)
+    target_wave_cols <- paste0(nodes, ".", wave)
     
     target_cols <- c(contrast, target_wave_cols)
     
     dat <- x[target_cols]
     
-    if (missing == "listwise_per_wave") {
+    if (missing == "lw_per_wave") {
       # Restrict to rows with complete data for columns of given wave
       
       dat <- dat[complete.cases(dat[target_wave_cols]), ]
@@ -167,67 +167,75 @@ fit_mgm <- function(net_dat_wide, contrast, missing) {
     
     dat_mat <- as.matrix(dat)
     
-    type  <- c("c", rep("g", 7))
-    level <- c(2, rep(1, 7))
+    num_nodes <- length(nodes)
     
-    # Fit with LASSO regularization with lambda selected via 10-fold cross-validation
-    # and default beta-min threshold (seed seems to be needed for reproducibility)
+    type  <- c("c", rep("g", num_nodes))
+    level <- c(2,   rep(1,   num_nodes))
     
-    set.seed(1234)
-    fit1 <- mgm(dat_mat, type, level, scale = TRUE, binarySign = TRUE, saveData = TRUE,
-                lambdaSeq = NULL, lambdaSel = "CV", lambdaFolds = 10, threshold = "LW")
-    
-    # Fit with LASSO regularization with lambda that minimizes EBIC with default gamma 
-    # of 0.25 and default beta-min threshold
+    # Fit saturated model without regularization, per Fried et al. (2020, https://doi.org/gg6378, 
+    # "Network 4 (3b without regularization)" on Line 719 of "3.network_estimation.R" in supplement),
+    # but also remove beta-min threshold (in contrast to Fried et al.), which is needed for network 
+    # stability analyses to yield confidence intervals
     
     set.seed(1234)
-    fit2 <- mgm(dat_mat, type, level, scale = TRUE, binarySign = TRUE, saveData = TRUE,
-                lambdaSeq = NULL, lambdaSel = "EBIC", lambdaGam = 0.25, threshold = "LW")
-    
-    # Fit without regularization but retaining default beta-min threshold, per Fried 
-    # et al. (2020, https://doi.org/gg6378, "Network 4 (3b without regularization)" 
-    # on Line 719 of "3.network_estimation.R" in supplement)
-    
-    set.seed(1234)
-    fit3 <- mgm(dat_mat, type, level, scale = TRUE, binarySign = TRUE, saveData = TRUE,
-                lambdaSeq = 0, lambdaSel = "EBIC", lambdaGam = 0, threshold = "LW")
-    
-    # Fit saturated model without regularization (i.e., remove beta-min threshold), 
-    # which is needed for network stability analyses to yield confidence intervals
-    
-    set.seed(1234)
-    fit4 <- mgm(dat_mat, type, level, scale = TRUE, binarySign = TRUE, saveData = TRUE,
-                lambdaSeq = 0, lambdaSel = "EBIC", lambdaGam = 0, threshold = "none")
+    fit <- mgm(dat_mat, type, level, scale = TRUE, binarySign = TRUE, saveData = TRUE,
+               lambdaSeq = 0, lambdaSel = "EBIC", lambdaGam = 0, threshold = "none")
     
     # Collect results for time point in list
     
     res[[wave]] <- list(vars = target_cols,
                         wave = wave,
-                        fit1 = fit1,
-                        fit2 = fit2,
-                        fit3 = fit3,
-                        fit4 = fit4)
+                        fit  = fit)
   }
 
   return(res)
 }
 
-# Run function for two contrasts and two missing handling methods each
+# Run function for RR and BBSIQ networks for two contrasts and two missing handling methods each
 
-res_rev_pos_neu_lw_per_wave     <- fit_mgm(net_dat_all_to_s6_wide, "positive_vs_neutral",     "listwise_per_wave")
-res_rev_pos_neu_lw_across_waves <- fit_mgm(net_dat_all_to_s6_wide, "positive_vs_neutral",     "listwise_across_waves")
+## For RR network
 
-res_rev_pos_fif_lw_per_wave     <- fit_mgm(net_dat_all_to_s6_wide, "positive_vs_fifty_fifty", "listwise_per_wave")
-res_rev_pos_fif_lw_across_waves <- fit_mgm(net_dat_all_to_s6_wide, "positive_vs_fifty_fifty", "listwise_across_waves")
+res_rr_pos_neu_lw_per_wave     <- fit_mgm(net_dat_rr_all_to_s6_wide, 
+                                          "positive_vs_neutral",     "lw_per_wave",     nodes$rr_net)
+res_rr_pos_neu_lw_across_waves <- fit_mgm(net_dat_rr_all_to_s6_wide, 
+                                          "positive_vs_neutral",     "lw_across_waves", nodes$rr_net)
 
-# Export results
+res_rr_pos_fif_lw_per_wave     <- fit_mgm(net_dat_rr_all_to_s6_wide, 
+                                          "positive_vs_fifty_fifty", "lw_per_wave",     nodes$rr_net)
+res_rr_pos_fif_lw_across_waves <- fit_mgm(net_dat_rr_all_to_s6_wide, 
+                                          "positive_vs_fifty_fifty", "lw_across_waves", nodes$rr_net)
 
-net_interv_path <- "./results/net_interv/"
+## For BBSIQ network
 
-dir.create(net_interv_path, recursive = TRUE)
+res_bb_pos_neu_lw_per_wave     <- fit_mgm(net_dat_bb_all_to_s6_wide, 
+                                          "positive_vs_neutral",     "lw_per_wave",     nodes$bb_net)
+res_bb_pos_neu_lw_across_waves <- fit_mgm(net_dat_bb_all_to_s6_wide, 
+                                          "positive_vs_neutral",     "lw_across_waves", nodes$bb_net)
 
-save(res_rev_pos_neu_lw_per_wave,     file = paste0(net_interv_path, "res_rev_pos_neu_lw_per_wave.RData"))
-save(res_rev_pos_neu_lw_across_waves, file = paste0(net_interv_path, "res_rev_pos_neu_lw_across_waves.RData"))
+res_bb_pos_fif_lw_per_wave     <- fit_mgm(net_dat_bb_all_to_s6_wide, 
+                                          "positive_vs_fifty_fifty", "lw_per_wave",     nodes$bb_net)
+res_bb_pos_fif_lw_across_waves <- fit_mgm(net_dat_bb_all_to_s6_wide, 
+                                          "positive_vs_fifty_fifty", "lw_across_waves", nodes$bb_net)
 
-save(res_rev_pos_fif_lw_per_wave,     file = paste0(net_interv_path, "res_rev_pos_fif_lw_per_wave.RData"))
-save(res_rev_pos_fif_lw_across_waves, file = paste0(net_interv_path, "res_rev_pos_fif_lw_across_waves.RData"))
+# ---------------------------------------------------------------------------- #
+# Export results ----
+# ---------------------------------------------------------------------------- #
+
+net_interv_path <- file.path("results", "net_interv")
+dir.create(net_interv_path)
+
+# For RR network
+
+saveRDS(res_rr_pos_neu_lw_per_wave,     file.path(net_interv_path, "res_rr_pos_neu_lw_per_wave.rds"))
+saveRDS(res_rr_pos_neu_lw_across_waves, file.path(net_interv_path, "res_rr_pos_neu_lw_across_waves.rds"))
+
+saveRDS(res_rr_pos_fif_lw_per_wave,     file.path(net_interv_path, "res_rr_pos_fif_lw_per_wave.rds"))
+saveRDS(res_rr_pos_fif_lw_across_waves, file.path(net_interv_path, "res_rr_pos_fif_lw_across_waves.rds"))
+
+# For BBSIQ network
+
+saveRDS(res_bb_pos_neu_lw_per_wave,     file.path(net_interv_path, "res_bb_pos_neu_lw_per_wave.rds"))
+saveRDS(res_bb_pos_neu_lw_across_waves, file.path(net_interv_path, "res_bb_pos_neu_lw_across_waves.rds"))
+
+saveRDS(res_bb_pos_fif_lw_per_wave,     file.path(net_interv_path, "res_bb_pos_fif_lw_per_wave.rds"))
+saveRDS(res_bb_pos_fif_lw_across_waves, file.path(net_interv_path, "res_bb_pos_fif_lw_across_waves.rds"))
