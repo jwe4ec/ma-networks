@@ -30,11 +30,7 @@ groundhog.library("qgraph", groundhog_day)
 # Import results ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (are these needed?) Network results
-
-
-
-
+# Network results
 
 net_interv_path <- file.path("results", "net_interv")
 
@@ -182,60 +178,59 @@ res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, create_edge_include_mat)
 # Define function to extract edge include matrices into list for each model type
 
 extract_edge_include_mats <- function(res_bs_ls, model_type) {
-  res_bs_pre <- res_bs_ls[[paste0(model_type, "_pre_bs")]]
-  res_bs_s3  <- res_bs_ls[[paste0(model_type, "_session3_bs")]]
-  res_bs_s6  <- res_bs_ls[[paste0(model_type, "_session6_bs")]]
+  wave_suffixes <- c(PRE = "pre_bs", SESSION3 = "session3_bs", SESSION6 = "session6_bs")
   
-  edge_include_mats_pre <- res_bs_pre[grep("edge_include_thres_", names(res_bs_pre), value = TRUE)]
-  edge_include_mats_s3  <- res_bs_s3[grep("edge_include_thres_",  names(res_bs_s3),  value = TRUE)]
-  edge_include_mats_s6  <- res_bs_s6[grep("edge_include_thres_",  names(res_bs_s6),  value = TRUE)]
-  
-  names(edge_include_mats_pre) <- sub("edge_include_", "", names(edge_include_mats_pre))
-  names(edge_include_mats_s3)  <- sub("edge_include_", "", names(edge_include_mats_s3))
-  names(edge_include_mats_s6)  <- sub("edge_include_", "", names(edge_include_mats_s6))
-  
-  ls <- list(PRE      = edge_include_mats_pre,
-             SESSION3 = edge_include_mats_s3,
-             SESSION6 = edge_include_mats_s6)
+  ls <- lapply(wave_suffixes, function(suffix) {
+    res_bs <- res_bs_ls[[paste0(model_type, "_", suffix)]]
+    
+    edge_include_mats <- res_bs[grep("edge_include_thres_", names(res_bs), value = TRUE)]
+    names(edge_include_mats) <- sub("edge_include_", "", names(edge_include_mats))
+    
+    edge_include_mats
+  })
   
   return(ls)
 }
 
-# TODO (check below): Run function
+# Run function
 
 rr_pos_neu_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_neu_lw_per_wave")
 rr_pos_neu_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_neu_lw_across_waves")
 rr_pos_fif_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_fif_lw_per_wave")
 rr_pos_fif_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_rr_net_ls, "res_rr_pos_fif_lw_across_waves")
 
-
-
-
-# TODO: Continue below after checking above
-
-
-
-
+bb_pos_neu_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_bb_net_ls, "res_bb_pos_neu_lw_per_wave")
+bb_pos_neu_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_bb_net_ls, "res_bb_pos_neu_lw_across_waves")
+bb_pos_fif_lw_per_wave_edge_include     <- extract_edge_include_mats(res_bs_bb_net_ls, "res_bb_pos_fif_lw_per_wave")
+bb_pos_fif_lw_across_waves_edge_include <- extract_edge_include_mats(res_bs_bb_net_ls, "res_bb_pos_fif_lw_across_waves")
 
 # ---------------------------------------------------------------------------- #
 # Create thresholded weighted adjacency matrices at alpha levels of .05 and .01  ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to create thresholded weighted adjacency matrices
+# Define function
 
-create_wadj_thres <- function(res, fit4_edge_include) {
+create_wadj_thres <- function(res, edge_include) {
   waves <- c("PRE", "SESSION3", "SESSION6")
   thres_names <- c("thres_a05", "thres_a01")
   
   for (wave in waves) {
+    fit <- res[[wave]]$fit
+    pw  <- fit$pairwise
+    
     for (thres_name in thres_names) {
-      res[[wave]][["fit4"]][["pairwise"]][[paste0("wadj_", thres_name)]] <-
-        res[[wave]][["fit4"]][["pairwise"]][["wadj"]] * fit4_edge_include[[wave]][[thres_name]]
+      mask <- edge_include[[wave]][[thres_name]]
       
-      res[[wave]][["fit4"]][["pairwise"]][[paste0("signs_", thres_name)]] <- res[[wave]][["fit4"]][["pairwise"]][["signs"]]
+      wadj_name  <- paste0("wadj_",  thres_name)
+      signs_name <- paste0("signs_", thres_name)
       
-      res[[wave]][["fit4"]][["pairwise"]][[paste0("signs_", thres_name)]][fit4_edge_include[[wave]][[thres_name]] == 0] <- NA
+      pw[[wadj_name]]  <- pw$wadj * mask
+      
+      pw[[signs_name]] <- pw$signs
+      pw[[signs_name]][mask == 0] <- NA
     }
+    
+    res[[wave]]$fit$pairwise <- pw
   }
   
   return(res)
@@ -243,33 +238,55 @@ create_wadj_thres <- function(res, fit4_edge_include) {
 
 # Run function
 
-res_rev_pos_neu_lw_per_wave     <- create_wadj_thres(res_rev_pos_neu_lw_per_wave,     rev_pos_neu_lw_per_wave_fit4_edge_include)
-res_rev_pos_neu_lw_across_waves <- create_wadj_thres(res_rev_pos_neu_lw_across_waves, rev_pos_neu_lw_across_waves_fit4_edge_include)
-res_rev_pos_fif_lw_per_wave     <- create_wadj_thres(res_rev_pos_fif_lw_per_wave,     rev_pos_fif_lw_per_wave_fit4_edge_include)
-res_rev_pos_fif_lw_across_waves <- create_wadj_thres(res_rev_pos_fif_lw_across_waves, rev_pos_fif_lw_across_waves_fit4_edge_include)
+res_rr_pos_neu_lw_per_wave     <- create_wadj_thres(res_rr_pos_neu_lw_per_wave,     rr_pos_neu_lw_per_wave_edge_include)
+res_rr_pos_neu_lw_across_waves <- create_wadj_thres(res_rr_pos_neu_lw_across_waves, rr_pos_neu_lw_across_waves_edge_include)
+res_rr_pos_fif_lw_per_wave     <- create_wadj_thres(res_rr_pos_fif_lw_per_wave,     rr_pos_fif_lw_per_wave_edge_include)
+res_rr_pos_fif_lw_across_waves <- create_wadj_thres(res_rr_pos_fif_lw_across_waves, rr_pos_fif_lw_across_waves_edge_include)
+
+res_bb_pos_neu_lw_per_wave     <- create_wadj_thres(res_bb_pos_neu_lw_per_wave,     bb_pos_neu_lw_per_wave_edge_include)
+res_bb_pos_neu_lw_across_waves <- create_wadj_thres(res_bb_pos_neu_lw_across_waves, bb_pos_neu_lw_across_waves_edge_include)
+res_bb_pos_fif_lw_per_wave     <- create_wadj_thres(res_bb_pos_fif_lw_per_wave,     bb_pos_fif_lw_per_wave_edge_include)
+res_bb_pos_fif_lw_across_waves <- create_wadj_thres(res_bb_pos_fif_lw_across_waves, bb_pos_fif_lw_across_waves_edge_include)
 
 # ---------------------------------------------------------------------------- #
 # Compute maximum edge weight across all network intervention analyses ----
 # ---------------------------------------------------------------------------- #
 
-fit4_max_overall <- max(abs(res_rev_pos_neu_lw_per_wave$PRE$fit4$pairwise$wadj),
-                        abs(res_rev_pos_neu_lw_per_wave$SESSION3$fit4$pairwise$wadj),
-                        abs(res_rev_pos_neu_lw_per_wave$SESSION6$fit4$pairwise$wadj),
-                        abs(res_rev_pos_neu_lw_across_waves$PRE$fit4$pairwise$wadj),
-                        abs(res_rev_pos_neu_lw_across_waves$SESSION3$fit4$pairwise$wadj),
-                        abs(res_rev_pos_neu_lw_across_waves$SESSION6$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_per_wave$PRE$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_per_wave$SESSION3$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_per_wave$SESSION6$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_across_waves$PRE$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_across_waves$SESSION3$fit4$pairwise$wadj),
-                        abs(res_rev_pos_fif_lw_across_waves$SESSION6$fit4$pairwise$wadj))
+res_all_ls <- list(res_rr_pos_neu_lw_per_wave     = res_rr_pos_neu_lw_per_wave,
+                   res_rr_pos_neu_lw_across_waves = res_rr_pos_neu_lw_across_waves,
+                   res_rr_pos_fif_lw_per_wave     = res_rr_pos_fif_lw_per_wave,
+                   res_rr_pos_fif_lw_across_waves = res_rr_pos_fif_lw_across_waves,
+                   
+                   res_bb_pos_neu_lw_per_wave     = res_bb_pos_neu_lw_per_wave,
+                   res_bb_pos_neu_lw_across_waves = res_bb_pos_neu_lw_across_waves,
+                   res_bb_pos_fif_lw_per_wave     = res_bb_pos_fif_lw_per_wave,
+                   res_bb_pos_fif_lw_across_waves = res_bb_pos_fif_lw_across_waves)
 
-round(fit4_max_overall, 2) == .71
+waves <- c("PRE", "SESSION3", "SESSION6")
+
+abs_wadj_ls <- lapply(names(res_all_ls), function(res_name) {
+  res <- res_all_ls[[res_name]]
+  
+  abs_wadj_mats <- lapply(waves, function(w) abs(res[[w]]$fit$pairwise$wadj))
+  names(abs_wadj_mats) <- waves
+  
+  abs_wadj_mats
+})
+names(abs_wadj_ls) <- names(res_all_ls)
+
+max_overall <- max(unlist(abs_wadj_ls))
+
+stopifnot(round(max_overall, 2) == .76)
 
 # ---------------------------------------------------------------------------- #
 # Create plots ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Continue here
+
+
+
+
 
 # Define function to plot networks at baseline, Session 3, and Session 6
 
