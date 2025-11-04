@@ -282,46 +282,11 @@ stopifnot(round(max_overall, 2) == .76)
 # Create plots ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Continue here
+# Define function to plot networks at baseline, Session 3, and Session 6, using
+# maximum edge weight across all network intervention analyses (see above)
 
-
-
-
-
-# Define function to plot networks at baseline, Session 3, and Session 6
-
-create_plots <- function(res, fit_name, thres_name, max_type, fit4_max_overall) {
+create_plots <- function(res, thres_name, max_overall) {
   res_name <- deparse(substitute(res))
-  
-  if (max_type == "per_fit_across_waves") {
-    # Compute maximum edge magnitude across waves
-    
-    fit_bl <- res$PRE[[fit_name]]
-    fit_s3 <- res$SESSION3[[fit_name]]
-    fit_s6 <- res$SESSION6[[fit_name]]
-    
-    if (fit_name != "fit4" | (fit_name == "fit4" & thres_name == "none")) {
-      wadj_bl <- fit_bl$pairwise$wadj
-      wadj_s3 <- fit_s3$pairwise$wadj
-      wadj_s6 <- fit_s6$pairwise$wadj
-    } else if (fit_name == "fit4" & thres_name == "thres_a05") {
-      wadj_bl <- fit_bl$pairwise$wadj_thres_a05
-      wadj_s3 <- fit_s3$pairwise$wadj_thres_a05
-      wadj_s6 <- fit_s6$pairwise$wadj_thres_a05
-    } else if (fit_name == "fit4" & thres_name == "thres_a01") {
-      wadj_bl <- fit_bl$pairwise$wadj_thres_a01
-      wadj_s3 <- fit_s3$pairwise$wadj_thres_a01
-      wadj_s6 <- fit_s6$pairwise$wadj_thres_a01
-    }
-    
-    max <- max(c(abs(wadj_bl), abs(wadj_s3), abs(wadj_s6)))
-  } else if (max_type == "overall" & fit_name == "fit4") {
-    # Use maximum edge weight across all network intervention analyses (see above)
-    
-    max <- fit4_max_overall
-  } else if (max_type == "overall" & fit_name != "fit4") {
-    stop(paste0("Overall maximum has been computed only for fit4, not for ", fit_name))
-  }
   
   # Create plot for each wave
   
@@ -332,83 +297,82 @@ create_plots <- function(res, fit_name, thres_name, max_type, fit4_max_overall) 
   names(plots) <- waves
   
   for (i in 1:length(waves)) {
-    res_wave <- res[[waves[i]]]
-    
-    vars <- res_wave$vars
-    wave <- res_wave$wave
+    wave       <- waves[i]
     wave_title <- wave_titles[i]
+    res_wave   <- res[[wave]]
     
-    fit  <- res_wave[[fit_name]]
+    vars             <- res_wave$vars
+    num_vars         <- length(vars)
+    num_noncond_vars <- num_vars - 1
     
-    if (fit_name != "fit4" | (fit_name == "fit4" & thres_name == "none")) {
-      wadj <- fit$pairwise$wadj
-    } else if (fit_name == "fit4" & thres_name == "thres_a05") {
-      wadj <- fit$pairwise$wadj_thres_a05
-    } else if (fit_name == "fit4" & thres_name == "thres_a01") {
-      wadj <- fit$pairwise$wadj_thres_a01
+    fit <- res_wave$fit
+    pw  <- fit$pairwise
+
+    if (thres_name == "none") {
+      wadj <- pw$wadj
+    } else if (thres_name == "thres_a05") {
+      wadj <- pw$wadj_thres_a05
+    } else if (thres_name == "thres_a01") {
+      wadj <- pw$wadj_thres_a01
     }
     
     labels <- sub(paste0(".", wave), "", vars)
     
-    labels[labels %in% c("positive_vs_neutral",
-                         "positive_vs_fifty_fifty")] <- "Pos.\nCBM-I"
-    labels[labels == "anxious_freq"]                 <- "Anx.\nFreq."
-    labels[labels == "anxious_sev"]                  <- "Anx.\nSev."
-    labels[labels == "avoid"]                        <- "Sit.\nAvoid"
-    labels[labels == "interfere"]                    <- "Work\nImp."
-    labels[labels == "interfere_social"]             <- "Soc.\nImp."
-    labels[labels == "rr_ns_mean"]                   <- "Neg.\nBias"
-    labels[labels == "rr_ps_mean_rev"]               <- "Lack\nof Pos.\nBias"
+    pos_cbm_contrasts <- c("positive_vs_neutral", "positive_vs_fifty_fifty")
+    lack_pos_bias     <- "Lack\nof Pos.\nBias"
+    
+    labels[labels %in% pos_cbm_contrasts]   <- "Pos.\nCBM-I"
+    labels[labels == "anxious_freq"]        <- "Anx.\nFreq."
+    labels[labels == "anxious_sev"]         <- "Anx.\nSev."
+    labels[labels == "avoid"]               <- "Sit.\nAvoid"
+    labels[labels == "interfere"]           <- "Work\nImp."
+    labels[labels == "interfere_social"]    <- "Soc.\nImp."
+    labels[labels == "rr_neg_thr_mean"]     <- "Neg.\nBias"
+    labels[labels == "rr_pos_thr_mean_rev"] <- lack_pos_bias
+    labels[labels == "bbsiq_neg_mean"]      <- "Neg.\nBias"
+    
+    label_cex <- ifelse(labels == lack_pos_bias, 0.9, 1.1)
     
     # Change edge colors to match those in temporal plots (see first elements of vectors here:
     # https://github.com/SachaEpskamp/qgraph/blob/9b70cd438ee14b2c51e8030b3d5100d07a553c28/R/qgraph.R#L965)
     
-    edge_colors <- fit$pairwise$edgecolor_cb
+    edge_colors <- pw$edgecolor_cb
     edge_colors[edge_colors == "darkblue"] <- "#0000D5"
     edge_colors[edge_colors == "red"]      <- "#BF0000"
     
     # Include edge labels only for thresholded networks (too cluttered in saturated networks)
     
-    if (thres_name == "none") {
-      edge_labels <- FALSE
-    } else {
-      edge_labels <- TRUE
-    }
+    edge_labels <- thres_name != "none"
     
-    # Make edge labels for certain models smaller due to overlapping positions
+    # If needed, edit this to make edge labels for certain models (i.e., certain "res_name" 
+    # and "thres_name" values) smaller (e.g., 1.6) due to overlapping positions
     
-    if (res_name == "res_rev_pos_fif_lw_across_waves" |
-        (res_name == "res_rev_pos_fif_lw_per_wave" & thres_name == "thres_a05")) {
-      edge_label_cex <- 1.6
-    } else {
-      edge_label_cex <- 2
-    }
+    edge_label_cex <- 2
     
     # TODO: Find better way to make negative edges dashed ("lty" below makes them
     # dashed, but the spacing between dashes increases as the magnitude of the edge
     # weight increases, making the plot difficult to read)
     
-    plots[[waves[i]]] <- 
-      qgraph(wadj,
-             edge.color = edge_colors,
-             edge.labels = edge_labels,
-             edge.label.color = "black",
-             edge.label.margin = .01,
-             edge.label.cex = edge_label_cex,
-             # lty = fit$pairwise$edge_lty,     # TODO
-             layout = "circle",
-             labels = labels,
-             theme = "colorblind",
-             asize = 7, 
-             vsize = 15, 
-             shape = c("square", rep("circle", 7)),
-             label.cex = c(rep(1.1, 7), .9), 
-             mar = rep(4, 4), 
-             title = bquote(paste(.(wave_title), " (", italic("n"), " = ", 
-                                  .(fit$call$n), ")")),
-             title.cex = 1.4,
-             label.scale = FALSE,
-             maximum = max)
+    plots[[wave]] <- qgraph(wadj,
+                            edge.color = edge_colors,
+                            edge.labels = edge_labels,
+                            edge.label.color = "black",
+                            edge.label.margin = .01,
+                            edge.label.cex = edge_label_cex,
+                            # lty = pw$edge_lty,   # TODO
+                            layout = "circle",
+                            labels = labels,
+                            theme = "colorblind",
+                            asize = 7,
+                            vsize = 15,
+                            shape = c("square", rep("circle", num_noncond_vars)),
+                            label.cex = label_cex,
+                            mar = rep(4, 4),
+                            title = bquote(paste(.(wave_title), " (", italic("n"), " = ", 
+                                                 .(fit$call$n), ")")),
+                            title.cex = 1.4,
+                            label.scale = FALSE,
+                            maximum = max_overall)
   }
   
   return(plots)
@@ -416,62 +380,69 @@ create_plots <- function(res, fit_name, thres_name, max_type, fit4_max_overall) 
 
 # Run function
 
-plots_rev_pos_neu_lw_per_wave_fit4               <- create_plots(res_rev_pos_neu_lw_per_wave,     "fit4", "none",      "overall", fit4_max_overall)
-plots_rev_pos_neu_lw_per_wave_fit4_thres_a05     <- create_plots(res_rev_pos_neu_lw_per_wave,     "fit4", "thres_a05", "overall", fit4_max_overall)
-plots_rev_pos_neu_lw_per_wave_fit4_thres_a01     <- create_plots(res_rev_pos_neu_lw_per_wave,     "fit4", "thres_a01", "overall", fit4_max_overall)
+p_ls <- list()
 
-plots_rev_pos_neu_lw_across_waves_fit4           <- create_plots(res_rev_pos_neu_lw_across_waves, "fit4", "none",      "overall", fit4_max_overall)
-plots_rev_pos_neu_lw_across_waves_fit4_thres_a05 <- create_plots(res_rev_pos_neu_lw_across_waves, "fit4", "thres_a05", "overall", fit4_max_overall)
-plots_rev_pos_neu_lw_across_waves_fit4_thres_a01 <- create_plots(res_rev_pos_neu_lw_across_waves, "fit4", "thres_a01", "overall", fit4_max_overall)
+## For RR network
 
-plots_rev_pos_fif_lw_per_wave_fit4               <- create_plots(res_rev_pos_fif_lw_per_wave,     "fit4", "none",      "overall", fit4_max_overall)
-plots_rev_pos_fif_lw_per_wave_fit4_thres_a05     <- create_plots(res_rev_pos_fif_lw_per_wave,     "fit4", "thres_a05", "overall", fit4_max_overall)
-plots_rev_pos_fif_lw_per_wave_fit4_thres_a01     <- create_plots(res_rev_pos_fif_lw_per_wave,     "fit4", "thres_a01", "overall", fit4_max_overall)
+p_ls[["plots_rr_pos_neu_lw_per_wave"]]               <- create_plots(res_rr_pos_neu_lw_per_wave,     "none",      max_overall)
+p_ls[["plots_rr_pos_neu_lw_per_wave_thres_a05"]]     <- create_plots(res_rr_pos_neu_lw_per_wave,     "thres_a05", max_overall)
+p_ls[["plots_rr_pos_neu_lw_per_wave_thres_a01"]]     <- create_plots(res_rr_pos_neu_lw_per_wave,     "thres_a01", max_overall)
 
-plots_rev_pos_fif_lw_across_waves_fit4           <- create_plots(res_rev_pos_fif_lw_across_waves, "fit4", "none",      "overall", fit4_max_overall)
-plots_rev_pos_fif_lw_across_waves_fit4_thres_a05 <- create_plots(res_rev_pos_fif_lw_across_waves, "fit4", "thres_a05", "overall", fit4_max_overall)
-plots_rev_pos_fif_lw_across_waves_fit4_thres_a01 <- create_plots(res_rev_pos_fif_lw_across_waves, "fit4", "thres_a01", "overall", fit4_max_overall)
+p_ls[["plots_rr_pos_neu_lw_across_waves"]]           <- create_plots(res_rr_pos_neu_lw_across_waves, "none",      max_overall)
+p_ls[["plots_rr_pos_neu_lw_across_waves_thres_a05"]] <- create_plots(res_rr_pos_neu_lw_across_waves, "thres_a05", max_overall)
+p_ls[["plots_rr_pos_neu_lw_across_waves_thres_a01"]] <- create_plots(res_rr_pos_neu_lw_across_waves, "thres_a01", max_overall)
 
-# Export plots
+p_ls[["plots_rr_pos_fif_lw_per_wave"]]               <- create_plots(res_rr_pos_fif_lw_per_wave,     "none",      max_overall)
+p_ls[["plots_rr_pos_fif_lw_per_wave_thres_a05"]]     <- create_plots(res_rr_pos_fif_lw_per_wave,     "thres_a05", max_overall)
+p_ls[["plots_rr_pos_fif_lw_per_wave_thres_a01"]]     <- create_plots(res_rr_pos_fif_lw_per_wave,     "thres_a01", max_overall)
 
-net_interv_plots_path <- paste0(net_interv_path, "plots/")
+p_ls[["plots_rr_pos_fif_lw_across_waves"]]           <- create_plots(res_rr_pos_fif_lw_across_waves, "none",      max_overall)
+p_ls[["plots_rr_pos_fif_lw_across_waves_thres_a05"]] <- create_plots(res_rr_pos_fif_lw_across_waves, "thres_a05", max_overall)
+p_ls[["plots_rr_pos_fif_lw_across_waves_thres_a01"]] <- create_plots(res_rr_pos_fif_lw_across_waves, "thres_a01", max_overall)
 
+## For BBSIQ network
+
+p_ls[["plots_bb_pos_neu_lw_per_wave"]]               <- create_plots(res_bb_pos_neu_lw_per_wave,     "none",      max_overall)
+p_ls[["plots_bb_pos_neu_lw_per_wave_thres_a05"]]     <- create_plots(res_bb_pos_neu_lw_per_wave,     "thres_a05", max_overall)
+p_ls[["plots_bb_pos_neu_lw_per_wave_thres_a01"]]     <- create_plots(res_bb_pos_neu_lw_per_wave,     "thres_a01", max_overall)
+
+p_ls[["plots_bb_pos_neu_lw_across_waves"]]           <- create_plots(res_bb_pos_neu_lw_across_waves, "none",      max_overall)
+p_ls[["plots_bb_pos_neu_lw_across_waves_thres_a05"]] <- create_plots(res_bb_pos_neu_lw_across_waves, "thres_a05", max_overall)
+p_ls[["plots_bb_pos_neu_lw_across_waves_thres_a01"]] <- create_plots(res_bb_pos_neu_lw_across_waves, "thres_a01", max_overall)
+
+p_ls[["plots_bb_pos_fif_lw_per_wave"]]               <- create_plots(res_bb_pos_fif_lw_per_wave,     "none",      max_overall)
+p_ls[["plots_bb_pos_fif_lw_per_wave_thres_a05"]]     <- create_plots(res_bb_pos_fif_lw_per_wave,     "thres_a05", max_overall)
+p_ls[["plots_bb_pos_fif_lw_per_wave_thres_a01"]]     <- create_plots(res_bb_pos_fif_lw_per_wave,     "thres_a01", max_overall)
+
+p_ls[["plots_bb_pos_fif_lw_across_waves"]]           <- create_plots(res_bb_pos_fif_lw_across_waves, "none",      max_overall)
+p_ls[["plots_bb_pos_fif_lw_across_waves_thres_a05"]] <- create_plots(res_bb_pos_fif_lw_across_waves, "thres_a05", max_overall)
+p_ls[["plots_bb_pos_fif_lw_across_waves_thres_a01"]] <- create_plots(res_bb_pos_fif_lw_across_waves, "thres_a01", max_overall)
+
+# ---------------------------------------------------------------------------- #
+# Export plots ----
+# ---------------------------------------------------------------------------- #
+
+# Export plots objects to RDS
+
+net_interv_plots_path <- file.path(net_interv_path, "plots")
 dir.create(net_interv_plots_path)
 
-save(plots_rev_pos_neu_lw_per_wave_fit4,               file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_per_wave_fit4.RData"))
-save(plots_rev_pos_neu_lw_per_wave_fit4_thres_a05,     file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_per_wave_fit4_thres_a05.RData"))
-save(plots_rev_pos_neu_lw_per_wave_fit4_thres_a01,     file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_per_wave_fit4_thres_a01.RData"))
-
-save(plots_rev_pos_neu_lw_across_waves_fit4,           file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_across_waves_fit4.RData"))
-save(plots_rev_pos_neu_lw_across_waves_fit4_thres_a05, file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_across_waves_fit4_thres_a05.RData"))
-save(plots_rev_pos_neu_lw_across_waves_fit4_thres_a01, file = paste0(net_interv_plots_path, "plots_rev_pos_neu_lw_across_waves_fit4_thres_a01.RData"))
-
-save(plots_rev_pos_fif_lw_per_wave_fit4,               file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_per_wave_fit4.RData"))
-save(plots_rev_pos_fif_lw_per_wave_fit4_thres_a05,     file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_per_wave_fit4_thres_a05.RData"))
-save(plots_rev_pos_fif_lw_per_wave_fit4_thres_a01,     file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_per_wave_fit4_thres_a01.RData"))
-
-save(plots_rev_pos_fif_lw_across_waves_fit4,           file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_across_waves_fit4.RData"))
-save(plots_rev_pos_fif_lw_across_waves_fit4_thres_a05, file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_across_waves_fit4_thres_a05.RData"))
-save(plots_rev_pos_fif_lw_across_waves_fit4_thres_a01, file = paste0(net_interv_plots_path, "plots_rev_pos_fif_lw_across_waves_fit4_thres_a01.RData"))
-
-# ---------------------------------------------------------------------------- #
-# Export multipanel plots ----
-# ---------------------------------------------------------------------------- #
-
-# Define function to export multipanel plots (for examples of using "layout()", see 
-# https://stackoverflow.com/questions/14660372/common-main-title-of-a-figure-panel-compiled-with-parmfrow
-
-export_multipanel <- function(plots, filename) {
-  # pdf(paste0(net_interv_plots_path, filename, ".pdf"), width = 12, height = 4.5)  # To include filename as title, use this line instead
-  pdf(paste0(net_interv_plots_path, filename, ".pdf"), width = 12, height = 4)
+for (plots_name in names(p_ls)) {
+  plots <- p_ls[[plots_name]]
   
-  # par(mar=c(0, 0, 0, 0))                                                          # To include filename as title, use these 3 lines instead
-  # layout(matrix(c(1, 2, 1, 3, 1, 4), ncol = 3), heights = c(.5, 4, .5, 4, .5, 4))
-  # plot.new()
+  saveRDS(plots, file.path(net_interv_plots_path, paste0(plots_name, ".rds")))
+}
+
+# Export multipanel plots to PDF
+
+for (plots_name in names(p_ls)) {
+  plots <- p_ls[[plots_name]]
   
-  layout(t(1:3))                                                                    # To include filename, remove this line
+  multi_name <- sub("plots_", "multi_", plots_name)
   
-  # text(0, .5, filename, pos = 4, cex = 2, font = 2, adj = 0)                      # To include filename as title, add this line
+  pdf(file.path(net_interv_plots_path, paste0(multi_name, ".pdf")), width = 12, height = 4)
+  
+  layout(t(1:3))
   
   qgraph(plots$PRE)
   box("figure")
@@ -483,64 +454,45 @@ export_multipanel <- function(plots, filename) {
   dev.off()
 }
 
-# Run function
-
-export_multipanel(plots_rev_pos_neu_lw_per_wave_fit4,               "multi_rev_pos_neu_lw_per_wave_fit4")
-export_multipanel(plots_rev_pos_neu_lw_per_wave_fit4_thres_a05,     "multi_rev_pos_neu_lw_per_wave_fit4_thres_a05")
-export_multipanel(plots_rev_pos_neu_lw_per_wave_fit4_thres_a01,     "multi_rev_pos_neu_lw_per_wave_fit4_thres_a01")
-
-export_multipanel(plots_rev_pos_neu_lw_across_waves_fit4,           "multi_rev_pos_neu_lw_across_waves_fit4")
-export_multipanel(plots_rev_pos_neu_lw_across_waves_fit4_thres_a05, "multi_rev_pos_neu_lw_across_waves_fit4_thres_a05")
-export_multipanel(plots_rev_pos_neu_lw_across_waves_fit4_thres_a01, "multi_rev_pos_neu_lw_across_waves_fit4_thres_a01")
-
-export_multipanel(plots_rev_pos_fif_lw_per_wave_fit4,               "multi_rev_pos_fif_lw_per_wave_fit4")
-export_multipanel(plots_rev_pos_fif_lw_per_wave_fit4_thres_a05,     "multi_rev_pos_fif_lw_per_wave_fit4_thres_a05")
-export_multipanel(plots_rev_pos_fif_lw_per_wave_fit4_thres_a01,     "multi_rev_pos_fif_lw_per_wave_fit4_thres_a01")
-
-export_multipanel(plots_rev_pos_fif_lw_across_waves_fit4,           "multi_rev_pos_fif_lw_across_waves_fit4")
-export_multipanel(plots_rev_pos_fif_lw_across_waves_fit4_thres_a05, "multi_rev_pos_fif_lw_across_waves_fit4_thres_a05")
-export_multipanel(plots_rev_pos_fif_lw_across_waves_fit4_thres_a01, "multi_rev_pos_fif_lw_across_waves_fit4_thres_a01")
-
 # ---------------------------------------------------------------------------- #
 # Create tables ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to create table for saturated model (fit4) across time points
+# Define function to create table for saturated model across time points
 
-create_net_interv_tbls <- function(res, fit4_edge_include) {
-  # Get results object name
-  
-  res_name <- deparse(substitute(res))
-  
+create_net_interv_tbls <- function(res, edge_include) {
   # Create table for each wave
   
-  waves       <- c("PRE", "SESSION3", "SESSION6")
+  waves <- c("PRE", "SESSION3", "SESSION6")
 
   tbls <- vector("list", length(waves))
   names(tbls) <- waves
   
   for (i in 1:length(waves)) {
-    res_wave <- res[[waves[i]]]
+    wave     <- waves[i]
+    res_wave <- res[[wave]]
     
     vars <- res_wave$vars
-    wave <- res_wave$wave
-
-    fit4  <- res_wave$fit4
+    
+    fit <- res_wave$fit
+    pw  <- fit$pairwise
     
     labels <- sub(paste0(".", wave), "", vars)
     
-    labels[labels %in% c("positive_vs_neutral",
-                         "positive_vs_fifty_fifty")] <- "Pos. CBM-I"
-    labels[labels == "anxious_freq"]                 <- "Anx. Freq."
-    labels[labels == "anxious_sev"]                  <- "Anx. Sev."
-    labels[labels == "avoid"]                        <- "Sit. Avoid"
-    labels[labels == "interfere"]                    <- "Work Imp."
-    labels[labels == "interfere_social"]             <- "Soc. Imp."
-    labels[labels == "rr_ns_mean"]                   <- "Neg. Bias"
-    labels[labels == "rr_ps_mean_rev"]               <- "Lack of Pos. Bias"
-  
-    wadj  <- fit4$pairwise$wadj
-    signs <- fit4$pairwise$signs
+    pos_cbm_contrasts <- c("positive_vs_neutral", "positive_vs_fifty_fifty")
+    
+    labels[labels %in% pos_cbm_contrasts]   <- "Pos. CBM-I"
+    labels[labels == "anxious_freq"]        <- "Anx. Freq."
+    labels[labels == "anxious_sev"]         <- "Anx. Sev."
+    labels[labels == "avoid"]               <- "Sit. Avoid"
+    labels[labels == "interfere"]           <- "Work Imp."
+    labels[labels == "interfere_social"]    <- "Soc. Imp."
+    labels[labels == "rr_neg_thr_mean"]     <- "Neg. Bias"
+    labels[labels == "rr_pos_thr_mean_rev"] <- "Lack of Pos. Bias"
+    labels[labels == "bbsiq_neg_mean"]      <- "Neg. Bias"
+    
+    wadj  <- pw$wadj
+    signs <- pw$signs
     
     tbl <- wadj * signs
     
@@ -552,31 +504,53 @@ create_net_interv_tbls <- function(res, fit4_edge_include) {
     tbls[[wave]] <- tbl
   }
   
-  # Export tables to CSV
-  
-  tbls_path <- "./results/net_interv/tbls/"
-  
-  filename <- sub("res_", "", res_name)
-  
-  dir.create (tbls_path, showWarnings = FALSE)
-  
-  sink(file = paste0(tbls_path, filename, ".csv"))
-  
-  print("Baseline:")
-  write.csv(tbls[["PRE"]])
-  
-  print("Session 3:")
-  write.csv(tbls[["SESSION3"]])
-  
-  print("Session 6:")
-  write.csv(tbls[["SESSION6"]])
-  
-  sink()
+  return(tbls)
 }
 
 # Run function
 
-create_net_interv_tbls(res_rev_pos_neu_lw_per_wave,     rev_pos_neu_lw_per_wave_fit4_edge_include)
-create_net_interv_tbls(res_rev_pos_neu_lw_across_waves, rev_pos_neu_lw_across_waves_fit4_edge_include)
-create_net_interv_tbls(res_rev_pos_fif_lw_per_wave,     rev_pos_fif_lw_per_wave_fit4_edge_include)
-create_net_interv_tbls(res_rev_pos_fif_lw_across_waves, rev_pos_fif_lw_across_waves_fit4_edge_include)
+t_ls <- list()
+
+t_ls[["tbls_rr_pos_neu_lw_per_wave"]]     <- create_net_interv_tbls(res_rr_pos_neu_lw_per_wave,     rr_pos_neu_lw_per_wave_edge_include)
+t_ls[["tbls_rr_pos_neu_lw_across_waves"]] <- create_net_interv_tbls(res_rr_pos_neu_lw_across_waves, rr_pos_neu_lw_across_waves_edge_include)
+t_ls[["tbls_rr_pos_fif_lw_per_wave"]]     <- create_net_interv_tbls(res_rr_pos_fif_lw_per_wave,     rr_pos_fif_lw_per_wave_edge_include)
+t_ls[["tbls_rr_pos_fif_lw_across_waves"]] <- create_net_interv_tbls(res_rr_pos_fif_lw_across_waves, rr_pos_fif_lw_across_waves_edge_include)
+
+t_ls[["tbls_bb_pos_neu_lw_per_wave"]]     <- create_net_interv_tbls(res_bb_pos_neu_lw_per_wave,     bb_pos_neu_lw_per_wave_edge_include)
+t_ls[["tbls_bb_pos_neu_lw_across_waves"]] <- create_net_interv_tbls(res_bb_pos_neu_lw_across_waves, bb_pos_neu_lw_across_waves_edge_include)
+t_ls[["tbls_bb_pos_fif_lw_per_wave"]]     <- create_net_interv_tbls(res_bb_pos_fif_lw_per_wave,     bb_pos_fif_lw_per_wave_edge_include)
+t_ls[["tbls_bb_pos_fif_lw_across_waves"]] <- create_net_interv_tbls(res_bb_pos_fif_lw_across_waves, bb_pos_fif_lw_across_waves_edge_include)
+
+# ---------------------------------------------------------------------------- #
+# Export tables ----
+# ---------------------------------------------------------------------------- #
+
+# Export tables to CSV
+
+tbls_path <- file.path(net_interv_path, "tbls")
+dir.create(tbls_path)
+
+for (tbls_name in names(t_ls)) {
+  tbls <- t_ls[[tbls_name]]
+  
+  multi_name <- sub("tbls_", "multi_", tbls_name)
+  
+  sink(file = file.path(tbls_path, paste0(multi_name, ".csv")))
+  
+  print("Baseline:")
+  write.csv(tbls$PRE)
+  
+  print("Session 3:")
+  write.csv(tbls$SESSION3)
+  
+  print("Session 6:")
+  write.csv(tbls$SESSION6)
+  
+  sink()
+}
+
+# TODO: Format tables
+
+
+
+
