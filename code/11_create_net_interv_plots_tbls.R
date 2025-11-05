@@ -145,16 +145,18 @@ res_bs_bb_net_ls <- lapply(res_bs_bb_net_ls, create_edge_include_mat)
 # Define function to extract edge include matrices into list for each model type
 
 extract_edge_include_mats <- function(res_bs_ls, model_type) {
-  wave_suffixes <- c(PRE = "pre_bs", SESSION3 = "session3_bs", SESSION6 = "session6_bs")
-  
-  ls <- lapply(wave_suffixes, function(suffix) {
-    res_bs <- res_bs_ls[[paste0(model_type, "_", suffix)]]
+  waves <- c("PRE", "SESSION3", "SESSION6")
+
+  ls <- lapply(waves, function(wave) {
+    res_bs <- res_bs_ls[[paste0(model_type, "_", wave, "_bs")]]
     
     edge_include_mats <- res_bs[grep("edge_include_thres_", names(res_bs), value = TRUE)]
     names(edge_include_mats) <- sub("edge_include_", "", names(edge_include_mats))
     
     edge_include_mats
   })
+  
+  names(ls) <- waves
   
   return(ls)
 }
@@ -216,6 +218,62 @@ res_bb_pos_fif_lw_per_wave     <- create_wadj_thres(res_bb_pos_fif_lw_per_wave, 
 res_bb_pos_fif_lw_across_waves <- create_wadj_thres(res_bb_pos_fif_lw_across_waves, bb_pos_fif_lw_across_waves_edge_include)
 
 # ---------------------------------------------------------------------------- #
+# Create data frames for confidence interval plots ----
+# ---------------------------------------------------------------------------- #
+
+# Define function
+
+create_ci_dfs <- function(res, res_bs_ls) {
+  # TODO
+  
+  
+  
+  
+}
+
+# TODO: Run function
+
+test <- create_ci_dfs(res_rr_pos_neu_lw_per_wave, res_bs_rr_net_ls)
+
+
+
+
+
+# TODO (Ingredients below)
+
+res_rr_pos_neu_lw_per_wave$PRE$vars
+res_rr_pos_neu_lw_per_wave$PRE$fit$pairwise$wadj
+res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a05
+res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a01
+
+res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$edge_include_thres_a05
+res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$edge_include_thres_a01
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Create confidence interval plots ----
+# ---------------------------------------------------------------------------- #
+
+# TODO
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Export confidence interval plots ----
+# ---------------------------------------------------------------------------- #
+
+# TODO
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
 # Compute maximum edge weight across all network intervention analyses ----
 # ---------------------------------------------------------------------------- #
 
@@ -246,7 +304,7 @@ max_overall <- max(unlist(abs_wadj_ls))
 stopifnot(round(max_overall, 2) == .76)
 
 # ---------------------------------------------------------------------------- #
-# Create plots ----
+# Create network plots ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to plot networks at baseline, Session 3, and Session 6, using
@@ -386,7 +444,7 @@ p_ls[["plots_bb_pos_fif_lw_across_waves_thres_a05"]] <- create_plots(res_bb_pos_
 p_ls[["plots_bb_pos_fif_lw_across_waves_thres_a01"]] <- create_plots(res_bb_pos_fif_lw_across_waves, "thres_a01", max_overall)
 
 # ---------------------------------------------------------------------------- #
-# Export plots ----
+# Export network plots ----
 # ---------------------------------------------------------------------------- #
 
 # Export plots objects to RDS
@@ -422,7 +480,7 @@ for (plots_name in names(p_ls)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Create tables ----
+# Create saturated model tables ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to create table for saturated model across time points
@@ -489,7 +547,7 @@ t_ls[["tbls_bb_pos_fif_lw_per_wave"]]     <- create_net_interv_tbls(res_bb_pos_f
 t_ls[["tbls_bb_pos_fif_lw_across_waves"]] <- create_net_interv_tbls(res_bb_pos_fif_lw_across_waves, bb_pos_fif_lw_across_waves_edge_include)
 
 # ---------------------------------------------------------------------------- #
-# Export tables ----
+# Export saturated model tables ----
 # ---------------------------------------------------------------------------- #
 
 # Export tables to CSV
