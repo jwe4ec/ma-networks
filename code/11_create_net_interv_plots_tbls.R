@@ -54,41 +54,8 @@ res_bb_pos_fif_lw_across_waves <- readRDS(file.path(net_interv_path, "res_bb_pos
 
 net_interv_stab_path <- file.path(net_interv_path, "stab")
 
-## For RR network
-
-res_bs_rr_net_files <- c("res_rr_pos_neu_lw_per_wave_pre_bs.rds", 
-                         "res_rr_pos_neu_lw_per_wave_session3_bs.rds", 
-                         "res_rr_pos_neu_lw_per_wave_session6_bs.rds", 
-                         "res_rr_pos_neu_lw_across_waves_pre_bs.rds", 
-                         "res_rr_pos_neu_lw_across_waves_session3_bs.rds", 
-                         "res_rr_pos_neu_lw_across_waves_session6_bs.rds", 
-                         "res_rr_pos_fif_lw_per_wave_pre_bs.rds", 
-                         "res_rr_pos_fif_lw_per_wave_session3_bs.rds", 
-                         "res_rr_pos_fif_lw_per_wave_session6_bs.rds", 
-                         "res_rr_pos_fif_lw_across_waves_pre_bs.rds", 
-                         "res_rr_pos_fif_lw_across_waves_session3_bs.rds", 
-                         "res_rr_pos_fif_lw_across_waves_session6_bs.rds")
-
-res_bs_rr_net_ls <- lapply(res_bs_rr_net_files, function(f) readRDS(file.path(net_interv_stab_path, f)))
-names(res_bs_rr_net_ls) <- tools::file_path_sans_ext(res_bs_rr_net_files)
-
-## For BBSIQ network
-
-res_bs_bb_net_files <- c("res_bb_pos_neu_lw_per_wave_pre_bs.rds", 
-                         "res_bb_pos_neu_lw_per_wave_session3_bs.rds", 
-                         "res_bb_pos_neu_lw_per_wave_session6_bs.rds", 
-                         "res_bb_pos_neu_lw_across_waves_pre_bs.rds", 
-                         "res_bb_pos_neu_lw_across_waves_session3_bs.rds", 
-                         "res_bb_pos_neu_lw_across_waves_session6_bs.rds", 
-                         "res_bb_pos_fif_lw_per_wave_pre_bs.rds", 
-                         "res_bb_pos_fif_lw_per_wave_session3_bs.rds", 
-                         "res_bb_pos_fif_lw_per_wave_session6_bs.rds", 
-                         "res_bb_pos_fif_lw_across_waves_pre_bs.rds", 
-                         "res_bb_pos_fif_lw_across_waves_session3_bs.rds", 
-                         "res_bb_pos_fif_lw_across_waves_session6_bs.rds")
-
-res_bs_bb_net_ls <- lapply(res_bs_bb_net_files, function(f) readRDS(file.path(net_interv_stab_path, f)))
-names(res_bs_bb_net_ls) <- tools::file_path_sans_ext(res_bs_bb_net_files)
+res_bs_rr_net_ls <- readRDS(file.path(net_interv_stab_path, "res_bs_rr_net_ls.rds"))
+res_bs_bb_net_ls <- readRDS(file.path(net_interv_stab_path, "res_bs_bb_net_ls.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Compute quantiles of bootstrap samples for alpha levels of .05 and .01 ----

@@ -24,42 +24,26 @@ groundhog_day <- version_control()
 
 # Load packages
 
-pkgs <- c("mgm", "ggplot2", "dplyr", "cowplot")
-
-groundhog.library(pkgs, groundhog_day)
+groundhog.library("mgm", groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import stability results ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Change case of imported objects (and the saved objects they came from and
-# the script "compute_net_interv_stability.R" that created them)
+net_interv_stab_path <- file.path("results", "net_interv", "stab")
 
-
-
-
-
-net_interv_stab_path <- "./results/net_interv/stab/"
-
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_per_wave_SESSION6_fit4_bs.RData"))
-
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_neu_lw_across_waves_SESSION6_fit4_bs.RData"))
-
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_per_wave_SESSION6_fit4_bs.RData"))
-
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_pre_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_session3_fit4_bs.RData"))
-load(paste0(net_interv_stab_path, "res_rev_pos_fif_lw_across_waves_SESSION6_fit4_bs.RData"))
+res_bs_rr_net_ls <- readRDS(file.path(net_interv_stab_path, "res_bs_rr_net_ls.rds"))
+res_bs_bb_net_ls <- readRDS(file.path(net_interv_stab_path, "res_bs_bb_net_ls.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Create plots ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Continue below
+
+
+
+
 
 # Plot summary of all sampling distributions 
 
