@@ -58,9 +58,12 @@ compute_net_stab <- function(res, wave) {
   # Bootstrap results at wave
   
   res_wave <- res[[wave]]
-  
+
   set.seed(1234)
   res_bs <- resample(res_wave$fit, res_wave$fit$call$data, 500)
+  
+  res_bs$vars <- res_wave$vars
+  res_bs$wave <- wave
   
   return(res_bs)
 }
@@ -72,39 +75,39 @@ res_bs_bb_net_ls <- list()
 
 print("For RR network")
 
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_pre_bs"]]          <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "PRE")
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_session3_bs"]]     <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION3")
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_session6_bs"]]     <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION6")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_PRE_bs"]]          <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "PRE")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_SESSION3_bs"]]     <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION3")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_per_wave_SESSION6_bs"]]     <- compute_net_stab(res_rr_pos_neu_lw_per_wave,     "SESSION6")
 
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_pre_bs"]]      <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "PRE")
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_session3_bs"]] <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION3")
-res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_session6_bs"]] <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION6")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_PRE_bs"]]      <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "PRE")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_SESSION3_bs"]] <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION3")
+res_bs_rr_net_ls[["res_rr_pos_neu_lw_across_waves_SESSION6_bs"]] <- compute_net_stab(res_rr_pos_neu_lw_across_waves, "SESSION6")
 
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_pre_bs"]]          <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "PRE")
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_session3_bs"]]     <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION3")
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_session6_bs"]]     <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION6")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_PRE_bs"]]          <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "PRE")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_SESSION3_bs"]]     <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION3")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_per_wave_SESSION6_bs"]]     <- compute_net_stab(res_rr_pos_fif_lw_per_wave,     "SESSION6")
 
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_pre_bs"]]      <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "PRE")
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_session3_bs"]] <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION3")
-res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_session6_bs"]] <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION6")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_PRE_bs"]]      <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "PRE")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_SESSION3_bs"]] <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION3")
+res_bs_rr_net_ls[["res_rr_pos_fif_lw_across_waves_SESSION6_bs"]] <- compute_net_stab(res_rr_pos_fif_lw_across_waves, "SESSION6")
 
 print("For BBSIQ network")
 
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_pre_bs"]]          <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "PRE")
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_session3_bs"]]     <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION3")
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_session6_bs"]]     <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION6")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_PRE_bs"]]          <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "PRE")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_SESSION3_bs"]]     <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION3")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_per_wave_SESSION6_bs"]]     <- compute_net_stab(res_bb_pos_neu_lw_per_wave,     "SESSION6")
 
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_pre_bs"]]      <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "PRE")
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_session3_bs"]] <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION3")
-res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_session6_bs"]] <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION6")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_PRE_bs"]]      <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "PRE")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_SESSION3_bs"]] <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION3")
+res_bs_bb_net_ls[["res_bb_pos_neu_lw_across_waves_SESSION6_bs"]] <- compute_net_stab(res_bb_pos_neu_lw_across_waves, "SESSION6")
 
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_pre_bs"]]          <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "PRE")
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_session3_bs"]]     <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION3")
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_session6_bs"]]     <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION6")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_PRE_bs"]]          <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "PRE")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_SESSION3_bs"]]     <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION3")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_per_wave_SESSION6_bs"]]     <- compute_net_stab(res_bb_pos_fif_lw_per_wave,     "SESSION6")
 
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_pre_bs"]]      <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "PRE")
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_session3_bs"]] <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION3")
-res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_session6_bs"]] <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION6")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_PRE_bs"]]      <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "PRE")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_SESSION3_bs"]] <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION3")
+res_bs_bb_net_ls[["res_bb_pos_fif_lw_across_waves_SESSION6_bs"]] <- compute_net_stab(res_bb_pos_fif_lw_across_waves, "SESSION6")
 
 # ---------------------------------------------------------------------------- #
 # Export network stability ----
