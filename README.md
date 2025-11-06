@@ -6,8 +6,10 @@ This repository contains analysis code for this project on the Open Science Fram
 - Search for auxiliary variables
 - Format network intervention analysis tables
   - In "create_net_interv_plots_tbls.R"
+- Create helper function for creating labels to reduce code
+  - In "create_net_interv_plots_tbls.R"
 - Rerun analyses with new data (and including BBSIQ)
-  - Resume in "create_net_interv_stability_plots.R"
+  - Resume with CI plots in "create_net_interv_plots_tbls.R"
 
 
 

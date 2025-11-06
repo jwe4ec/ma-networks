@@ -224,11 +224,87 @@ res_bb_pos_fif_lw_across_waves <- create_wadj_thres(res_bb_pos_fif_lw_across_wav
 # Define function
 
 create_ci_dfs <- function(res, res_bs_ls) {
-  # TODO
+  res_name <- deparse(substitute(res))
   
+  waves <- c("PRE", "SESSION3", "SESSION6")
   
-  
-  
+  for (wave in waves) {
+    # Extract results for given wave to get variables, weighted adjacency matrix,
+    # and signs for saturated network
+    
+    res_wave <- res[[wave]]
+    
+    vars  <- res_wave$vars
+    
+    pw    <- res_wave$fit$pairwise
+    wadj  <- pw$wadj
+    signs <- pw$signs
+    
+    # Extract bootstrap results at given wave to get quantiles and edge inclusion 
+    # matrices for alphas of .05 and .01
+    
+    res_wave_bs_name <- paste(res_name, wave, "bs", sep = "_")
+    res_wave_bs      <- res_bs_ls[[res_wave_bs_name]]
+    
+    bootQuantiles_a05 <- res_wave_bs$bootQuantiles_a05
+    bootQuantiles_a01 <- res_wave_bs$bootQuantiles_a01
+    
+    edge_include_thres_a05 <- res_wave_bs$edge_include_thres_a05
+    edge_include_thres_a01 <- res_wave_bs$edge_include_thres_a01
+    
+    # TODO (check below): Create edge list with results from matrices
+    
+    inds <- which(lower.tri(wadj), arr.ind = TRUE)
+    
+    el <- data.frame(row        = inds[, "row"],
+                     col        = inds[, "col"],
+                     abs_weight = wadj[inds],
+                     sign       = signs[inds],
+                     ci_ll_a05  = bootQuantiles_a05[, , 1][inds],
+                     ci_ul_a05  = bootQuantiles_a05[, , 2][inds],
+                     sig_a05    = edge_include_thres_a05[inds],
+                     ci_ll_a01  = bootQuantiles_a01[, , 1][inds],
+                     ci_ul_a01  = bootQuantiles_a01[, , 2][inds],
+                     sig_a01    = edge_include_thres_a01[inds])
+    
+    
+    
+    
+    
+    # Compute signed weight and order edge list on it
+    
+    el$weight <- el$abs_weight * el$sign
+    
+    el <- el[order(el$weight, decreasing = TRUE), ]
+    
+    # Create edge labels
+    
+    labels <- sub(paste0(".", wave), "", vars)
+    
+    pos_cbm_contrasts <- c("positive_vs_neutral", "positive_vs_fifty_fifty")
+    
+    labels[labels %in% pos_cbm_contrasts]   <- "Pos. CBM-I"
+    labels[labels == "anxious_freq"]        <- "Anx. Freq."
+    labels[labels == "anxious_sev"]         <- "Anx. Sev."
+    labels[labels == "avoid"]               <- "Sit. Avoid"
+    labels[labels == "interfere"]           <- "Work Imp."
+    labels[labels == "interfere_social"]    <- "Soc. Imp."
+    labels[labels == "rr_neg_thr_mean"]     <- "Neg. Bias"
+    labels[labels == "rr_pos_thr_mean_rev"] <- "Lack of Pos. Bias"
+    labels[labels == "bbsiq_neg_mean"]      <- "Neg. Bias"
+    
+    ## TODO: "mgm" plot uses opposite order
+    
+    el$label <- paste(labels[el$row], "-", labels[el$col])
+
+    View(el)
+    stop("Stop test")
+    
+    
+    
+    
+    
+  }
 }
 
 # TODO: Run function
@@ -243,6 +319,7 @@ test <- create_ci_dfs(res_rr_pos_neu_lw_per_wave, res_bs_rr_net_ls)
 
 res_rr_pos_neu_lw_per_wave$PRE$vars
 res_rr_pos_neu_lw_per_wave$PRE$fit$pairwise$wadj
+res_rr_pos_neu_lw_per_wave$PRE$fit$pairwise$signs
 res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a05
 res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a01
 
