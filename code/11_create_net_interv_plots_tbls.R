@@ -24,7 +24,7 @@ groundhog_day <- version_control()
 
 # Load packages
 
-groundhog.library("qgraph", groundhog_day)
+groundhog.library(c("qgraph", "dplyr", "ggplot2", "cowplot"), groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import results ----
@@ -223,10 +223,13 @@ res_bb_pos_fif_lw_across_waves <- create_wadj_thres(res_bb_pos_fif_lw_across_wav
 
 # Define function
 
-create_ci_dfs <- function(res, res_bs_ls) {
+create_ci_dfs <- function(res, res_bs_ls, label_length = "s") {
   res_name <- deparse(substitute(res))
   
   waves <- c("PRE", "SESSION3", "SESSION6")
+  
+  el <- vector("list", length(waves))
+  names(el) <- waves
   
   for (wave in waves) {
     # Extract results for given wave to get variables, weighted adjacency matrix,
@@ -252,103 +255,229 @@ create_ci_dfs <- function(res, res_bs_ls) {
     edge_include_thres_a05 <- res_wave_bs$edge_include_thres_a05
     edge_include_thres_a01 <- res_wave_bs$edge_include_thres_a01
     
-    # TODO (check below): Create edge list with results from matrices
+    # Create edge list with results from matrices (using upper tri to obtain
+    # same edge labels below as "mgm::plotRes()")
     
-    inds <- which(lower.tri(wadj), arr.ind = TRUE)
+    inds <- which(upper.tri(wadj), arr.ind = TRUE)
     
-    el <- data.frame(row        = inds[, "row"],
-                     col        = inds[, "col"],
-                     abs_weight = wadj[inds],
-                     sign       = signs[inds],
-                     ci_ll_a05  = bootQuantiles_a05[, , 1][inds],
-                     ci_ul_a05  = bootQuantiles_a05[, , 2][inds],
-                     sig_a05    = edge_include_thres_a05[inds],
-                     ci_ll_a01  = bootQuantiles_a01[, , 1][inds],
-                     ci_ul_a01  = bootQuantiles_a01[, , 2][inds],
-                     sig_a01    = edge_include_thres_a01[inds])
-    
-    
-    
-    
+    el_wave <- data.frame(row        = inds[, "row"],
+                          col        = inds[, "col"],
+                          abs_weight = wadj[inds],
+                          sign       = signs[inds],
+                          ci_ll_a05  = bootQuantiles_a05[, , 1][inds],
+                          ci_ul_a05  = bootQuantiles_a05[, , 2][inds],
+                          sig_a05    = edge_include_thres_a05[inds],
+                          ci_ll_a01  = bootQuantiles_a01[, , 1][inds],
+                          ci_ul_a01  = bootQuantiles_a01[, , 2][inds],
+                          sig_a01    = edge_include_thres_a01[inds])
     
     # Compute signed weight and order edge list on it
     
-    el$weight <- el$abs_weight * el$sign
+    el_wave$weight <- el_wave$abs_weight * el_wave$sign
     
-    el <- el[order(el$weight, decreasing = TRUE), ]
+    el_wave <- el_wave[order(el_wave$weight, decreasing = TRUE), ]
     
-    # Create edge labels
+    # Create node labels
     
     labels <- sub(paste0(".", wave), "", vars)
     
     pos_cbm_contrasts <- c("positive_vs_neutral", "positive_vs_fifty_fifty")
     
-    labels[labels %in% pos_cbm_contrasts]   <- "Pos. CBM-I"
-    labels[labels == "anxious_freq"]        <- "Anx. Freq."
-    labels[labels == "anxious_sev"]         <- "Anx. Sev."
-    labels[labels == "avoid"]               <- "Sit. Avoid"
-    labels[labels == "interfere"]           <- "Work Imp."
-    labels[labels == "interfere_social"]    <- "Soc. Imp."
-    labels[labels == "rr_neg_thr_mean"]     <- "Neg. Bias"
-    labels[labels == "rr_pos_thr_mean_rev"] <- "Lack of Pos. Bias"
-    labels[labels == "bbsiq_neg_mean"]      <- "Neg. Bias"
+    if (label_length == "s") {
+      labels[labels %in% pos_cbm_contrasts]   <- "P.CBM"
+      labels[labels == "anxious_freq"]        <- "AF"
+      labels[labels == "anxious_sev"]         <- "AS"
+      labels[labels == "avoid"]               <- "SA"
+      labels[labels == "interfere"]           <- "WI"
+      labels[labels == "interfere_social"]    <- "SI"
+      labels[labels == "rr_neg_thr_mean"]     <- "NB"
+      labels[labels == "rr_pos_thr_mean_rev"] <- "LPB"
+      labels[labels == "bbsiq_neg_mean"]      <- "NB"
+    } else if (label_length == "l") {
+      labels[labels %in% pos_cbm_contrasts]   <- "Pos. CBM-I"
+      labels[labels == "anxious_freq"]        <- "Anx. Freq."
+      labels[labels == "anxious_sev"]         <- "Anx. Sev."
+      labels[labels == "avoid"]               <- "Sit. Avoid"
+      labels[labels == "interfere"]           <- "Work Imp."
+      labels[labels == "interfere_social"]    <- "Soc. Imp."
+      labels[labels == "rr_neg_thr_mean"]     <- "Neg. Bias"
+      labels[labels == "rr_pos_thr_mean_rev"] <- "Lack Pos. Bias"
+      labels[labels == "bbsiq_neg_mean"]      <- "Neg. Bias"
+    }
     
-    ## TODO: "mgm" plot uses opposite order
+    # Create edge labels and index
     
-    el$label <- paste(labels[el$row], "-", labels[el$col])
-
-    View(el)
-    stop("Stop test")
+    el_wave$label <- paste(labels[el_wave$row], "-", labels[el_wave$col])
     
+    row.names(el_wave) <- NULL
+    el_wave$index <- as.integer(row.names(el_wave))
     
-    
-    
-    
+    el[[wave]] <- el_wave
   }
+  
+  return(el)
 }
 
-# TODO: Run function
+# Run function
 
-test <- create_ci_dfs(res_rr_pos_neu_lw_per_wave, res_bs_rr_net_ls)
+rr_pos_neu_lw_per_wave_el     <- create_ci_dfs(res_rr_pos_neu_lw_per_wave,     res_bs_rr_net_ls)
+rr_pos_neu_lw_across_waves_el <- create_ci_dfs(res_rr_pos_neu_lw_across_waves, res_bs_rr_net_ls)
+rr_pos_fif_lw_per_wave_el     <- create_ci_dfs(res_rr_pos_fif_lw_per_wave,     res_bs_rr_net_ls)
+rr_pos_fif_lw_across_waves_el <- create_ci_dfs(res_rr_pos_fif_lw_across_waves, res_bs_rr_net_ls)
 
-
-
-
-
-# TODO (Ingredients below)
-
-res_rr_pos_neu_lw_per_wave$PRE$vars
-res_rr_pos_neu_lw_per_wave$PRE$fit$pairwise$wadj
-res_rr_pos_neu_lw_per_wave$PRE$fit$pairwise$signs
-res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a05
-res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$bootQuantiles_a01
-
-res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$edge_include_thres_a05
-res_bs_rr_net_ls$res_rr_pos_neu_lw_per_wave_PRE_bs$edge_include_thres_a01
-
-
-
-
+bb_pos_neu_lw_per_wave_el     <- create_ci_dfs(res_bb_pos_neu_lw_per_wave,     res_bs_bb_net_ls)
+bb_pos_neu_lw_across_waves_el <- create_ci_dfs(res_bb_pos_neu_lw_across_waves, res_bs_bb_net_ls)
+bb_pos_fif_lw_per_wave_el     <- create_ci_dfs(res_bb_pos_fif_lw_per_wave,     res_bs_bb_net_ls)
+bb_pos_fif_lw_across_waves_el <- create_ci_dfs(res_bb_pos_fif_lw_across_waves, res_bs_bb_net_ls)
 
 # ---------------------------------------------------------------------------- #
 # Create confidence interval plots ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+# Define function to create multipanel plot
 
+create_ci_plot <- function(el, label_length = "s") {
+  waves       <- c("PRE", "SESSION3", "SESSION6")
+  wave_labels <- c("Baseline", "Session 3", "Session 6")
+  
+  # Determine number of 0.5 x-axis increments needed for each wave (include
+  # padding at left for edge labels), to ensure physical distance of each 
+  # increment is same across waves using "rel_widths" in "plot_grid()"
+  
+  pad <- c(s = 1, l = 2.5)[[label_length]]
 
+  x_axis_ls <- lapply(el, function(el_wave) {
+    x_min <- floor(min(el_wave$ci_ll_a01) * 2) / 2 - pad
+    x_max <- ceiling(max(el_wave$ci_ul_a01) * 2) / 2
+    
+    increments <- (x_max - x_min) / 0.5
+    
+    list(x_min = x_min, x_max = x_max, increments = increments)
+  })
+  
+  x_increments <- sapply(x_axis_ls, function(x) x$increments)
+  
+  # Create plots
+  
+  ci_p_ls <- vector("list", length(waves))
+  names(ci_p_ls) <- waves
+  
+  for (i in 1:length(waves)) {
+    wave       <- waves[i]
+    wave_label <- wave_labels[i]
+    el_wave    <- el[[wave]]
+    
+    x_axis_wave <- x_axis_ls[[wave]]
+    x_min <- x_axis_wave$x_min
+    x_max <- x_axis_wave$x_max
 
+    # Determine positions for edge and wave labels
+    
+    offset <- 0.05
 
+    x_edge_label <- x_min + pad - offset
+    
+    x_wave_label <- x_max - offset
+    y_wave_label <- max(el_wave$index)
+    
+    # Create plot
+    
+    ci_p_ls[[wave]] <- ggplot(el_wave, aes(x = weight, y = index)) +
+      # X-axis at top and bottom
+      
+      scale_x_continuous(limits = c(x_min, x_max),
+                         breaks = seq(x_min + pad, x_max, by = 0.5),
+                         expand = c(0, 0),
+                         sec.axis = dup_axis()) +
+      
+      # Y-axis (line hidden in theme)
+      
+      scale_y_reverse() +
+      
+      # Edge labels inside plot area
+      
+      geom_text(aes(label = label), size = 3,
+                x = x_edge_label,
+                hjust = 1, vjust = 0.5) +
+      
+      # Vertical lines at first x-axis tick and at 0
+      
+      geom_vline(xintercept = x_min + pad) +
+      geom_vline(xintercept = 0, linetype = "dotted") +
+      
+      # Error bars (95% CIs overlaid on 99% CIs) and points (sample estimates)
+      
+      geom_errorbar(aes(xmin = ci_ll_a01, xmax = ci_ul_a01,
+                        color = case_when(sig_a01 == 1 & weight > 0 ~ "pos_sig",
+                                          sig_a01 == 1 & weight < 0 ~ "neg_sig",
+                                          TRUE ~ "ns")),
+                    width = 0) +
+      geom_errorbar(aes(xmin = ci_ll_a05, xmax = ci_ul_a05,
+                        color = case_when(sig_a05 == 1 & weight > 0 ~ "pos_sig",
+                                          sig_a05 == 1 & weight < 0 ~ "neg_sig",
+                                          TRUE ~ "ns")),
+                    width = 0.5) +
+      geom_point(size = 1.5) +
+      
+      # Theme
+      
+      theme_minimal() +
+      theme(panel.grid = element_blank(),
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.line.x = element_line(color = "black"),
+            axis.text.x = element_text(color = "black"),
+            axis.ticks.x = element_line(color = "black"),
+            legend.position = "none") +
+      scale_color_manual(values = c("pos_sig" = "#0000D5",
+                                    "neg_sig" = "#BF0000",
+                                    "ns"      = "#00B3B3")) +
+      
+      # Wave labels inside plot area
+      
+      annotate("text", label = wave_label, size = 3.5, fontface = "bold",
+               x = x_wave_label, y = y_wave_label,
+               hjust = 1, vjust = 1)
+  }
+  
+  # Create multipanel plot
+  
+  ci_multi_p <- plot_grid(ci_p_ls$PRE, ci_p_ls$SESSION3, ci_p_ls$SESSION6, 
+                          nrow = 1, rel_widths = x_increments)
+  
+  return(ci_multi_p)
+}
+
+# Run function
+
+ci_p_ls <- list()
+
+ci_p_ls[["rr_pos_neu_lw_per_wave_el_multi"]]     <- create_ci_plot(rr_pos_neu_lw_per_wave_el)
+ci_p_ls[["rr_pos_neu_lw_across_waves_el_multi"]] <- create_ci_plot(rr_pos_neu_lw_across_waves_el)
+ci_p_ls[["rr_pos_fif_lw_per_wave_el_multi"]]     <- create_ci_plot(rr_pos_fif_lw_per_wave_el)
+ci_p_ls[["rr_pos_fif_lw_across_waves_el_multi"]] <- create_ci_plot(rr_pos_fif_lw_across_waves_el)
+
+ci_p_ls[["bb_pos_neu_lw_per_wave_el_multi"]]     <- create_ci_plot(bb_pos_neu_lw_per_wave_el)
+ci_p_ls[["bb_pos_neu_lw_across_waves_el_multi"]] <- create_ci_plot(bb_pos_neu_lw_across_waves_el)
+ci_p_ls[["bb_pos_fif_lw_per_wave_el_multi"]]     <- create_ci_plot(bb_pos_fif_lw_per_wave_el)
+ci_p_ls[["bb_pos_fif_lw_across_waves_el_multi"]] <- create_ci_plot(bb_pos_fif_lw_across_waves_el)
 
 # ---------------------------------------------------------------------------- #
 # Export confidence interval plots ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+# Export multipanel CI plots to PDF
 
+ci_plots_path <- file.path(net_interv_path, "ci_plots")
+dir.create(ci_plots_path)
 
-
-
+for (name in names(ci_p_ls)) {
+  save_plot(file.path(ci_plots_path, paste0(name, ".pdf")),
+            ci_p_ls[[name]],
+            base_height = 5,
+            base_width = 12)
+}
 
 # ---------------------------------------------------------------------------- #
 # Compute maximum edge weight across all network intervention analyses ----
