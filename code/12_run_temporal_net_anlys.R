@@ -20,13 +20,11 @@ source(file.path("code", "01a_define_functions.R"))
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control()
+groundhog_day <- version_control(temporal_script = TRUE)
 
 # Load packages
 
-pkgs <- c("dplyr", "psychonetrics")
-
-groundhog.library(pkgs, groundhog_day)
+groundhog.library(c("dplyr", "psychonetrics"), groundhog_day)
 
 # Set seed
 
@@ -36,7 +34,18 @@ set.seed(1234)
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-net_dat_all_to_s6_wide <- read.csv(file = "./data/intermediate/net_dat_all_to_s6_wide.csv")
+# Wide-format network datasets
+
+processed_path <- file.path("data", "processed")
+
+net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
+net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
+
+# TODO: Continue below
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Remove significant linear trends and standardize across waves and participants ----

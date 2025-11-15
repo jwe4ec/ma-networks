@@ -9,12 +9,22 @@
 
 # Define function to check R version, load groundhog package, and return groundhog_day
 
-version_control <- function() {
+version_control <- function(temporal_script = FALSE) {
   # Ensure you are using the same version of R used at the time the script was 
   # written. To install a previous version, go to 
   # https://cran.r-project.org/bin/windows/base/old/
   
-  script_R_version <- "R version 4.4.0 (2024-04-24 ucrt)"
+  # If temporal script, use later R version and groundhog_day so that most recent
+  # version of psychonetrics package can be used
+  
+  if (temporal_script == TRUE) {
+    script_R_version <- "R version 4.5.1 (2025-06-13 ucrt)"
+    groundhog_day    <- "2025-10-25"
+  } else {
+    script_R_version <- "R version 4.4.0 (2024-04-24 ucrt)"
+    groundhog_day    <- "2024-06-01"
+  }
+  
   current_R_version <- R.Version()$version.string
   
   if(current_R_version != script_R_version) {
@@ -39,8 +49,7 @@ version_control <- function() {
   # and putting "Rtools" on the PATH. Then try loading the packages again.
   
   library(groundhog)
-  meta.groundhog("2024-06-01")
-  groundhog_day <- "2024-06-01"
-  
+  meta.groundhog(groundhog_day)
+
   return(groundhog_day)
 }
