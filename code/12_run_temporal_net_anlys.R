@@ -41,49 +41,64 @@ processed_path <- file.path("data", "processed")
 net_dat_rr_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_rr_all_to_s6_wide.rds"))
 net_dat_bb_all_to_s6_wide <- readRDS(file.path(processed_path, "net_dat_bb_all_to_s6_wide.rds"))
 
-# TODO: Continue below
+# Helper nodes list
 
-
-
-
+nodes <- readRDS(file.path("data", "helper", "nodes.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Remove significant linear trends and standardize across waves and participants ----
 # ---------------------------------------------------------------------------- #
 
-# Convert to long format
+# Temporarily convert to long format
 
-potential_node_vars <- c("anxious_freq", "anxious_sev", "avoid", "interfere", "interfere_social",
-                         "rr_ns_mean", "rr_ps_mean", "rr_ps_mean_rev")
+## Define function
 
-waves <- c("PRE", paste0("SESSION", 1:6))
+convert_to_long <- function(net_dat_wide, node_vars) {
+  waves <- c("PRE", paste0("SESSION", 1:6))
+  
+  varying_vars <- lapply(node_vars, function(v) paste0(v, ".", waves))
+  names(varying_vars) <- node_vars
+  
+  net_dat_long <- reshape(net_dat_wide,
+                          varying   = varying_vars,
+                          v.names   = node_vars,
+                          timevar   = "wave",
+                          times     = waves,
+                          idvar     = "participant_id",
+                          direction = "long")
+  
+  net_dat_long <- net_dat_long[order(net_dat_long$participant_id, net_dat_long$wave), ]
+  
+  return(net_dat_long)
+}
 
-varying_vars <- paste0(rep(potential_node_vars, length(waves)), 
-                       ".",
-                       rep(waves, each = length(potential_node_vars)))
+## Run function
 
-net_dat_long <- reshape(net_dat_all_to_s6_wide,
-                        varying   = varying_vars,
-                        v.names   = potential_node_vars,
-                        timevar   = "wave",
-                        times     = waves,
-                        idvar     = "participant_id",
-                        direction = "long")
-
-net_dat_long <- net_dat_long[order(net_dat_long$participant_id,
-                                   net_dat_long$wave), ]
+net_dat_rr_long <- convert_to_long(net_dat_rr_all_to_s6_wide, nodes$rr_net)
+net_dat_bb_long <- convert_to_long(net_dat_bb_all_to_s6_wide, nodes$bb_net)
 
 # Recode wave
 
-net_dat_long$wave_int <- NA
+## Define function
 
-net_dat_long$wave_int[net_dat_long$wave == "PRE"] <- 0
-net_dat_long$wave_int[net_dat_long$wave == "SESSION1"] <- 1
-net_dat_long$wave_int[net_dat_long$wave == "SESSION2"] <- 2
-net_dat_long$wave_int[net_dat_long$wave == "SESSION3"] <- 3
-net_dat_long$wave_int[net_dat_long$wave == "SESSION4"] <- 4
-net_dat_long$wave_int[net_dat_long$wave == "SESSION5"] <- 5
-net_dat_long$wave_int[net_dat_long$wave == "SESSION6"] <- 6
+compute_wave_int <- function(net_dat_long) {
+  net_dat_long$wave_int <- NA
+  
+  net_dat_long$wave_int[net_dat_long$wave == "PRE"]      <- 0
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION1"] <- 1
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION2"] <- 2
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION3"] <- 3
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION4"] <- 4
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION5"] <- 5
+  net_dat_long$wave_int[net_dat_long$wave == "SESSION6"] <- 6
+  
+  return(net_dat_long)
+}
+
+## Run function
+
+net_dat_rr_long <- compute_wave_int(net_dat_rr_long)
+net_dat_bb_long <- compute_wave_int(net_dat_bb_long)
 
 # Remove significant linear trends for each variable separately in each condition
 # (and output which trends were removed to TXT). For reference, see:
@@ -99,43 +114,59 @@ net_dat_long$wave_int[net_dat_long$wave == "SESSION6"] <- 6
 #      https://osf.io/vqzsy/?view_only=fe79b6f659b648d697389e9109ff7962 ), who removed
 #      all linear and quadratic trends and standardized in a panel GVAR
 
-detrend_path <- "./results/panel_gvar/detrend/"
-
+detrend_path <- file.path("results", "panel_gvar", "detrend")
 dir.create(detrend_path, recursive = TRUE)
 
-sink(file = paste0(detrend_path, "detrend.txt"))
+## Define function
 
-conditions <- c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL")
-
-for (i in 1:length(potential_node_vars)) {
-  # Create new variable for detrended values
+detrend_and_sink <- function(net_dat_long, net_type, node_vars) {
+  sink(file.path(detrend_path, paste0("detrend_", net_type, ".txt")))
   
-  node_var_detrend <- paste0(potential_node_vars[i], "_detrend")
+  conditions <- c("POSITIVE", "FIFTY_FIFTY", "NEUTRAL")
   
-  net_dat_long[node_var_detrend] <- NA
-  
-  # Detrend if needed separately in each condition (otherwise use original value)
-  
-  for (j in 1:length(conditions)) {
-    ff <- as.formula(paste0(potential_node_vars[i]," ~ wave_int"))
+  for (node_var in node_vars) {
+    # Create new variable for detrended values
     
-    fit <- lm(ff, net_dat_long[net_dat_long$cbmCondition == conditions[j], ])
-
-    if (anova(fit)["wave_int", "Pr(>F)"] < .05) {
-      net_dat_long[net_dat_long$cbmCondition == conditions[j] &
-                     !is.na(net_dat_long[potential_node_vars[i]]), node_var_detrend] <- residuals(fit)
-
-      print(paste("Removed sig. linear trend for", potential_node_vars[i], "in condition", conditions[j]))
-    } else {
-      net_dat_long[net_dat_long$cbmCondition == conditions[j], node_var_detrend] <-
-        net_dat_long[net_dat_long$cbmCondition == conditions[j], potential_node_vars[i]]
-
-      print(paste("No sig. linear trend for", potential_node_vars[i], "in condition", conditions[j]))
+    node_var_detrend <- paste0(node_var, "_detrend")
+    net_dat_long[[node_var_detrend]] <- NA
+    
+    # Detrend if needed separately in each condition (otherwise use original value)
+    
+    for (condition in conditions) {
+      condition_mask <- net_dat_long$cbmCondition == condition
+      
+      ff  <- as.formula(paste0(node_var, " ~ wave_int"))
+      fit <- lm(ff, net_dat_long[condition_mask, ])
+      
+      p <- anova(fit)["wave_int", "Pr(>F)"]
+      
+      if (p < .05) {
+        not_na_mask <- condition_mask & !is.na(net_dat_long[[node_var]])
+        
+        net_dat_long[not_na_mask, node_var_detrend] <- residuals(fit)
+        
+        cat("Removed sig. linear trend for", node_var, "in condition", condition, "\n")
+      } else {
+        net_dat_long[condition_mask, node_var_detrend] <- net_dat_long[condition_mask, node_var]
+        
+        cat("No sig. linear trend for", node_var, "in condition", condition, "\n")
+      }
     }
   }
+  
+  sink()
+  
+  return(net_dat_long)
 }
 
-sink()
+## TODO (check this and then continue below): Run function
+
+net_dat_rr_long <- detrend_and_sink(net_dat_rr_long, "rr_net", nodes$rr_net)
+net_dat_bb_long <- detrend_and_sink(net_dat_bb_long, "bb_net", nodes$bb_net)
+
+
+
+
 
 # Remove "detrend" from column names
 
