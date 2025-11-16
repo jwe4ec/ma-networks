@@ -159,7 +159,7 @@ detrend_and_sink <- function(net_dat_long, net_type, node_vars) {
   return(net_dat_long)
 }
 
-## TODO (check this and then continue below): Run function
+## TODO (check this method): Run function
 
 net_dat_rr_long <- detrend_and_sink(net_dat_rr_long, "rr_net", nodes$rr_net)
 net_dat_bb_long <- detrend_and_sink(net_dat_bb_long, "bb_net", nodes$bb_net)
@@ -170,50 +170,85 @@ net_dat_bb_long <- detrend_and_sink(net_dat_bb_long, "bb_net", nodes$bb_net)
 
 # Remove "detrend" from column names
 
-net_dat_long_detrend <- net_dat_long[, !(names(net_dat_long) %in% potential_node_vars)]
+## Define function
 
-names(net_dat_long_detrend) <- sub("_detrend", "", names(net_dat_long_detrend))
+rename_detrend_cols <- function(net_dat_long, node_vars) {
+  net_dat_long_detrend <- net_dat_long[setdiff(names(net_dat_long), node_vars)]
+  
+  names(net_dat_long_detrend) <- sub("_detrend", "", names(net_dat_long_detrend))
+  
+  return(net_dat_long_detrend)
+}
 
-# Also create a dataset with each variable standardized across waves and participants.
-# However, this does not seem to make a difference in results. Perhaps not needed.
+## Run function
 
-net_dat_long_detrend_std <- net_dat_long_detrend
+net_dat_rr_long_detrend <- rename_detrend_cols(net_dat_rr_long, nodes$rr_net)
+net_dat_bb_long_detrend <- rename_detrend_cols(net_dat_bb_long, nodes$bb_net)
 
-net_dat_long_detrend_std[, potential_node_vars] <- 
-  as.data.frame(scale(net_dat_long_detrend_std[, potential_node_vars]))
+# Also create dataset with each variable standardized across waves and participants.
 
-# Convert to wide format
+## Define function
 
-net_dat_all_to_s6_wide_detrend <- reshape(net_dat_long_detrend, 
-                                          direction = "wide",
-                                          idvar     = "participant_id",
-                                          timevar   = "wave",
-                                          v.names   = potential_node_vars,
-                                          drop      = "wave_int")
+std_node_cols <- function(net_dat_long_detrend, node_vars) {
+  net_dat_long_detrend_std <- net_dat_long_detrend
+  
+  net_dat_long_detrend_std[node_vars] <- as.data.frame(scale(net_dat_long_detrend_std[node_vars]))
+  
+  return(net_dat_long_detrend_std)
+}
 
-net_dat_all_to_s6_wide_detrend_std <- reshape(net_dat_long_detrend_std, 
-                                              direction = "wide",
-                                              idvar     = "participant_id",
-                                              timevar   = "wave",
-                                              v.names   = potential_node_vars,
-                                              drop      = "wave_int")
+## TODO (In diss, this didn't seem to make difference in results. Needed?): Run function
+
+net_dat_rr_long_detrend_std <- std_node_cols(net_dat_rr_long_detrend, nodes$rr_net)
+net_dat_bb_long_detrend_std <- std_node_cols(net_dat_bb_long_detrend, nodes$bb_net)
+
+
+
+
+
+# Convert back to wide format
+
+## Define function
+
+convert_to_wide <- function(net_dat_long, node_vars) {
+  net_dat_wide <- reshape(net_dat_long, 
+                          direction = "wide",
+                          idvar     = "participant_id",
+                          timevar   = "wave",
+                          v.names   = node_vars,
+                          drop      = "wave_int")
+}
+
+## Run function
+
+net_dat_rr_all_to_s6_wide_detrend     <- convert_to_wide(net_dat_rr_long_detrend,     nodes$rr_net)
+net_dat_bb_all_to_s6_wide_detrend     <- convert_to_wide(net_dat_bb_long_detrend,     nodes$bb_net)
+
+net_dat_rr_all_to_s6_wide_detrend_std <- convert_to_wide(net_dat_rr_long_detrend_std, nodes$rr_net)
+net_dat_bb_all_to_s6_wide_detrend_std <- convert_to_wide(net_dat_bb_long_detrend_std, nodes$bb_net)
 
 # Save detrended, unstandardized data for connectivity analyses
 
-save(net_dat_all_to_s6_wide_detrend, file = "./data/intermediate/net_dat_all_to_s6_wide_detrend.RData")
+saveRDS(net_dat_rr_all_to_s6_wide_detrend, file.path(processed_path, "net_dat_rr_all_to_s6_wide_detrend.rds"))
+saveRDS(net_dat_bb_all_to_s6_wide_detrend, file.path(processed_path, "net_dat_bb_all_to_s6_wide_detrend.rds"))
 
 # ---------------------------------------------------------------------------- #
 # Notes on panel GVAR analyses ----
 # ---------------------------------------------------------------------------- #
+
+# TODO: Continue revising code below for new data
+
+
+
+
 
 # Use "panelgvar" wrapper of "dvlm1" to run a multilevel GVAR model (with random 
 # intercepts and fixed network parameters), which is what the panel-lvgvar model
 # reduces to if all variables are treated as observed without measurement error 
 # (see Epskamp, 2020, p. 227). The code draws on examples below from Sacha Epskamp
 # and on "panel_lvgvar_example.R" in Epskamp (2020) supplement at https://doi.org/m337
-
-# http://psychonetrics.org/files/PNAWS2020lecture.html#panel-data-gvar
-# https://github.com/SachaEpskamp/SEM-code-examples/blob/master/psychonetrics/SHARE%20panel%20example/shareAnalysis.R
+# - http://psychonetrics.org/files/PNAWS2020lecture.html#panel-data-gvar
+# - https://github.com/SachaEpskamp/SEM-code-examples/blob/master/psychonetrics/SHARE%20panel%20example/shareAnalysis.R
 
 # TODO: If model fit issues, consider removing quadratic trends (perhaps inspecting
 # trajectories first), as Freichel (2023) did
@@ -223,7 +258,7 @@ save(net_dat_all_to_s6_wide_detrend, file = "./data/intermediate/net_dat_all_to_
 
 
 # TODO: Consider detrending and standardizing OASIS items just based on three waves 
-# modeled. Also consider completer analysis based on complete data
+# modeled. Also consider completer analysis based on complete data.
 
 
 
